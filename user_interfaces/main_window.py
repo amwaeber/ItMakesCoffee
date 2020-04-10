@@ -1,6 +1,7 @@
 import os
 from PyQt5 import QtWidgets, QtGui
 
+from user_interfaces.table_widget import TableWidget
 from utility.config import global_confs
 from utility.config import paths
 
@@ -18,5 +19,5 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(os.path.join(paths['icons'], 'coffee.png')))
         self.setWindowTitle("%s %s" % (global_confs['progname'], global_confs['progversion']))
 
-        self.mdi = QtWidgets.QMdiArea()  # create multiple document interface widget
-        self.setCentralWidget(self.mdi)
+        self.table_widget = TableWidget(self)  # create multiple document interface widget
+        self.setCentralWidget(self.table_widget)
