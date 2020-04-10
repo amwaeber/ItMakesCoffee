@@ -1,14 +1,13 @@
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 
+from user_interfaces.folder_layout import FolderLayout
 
 class TableWidget(QtWidgets.QWidget):
 
     def __init__(self, parent):
         super(TableWidget, self).__init__(parent)
-        self.init_ui()
 
-    def init_ui(self):
         self.layout = QtWidgets.QVBoxLayout(self)
 
         # Initialize tab screen
@@ -17,12 +16,12 @@ class TableWidget(QtWidgets.QWidget):
         self.tab2 = QtWidgets.QWidget()
         self.tab3 = QtWidgets.QWidget()
         self.tab4 = QtWidgets.QWidget()
-        self.tabs.resize(300, 200)
 
         # Add tabs
         self.tabs.addTab(self.tab1, "Experiment")
         self.tabs.addTab(self.tab2, "Analysis")
         self.tabs.addTab(self.tab3, "Folder")
+        self.tab3.setLayout(FolderLayout(self))
         self.tabs.addTab(self.tab4, "Calibration")
 
         # Create first tab
