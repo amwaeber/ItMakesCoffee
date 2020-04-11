@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.Qt import Qt
 
 from utility.config import paths
@@ -18,6 +18,7 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         self.folder_model.setRootPath('')
         self.folder_tree = QtWidgets.QTreeView()
         self.folder_tree.setModel(self.folder_model)
+        self.folder_tree.setCurrentIndex(self.folder_model.index(paths['last_data']))
 
         self.folder_tree.setAnimated(False)
         self.folder_tree.setIndentation(20)
@@ -33,19 +34,13 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         self.remove_reference_button.clicked.connect(self.remove_reference)
         self.add_reference_button.setToolTip('Remove reference')
 
+        self.reference_group_box = QtWidgets.QGroupBox('Reference curve')
         self.reference_tree = QtWidgets.QTreeWidget()
-        self.headerItem = QtWidgets.QTreeWidgetItem()
-        self.item = QtWidgets.QTreeWidgetItem()
+        self.reference_layout = QtWidgets.QHBoxLayout()
+        self.reference_layout.addWidget(self.reference_tree)
+        self.reference_group_box.setLayout(self.reference_layout)
 
-        for i in range(3):
-            parent = QtWidgets.QTreeWidgetItem(self.reference_tree)
-            parent.setText(0, "Parent {}".format(i))
-            parent.setFlags(parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
-            for x in range(5):
-                child = QtWidgets.QTreeWidgetItem(parent)
-                child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
-                child.setText(0, "Child {}".format(x))
-                child.setCheckState(0, Qt.Unchecked)
+        self.reference_tree.header().hide()
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.add_reference_button)
@@ -53,11 +48,14 @@ class FolderLayout(QtWidgets.QHBoxLayout):
 
         self.addWidget(self.folder_tree)
         self.addLayout(vbox)
-        self.addWidget(self.reference_tree)
+        self.addWidget(self.reference_group_box)
         # self.addWidget(self.selection_tree)
 
     def add_reference(self):
-        self.reference_files = get_list_of_csv(self.selected_file_path)
+        csv_list = get_list_of_csv(self.selected_file_path)
+        if csv_list:
+            self.reference_files = self.reference_files + csv_list
+            self.update_tree(self.reference_tree, self.reference_files)
         print(self.reference_files)
 
     def remove_reference(self):
@@ -65,3 +63,21 @@ class FolderLayout(QtWidgets.QHBoxLayout):
 
     def select_files(self, signal):
         self.selected_file_path = self.folder_tree.model().filePath(signal)
+
+    def update_tree(self, tree_widget, file_paths):
+        tree_widget.clear()
+        i_dir = 0
+        for path in file_paths:
+            if os.path.isdir(path):
+                folder = QtWidgets.QTreeWidgetItem(tree_widget)
+                folder.setText(0, path)
+                folder.setFlags(folder.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+                i_dir = i_dir + 1
+            elif os.path.isfile(path):
+                if i_dir == 0:
+                    file = QtWidgets.QTreeWidgetItem(tree_widget)
+                else:
+                    file = QtWidgets.QTreeWidgetItem(folder)
+                file.setText(0, os.path.basename(path))
+                file.setFlags(file.flags() | Qt.ItemIsUserCheckable)
+                file.setCheckState(0, Qt.Unchecked)

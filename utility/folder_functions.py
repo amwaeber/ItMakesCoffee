@@ -6,7 +6,7 @@ def get_list_of_csv(path):
     # names in the given directory
     all_files = list()
     if os.path.isdir(path):
-        all_files.append(path)  # directory name as first entry
+        # all_files.append(path)  # directory name as first entry
         list_of_files = os.listdir(path)
         # Iterate over all the entries
         for entry in list_of_files:

@@ -12,7 +12,8 @@ def write_config():
                          'progversion': '2020.04.11.01'
                          }
 
-    config['paths'] = {'icons': os.path.join(project_path, 'icons')
+    config['paths'] = {'icons': os.path.join(project_path, 'icons'),
+                       'last_data': 'C:\\Users\\amwae\\Python\\Lambda\\test\\03-04-2020'
                        }
 
     with open(config_path, 'w') as f:
