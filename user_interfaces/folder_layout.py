@@ -23,6 +23,7 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         self.folder_tree.setAnimated(False)
         self.folder_tree.setIndentation(20)
         self.folder_tree.setSortingEnabled(True)
+        self.folder_tree.setColumnWidth(0, 500)
         self.folder_tree.clicked.connect(self.select_files)
 
         self.add_reference_button = QtWidgets.QPushButton(
@@ -55,6 +56,7 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         csv_list = get_list_of_csv(self.selected_file_path)
         if csv_list:
             self.reference_files = self.reference_files + csv_list
+            self.reference_files = list(dict.fromkeys(self.reference_files))
             self.update_tree(self.reference_tree, self.reference_files)
         print(self.reference_files)
 
@@ -81,3 +83,6 @@ class FolderLayout(QtWidgets.QHBoxLayout):
                 file.setText(0, os.path.basename(path))
                 file.setFlags(file.flags() | Qt.ItemIsUserCheckable)
                 file.setCheckState(0, Qt.Unchecked)
+
+'C:/Users/amwae/Python/Lambda/test/03-04-2020/PV 1st/IV Characterizer-1 Run 667 2020-04-03T15.28.37.csv'
+'C:/Users/amwae/Python/Lambda/test/03-04-2020/PV 1st\\IV Characterizer-1 Run 667 2020-04-03T15.28.37.csv'

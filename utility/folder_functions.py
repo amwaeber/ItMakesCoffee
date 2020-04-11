@@ -12,10 +12,10 @@ def get_list_of_csv(path):
         for entry in list_of_files:
             full_path = os.path.join(path, entry)
             if full_path.endswith('.csv'):
-                all_files.append(full_path)
+                all_files.append(os.path.normpath(full_path))
         if len(all_files) == 1:  # if there were no csv files in the folder, return empty instead
             all_files = list()
     elif path.endswith('.csv'):
-        all_files.append(path)
+        all_files.append(os.path.normpath(path))
 
     return all_files
