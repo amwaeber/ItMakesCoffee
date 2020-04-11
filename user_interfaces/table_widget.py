@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSlot
 
 from user_interfaces.folder_layout import FolderLayout
 
+
 class TableWidget(QtWidgets.QWidget):
 
     def __init__(self, parent):
