@@ -3,12 +3,16 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
 from utility.config import paths
+from utility.folder_functions import get_list_of_csv
 
 
 class FolderLayout(QtWidgets.QHBoxLayout):
 
     def __init__(self, parent=None):
         super(FolderLayout, self).__init__(parent)
+
+        self.selected_file_path = ''
+        self.reference_files = list()
 
         self.folder_model = QtWidgets.QFileSystemModel()
         self.folder_model.setRootPath('')
@@ -18,7 +22,7 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         self.folder_tree.setAnimated(False)
         self.folder_tree.setIndentation(20)
         self.folder_tree.setSortingEnabled(True)
-        self.folder_tree.resize(640, 480)
+        self.folder_tree.clicked.connect(self.select_files)
 
         self.add_reference_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'right_double_arrow.png')), '')
@@ -53,7 +57,11 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         # self.addWidget(self.selection_tree)
 
     def add_reference(self):
-        pass
+        self.reference_files = get_list_of_csv(self.selected_file_path)
+        print(self.reference_files)
 
     def remove_reference(self):
         pass
+
+    def select_files(self, signal):
+        self.selected_file_path = self.folder_tree.model().filePath(signal)
