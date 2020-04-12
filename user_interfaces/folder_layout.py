@@ -102,6 +102,20 @@ class FolderLayout(QtWidgets.QHBoxLayout):
             self.selection_files = list(dict.fromkeys(self.selection_files))
             self.update_tree(self.selection_tree, self.selection_files)
 
+    def get_picked_reference(self):
+        picked_reference = list()
+        for item in self.reference_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
+            if item.checkState(0) == 2:
+                picked_reference = [file for file in self.reference_files if item.text(0) in file]
+        return picked_reference
+
+    def get_picked_selection(self):
+        picked_selection = list()
+        for item in self.selection_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
+            if item.checkState(0) == 2:
+                picked_selection = [file for file in self.selection_files if item.text(0) in file]
+        return picked_selection
+
     def remove_reference(self):
         for item in self.reference_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
             if item.checkState(0) == 2:
