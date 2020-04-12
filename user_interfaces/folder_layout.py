@@ -26,7 +26,7 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         self.folder_tree.setIndentation(20)
         self.folder_tree.setSortingEnabled(True)
         self.folder_tree.setColumnWidth(0, 500)
-        self.folder_tree.clicked.connect(self.select_files)
+        self.folder_tree.clicked.connect(self.pick_files)
         self.folder_layout = QtWidgets.QHBoxLayout()
         self.folder_layout.addWidget(self.folder_tree)
         self.folder_group_box.setLayout(self.folder_layout)
@@ -103,17 +103,22 @@ class FolderLayout(QtWidgets.QHBoxLayout):
             self.update_tree(self.selection_tree, self.selection_files)
 
     def remove_reference(self):
-        pass
+        for item in self.reference_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
+            if item.checkState(0) == 2:
+                self.reference_files = [file for file in self.reference_files if not(item.text(0) in file)]
+        self.update_tree(self.reference_tree, self.reference_files)
 
     def remove_selection(self):
-        pass
+        for item in self.selection_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
+            if item.checkState(0) == 2:
+                self.selection_files = [file for file in self.selection_files if not (item.text(0) in file)]
+        self.update_tree(self.selection_tree, self.selection_files)
 
-    def select_files(self, signal):
+    def pick_files(self, signal):
         self.picked_file_path = self.folder_tree.model().filePath(signal)
 
     def update_tree(self, tree_widget, file_paths):
         tree_widget.clear()
-        # i_dir = 0
         for path in file_paths:
             dirname = os.path.dirname(path)
             folder = tree_widget.findItems(dirname, QtCore.Qt.MatchExactly)
