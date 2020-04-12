@@ -131,7 +131,8 @@ class FolderLayout(QtWidgets.QHBoxLayout):
     def pick_files(self, signal):
         self.picked_file_path = self.folder_tree.model().filePath(signal)
 
-    def update_tree(self, tree_widget, file_paths):
+    @staticmethod
+    def update_tree(tree_widget, file_paths):
         tree_widget.clear()
         for path in file_paths:
             dirname = os.path.dirname(path)
@@ -139,13 +140,13 @@ class FolderLayout(QtWidgets.QHBoxLayout):
             if folder:
                 file = QtWidgets.QTreeWidgetItem(folder[0])
                 file.setText(0, os.path.basename(path))
-                file.setFlags(file.flags() | Qt.ItemIsUserCheckable)
+                file.setFlags(int(file.flags()) | Qt.ItemIsUserCheckable)
                 file.setCheckState(0, Qt.Unchecked)
             else:
                 folder = QtWidgets.QTreeWidgetItem(tree_widget)
                 folder.setText(0, dirname)
-                folder.setFlags(folder.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+                folder.setFlags(int(folder.flags()) | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
                 file = QtWidgets.QTreeWidgetItem(folder)
                 file.setText(0, os.path.basename(path))
-                file.setFlags(file.flags() | Qt.ItemIsUserCheckable)
+                file.setFlags(int(file.flags()) | Qt.ItemIsUserCheckable)
                 file.setCheckState(0, Qt.Unchecked)
