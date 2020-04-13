@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 
+from user_interfaces.analysis_layout import AnalysisLayout
 from user_interfaces.folder_layout import FolderLayout
 
 
@@ -21,6 +22,7 @@ class TableWidget(QtWidgets.QWidget):
         # Add tabs
         self.tabs.addTab(self.tab1, "Experiment")
         self.tabs.addTab(self.tab2, "Analysis")
+        self.tab2.setLayout(AnalysisLayout(self))
         self.tabs.addTab(self.tab3, "Folder")
         self.tab3.setLayout(FolderLayout(self))
         self.tabs.addTab(self.tab4, "Calibration")
