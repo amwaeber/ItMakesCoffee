@@ -1,7 +1,10 @@
 import os
+import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
+from helper_classes.csv_import import CsvFile
+from helper_classes import data_analysis
 from utility.config import paths
 
 
@@ -12,7 +15,12 @@ class Analysis(QtWidgets.QWidget):
         super(Analysis, self).__init__(parent)
 
         self.reference_files = list()
+        self.reference_data = list()
+        self.reference_averaged = pd.DataFrame()
         self.selection_files = list()
+        self.selection_data = list()
+        self.selection_averaged = pd.DataFrame()
+        self.selection_efficiency = pd.DataFrame()
 
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
@@ -57,8 +65,14 @@ class Analysis(QtWidgets.QWidget):
     def load_selection(self):
         # Load file data for selection from folder tab
         self.get_file_paths.emit()
-        print(self.reference_files)
-        print(self.selection_files)
+        for file in self.reference_files:
+            csv = CsvFile()
+            self.reference_data.append(csv.load_file(file))
+        for file in self.selection_files:
+            csv = CsvFile()
+            self.selection_data.append(csv.load_file(file))
+        self.update_data()
+        self.update_tables()
 
     def save_tables(self):
         # save both average and relative tables
@@ -71,4 +85,13 @@ class Analysis(QtWidgets.QWidget):
 
     def toggle_table(self):
         # switch between showing average data by experiment and relative change vs reference
+        pass
+
+    def update_data(self):
+        self.reference_averaged = data_analysis.average_results(self.reference_data)
+        self.selection_averaged = data_analysis.average_results(self.selection_data)
+        self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
+        print(self.selection_efficiency)
+
+    def update_tables(self):
         pass
