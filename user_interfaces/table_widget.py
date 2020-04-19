@@ -28,7 +28,8 @@ class TableWidget(QtWidgets.QWidget):
         self.tabs.addTab(self.tab_calibration, "Calibration")
 
         # Connect signals
-        # self.tab_analysis.get_file_paths.connect(self.tab3.get_paths)
+        self.tab_analysis.get_file_paths.connect(self.tab_folders.get_paths)
+        self.tab_folders.file_paths.connect(self.tab_analysis.set_paths)
 
         # Add tabs to widget
         self.layout.addWidget(self.tabs)

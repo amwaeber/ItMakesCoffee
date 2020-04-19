@@ -7,6 +7,7 @@ from utility.folder_functions import get_list_of_csv
 
 
 class Folders(QtWidgets.QWidget):
+    file_paths = QtCore.pyqtSignal(list, list)
 
     def __init__(self, parent=None):
         super(Folders, self).__init__(parent)
@@ -103,6 +104,10 @@ class Folders(QtWidgets.QWidget):
             self.selection_files = self.selection_files + csv_list
             self.selection_files = list(dict.fromkeys(self.selection_files))
             self.update_tree(self.selection_tree, self.selection_files)
+
+    @QtCore.pyqtSlot()
+    def get_paths(self):
+        self.file_paths.emit(self.reference_files, self.selection_files)
 
     def get_picked_reference(self):
         picked_reference = list()

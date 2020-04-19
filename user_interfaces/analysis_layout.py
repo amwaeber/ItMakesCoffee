@@ -6,10 +6,13 @@ from utility.config import paths
 
 
 class Analysis(QtWidgets.QWidget):
-    # get_file_paths = QtCore.pyqtSignal()
+    get_file_paths = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(Analysis, self).__init__(parent)
+
+        self.reference_files = list()
+        self.selection_files = list()
 
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
@@ -53,13 +56,19 @@ class Analysis(QtWidgets.QWidget):
 
     def load_selection(self):
         # Load file data for selection from folder tab
-        # self.get_file_paths.emit()
-        # self.files = self.parent().tab3.
+        self.get_file_paths.emit()
+        print(self.reference_files)
+        print(self.selection_files)
         pass
 
     def save_tables(self):
         # save both average and relative tables
         pass
+
+    @QtCore.pyqtSlot(list, list)
+    def set_paths(self, reference_path, selection_path):
+        self.reference_files = reference_path
+        self.selection_files = selection_path
 
     def toggle_table(self):
         # switch between showing average data by experiment and relative change vs reference
