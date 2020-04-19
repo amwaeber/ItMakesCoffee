@@ -59,7 +59,6 @@ class Analysis(QtWidgets.QWidget):
         self.get_file_paths.emit()
         print(self.reference_files)
         print(self.selection_files)
-        pass
 
     def save_tables(self):
         # save both average and relative tables

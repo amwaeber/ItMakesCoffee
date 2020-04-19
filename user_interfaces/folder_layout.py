@@ -106,21 +106,21 @@ class Folders(QtWidgets.QWidget):
             self.update_tree(self.selection_tree, self.selection_files)
 
     @QtCore.pyqtSlot()
-    def get_paths(self):
-        self.file_paths.emit(self.reference_files, self.selection_files)
+    def get_ticked_paths(self):
+        self.file_paths.emit(self.get_picked_reference(), self.get_picked_selection())
 
     def get_picked_reference(self):
-        picked_reference = list()
+        picked_reference = self.reference_files
         for item in self.reference_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
-            if item.checkState(0) == 2:
-                picked_reference = [file for file in self.reference_files if item.text(0) in file]
+            if item.checkState(0) == 0:
+                picked_reference = [file for file in picked_reference if not(item.text(0) in file)]
         return picked_reference
 
     def get_picked_selection(self):
-        picked_selection = list()
+        picked_selection = self.selection_files
         for item in self.selection_tree.findItems("", Qt.MatchContains | Qt.MatchRecursive):
-            if item.checkState(0) == 2:
-                picked_selection = [file for file in self.selection_files if item.text(0) in file]
+            if item.checkState(0) == 0:
+                picked_selection = [file for file in picked_selection if not(item.text(0) in file)]
         return picked_selection
 
     def remove_reference(self):
