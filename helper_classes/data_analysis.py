@@ -2,6 +2,8 @@ import pandas as pd
 
 
 def average_results(data_list):
+    if not data_list:  # return empty dataframe if empty list
+        return pd.DataFrame()
     df = get_results(data_list)
     df_avg = df.groupby(["Experiment"]).agg({'Timestamp': 'min',
                                              'MaxPower': ['mean', 'std'],
@@ -24,9 +26,11 @@ def average_results(data_list):
     return df_avg
 
 
-def efficiency_results(df_select, df_average):
+def efficiency_results(df_select, df_reference):
+    if df_select.empty or df_reference.empty:  # return empty dataframe if either dataframe is empty
+        return pd.DataFrame()
     df_eff = df_select.copy()
-    start_vals = df_average.loc[df_average['Timestamp_min'] == df_average['Timestamp_min'].min()]  # need to fix!!!
+    start_vals = df_reference.loc[df_reference['Timestamp_min'] == df_reference['Timestamp_min'].min()]  # need to fix!!!
     for col in ["MaxPower", "Voc", "Isc", "FillFactor"]:
         df_eff[col + "_std"] = 100 * df_eff[col + "_std"] / df_eff[col + "_mean"] / 2
         df_eff[col + "_mean"] = 100 * (df_eff[col + "_mean"] - start_vals[col + "_mean"].values[0]) /\

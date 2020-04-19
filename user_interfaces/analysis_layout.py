@@ -41,14 +41,10 @@ class Analysis(QtWidgets.QWidget):
         self.statistics_table = QtWidgets.QTableWidget()
         self.statistics_table.setRowCount(4)
         self.statistics_table.setColumnCount(12)
-        self.statistics_table.setItem(0, 0, QtWidgets.QTableWidgetItem("Cell (1,1)"))
-        self.statistics_table.setItem(0, 1, QtWidgets.QTableWidgetItem("Cell (1,2)"))
-        self.statistics_table.setItem(1, 0, QtWidgets.QTableWidgetItem("Cell (2,1)"))
-        self.statistics_table.setItem(1, 1, QtWidgets.QTableWidgetItem("Cell (2,2)"))
-        self.statistics_table.setItem(2, 0, QtWidgets.QTableWidgetItem("Cell (3,1)"))
-        self.statistics_table.setItem(2, 1, QtWidgets.QTableWidgetItem("Cell (3,2)"))
-        self.statistics_table.setItem(3, 0, QtWidgets.QTableWidgetItem("Cell (4,1)"))
-        self.statistics_table.setItem(3, 1, QtWidgets.QTableWidgetItem("Cell (4,2)"))
+        col_headers = ['Experiment', 'Time', 'Max. Power', r'$\sigma$', 'V_oc', r'$\sigma$',
+                       'I_sc', r'$\sigma$', 'Fill Factor', r'$\sigma$', 'Temperature', r'$\sigma$']
+        self.statistics_table.setHorizontalHeaderLabels(col_headers)
+        self.update_tables()
 
         vbox1 = QtWidgets.QVBoxLayout()
         vbox1.addWidget(self.refresh_button)
@@ -102,9 +98,13 @@ class Analysis(QtWidgets.QWidget):
 
     def update_tables(self):
         if self.table_select == 'default':
-            # add tables here
-            pass
+            for n in range(self.statistics_table.columnCount()):
+                for m in range(3):
+                    entry = QtWidgets.QTableWidgetItem('-')
+                    self.statistics_table.setItem(m, n, entry)
         elif self.table_select == 'averaged':
             pass
         elif self.table_select == 'efficiency':
             pass
+        self.statistics_table.resizeColumnsToContents()
+        self.statistics_table.resizeRowsToContents()
