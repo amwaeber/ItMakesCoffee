@@ -99,12 +99,19 @@ class Analysis(QtWidgets.QWidget):
     def update_tables(self):
         if self.table_select == 'default':
             for n in range(self.statistics_table.columnCount()):
-                for m in range(3):
+                for m in range(4):  # add a fix to catch reset to default
                     entry = QtWidgets.QTableWidgetItem('-')
                     self.statistics_table.setItem(m, n, entry)
         elif self.table_select == 'averaged':
-            pass
+            df = pd.concat([self.reference_averaged, self.selection_averaged])
+            for m in range(len(df.index)):  # capture shorter subsequent datasets
+                if m >= self.statistics_table.rowCount():
+                    self.statistics_table.insertRow(m)
+                for n in range(len(df.columns)):
+                    entry = QtWidgets.QTableWidgetItem('123')
+                    self.statistics_table.setItem(m, n, entry)
         elif self.table_select == 'efficiency':
+            df = self.selection_efficiency
             pass
         self.statistics_table.resizeColumnsToContents()
         self.statistics_table.resizeRowsToContents()
