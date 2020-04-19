@@ -67,10 +67,12 @@ class Analysis(QtWidgets.QWidget):
         self.get_file_paths.emit()
         for file in self.reference_files:
             csv = CsvFile()
-            self.reference_data.append(csv.load_file(file))
+            csv.load_file(file)
+            self.reference_data.append(csv)
         for file in self.selection_files:
             csv = CsvFile()
-            self.selection_data.append(csv.load_file(file))
+            csv.load_file(file)
+            self.selection_data.append(csv)
         self.update_data()
         self.update_tables()
 
@@ -91,7 +93,6 @@ class Analysis(QtWidgets.QWidget):
         self.reference_averaged = data_analysis.average_results(self.reference_data)
         self.selection_averaged = data_analysis.average_results(self.selection_data)
         self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
-        print(self.selection_efficiency)
 
     def update_tables(self):
         pass

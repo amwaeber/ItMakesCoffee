@@ -3,7 +3,6 @@ import pandas as pd
 
 def average_results(data_list):
     df = get_results(data_list)
-
     df_avg = df.groupby(["Experiment"]).agg({'Timestamp': 'min',
                                              'MaxPower': ['mean', 'std'],
                                              'Voc': ['mean', 'std'],
