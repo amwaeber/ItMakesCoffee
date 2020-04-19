@@ -5,10 +5,11 @@ from PyQt5.Qt import Qt
 from utility.config import paths
 
 
-class AnalysisLayout(QtWidgets.QHBoxLayout):
+class Analysis(QtWidgets.QWidget):
+    # get_file_paths = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
-        super(AnalysisLayout, self).__init__(parent)
+        super(Analysis, self).__init__(parent)
 
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
@@ -48,10 +49,11 @@ class AnalysisLayout(QtWidgets.QHBoxLayout):
         hbox = QtWidgets.QHBoxLayout()
         hbox.addLayout(vbox1)
         hbox.addWidget(self.statistics_group_box)
-        self.addLayout(hbox)
+        self.setLayout(hbox)
 
     def load_selection(self):
         # Load file data for selection from folder tab
+        # self.get_file_paths.emit()
         # self.files = self.parent().tab3.
         pass
 

@@ -1,8 +1,8 @@
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 
-from user_interfaces.analysis_layout import AnalysisLayout
-from user_interfaces.folder_layout import FolderLayout
+from user_interfaces.analysis_layout import Analysis
+from user_interfaces.folder_layout import Folders
 
 
 class TableWidget(QtWidgets.QWidget):
@@ -14,31 +14,22 @@ class TableWidget(QtWidgets.QWidget):
 
         # Initialize tab screen
         self.tabs = QtWidgets.QTabWidget()
-        self.tab1 = QtWidgets.QWidget()
-        self.tab2 = QtWidgets.QWidget()
-        self.tab3 = QtWidgets.QWidget()
-        self.tab4 = QtWidgets.QWidget()
 
-        # Add tabs
-        self.tabs.addTab(self.tab1, "Experiment")
-        self.tabs.addTab(self.tab2, "Analysis")
-        self.tab2.setLayout(AnalysisLayout(self))
-        self.tabs.addTab(self.tab3, "Folder")
-        self.tab3.setLayout(FolderLayout(self))
-        self.tabs.addTab(self.tab4, "Calibration")
+        self.tab_experiment = QtWidgets.QWidget()
+        self.tabs.addTab(self.tab_experiment, "Experiment")
 
-        # Create first tab
-        self.tab1.layout = QtWidgets.QVBoxLayout(self)
-        self.pushButton1 = QtWidgets.QPushButton("PyQt5 button")
-        self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.setLayout(self.tab1.layout)
+        self.tab_analysis = Analysis(self)
+        self.tabs.addTab(self.tab_analysis, "Analysis")
+
+        self.tab_folders = Folders(self)
+        self.tabs.addTab(self.tab_folders, "Folder")
+
+        self.tab_calibration = QtWidgets.QWidget()
+        self.tabs.addTab(self.tab_calibration, "Calibration")
+
+        # Connect signals
+        # self.tab_analysis.get_file_paths.connect(self.tab3.get_paths)
 
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
-
-    @pyqtSlot()
-    def on_click(self):
-        print("\n")
-        for currentQTableWidgetItem in self.selectedItems():
-            print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())

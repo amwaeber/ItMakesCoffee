@@ -6,10 +6,10 @@ from utility.config import paths
 from utility.folder_functions import get_list_of_csv
 
 
-class FolderLayout(QtWidgets.QHBoxLayout):
+class Folders(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
-        super(FolderLayout, self).__init__(parent)
+        super(Folders, self).__init__(parent)
 
         self.picked_file_path = ''
         self.reference_files = list()
@@ -85,8 +85,10 @@ class FolderLayout(QtWidgets.QHBoxLayout):
         vbox_large.addLayout(hbox)
         vbox_large.addLayout(hbox2)
 
-        self.addWidget(self.folder_group_box)
-        self.addLayout(vbox_large)
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(self.folder_group_box)
+        hbox.addLayout(vbox_large)
+        self.setLayout(hbox)
 
     def add_reference(self):
         csv_list = get_list_of_csv(self.picked_file_path)
