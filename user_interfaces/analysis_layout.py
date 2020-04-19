@@ -21,6 +21,7 @@ class Analysis(QtWidgets.QWidget):
         self.selection_data = list()
         self.selection_averaged = pd.DataFrame()
         self.selection_efficiency = pd.DataFrame()
+        self.table_select = 'default'
 
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
@@ -74,6 +75,7 @@ class Analysis(QtWidgets.QWidget):
             csv.load_file(file)
             self.selection_data.append(csv)
         self.update_data()
+        self.table_select = 'averaged'
         self.update_tables()
 
     def save_tables(self):
@@ -86,8 +88,12 @@ class Analysis(QtWidgets.QWidget):
         self.selection_files = selection_path
 
     def toggle_table(self):
-        # switch between showing average data by experiment and relative change vs reference
-        pass
+        if self.table_select == 'averaged':
+            self.table_select = 'efficiency'
+            self.update_tables()
+        elif self.table_select == 'efficiency':
+            self.table_select = 'averaged'
+            self.update_tables()
 
     def update_data(self):
         self.reference_averaged = data_analysis.average_results(self.reference_data)
@@ -95,4 +101,10 @@ class Analysis(QtWidgets.QWidget):
         self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
 
     def update_tables(self):
-        pass
+        if self.table_select == 'default':
+            # add tables here
+            pass
+        elif self.table_select == 'averaged':
+            pass
+        elif self.table_select == 'efficiency':
+            pass
