@@ -1,5 +1,9 @@
+cycler==0.10.0
+kiwisolver==1.2.0
+matplotlib==3.2.1
 numpy==1.18.2
 pandas==1.0.3
+pyparsing==2.4.7
 PyQt5==5.14.2
 PyQt5-sip==12.7.2
 PyQt5-stubs==5.14.2.0

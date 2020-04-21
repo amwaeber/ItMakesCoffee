@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSlot
 
 from user_interfaces.analysis_layout import Analysis
 from user_interfaces.folder_layout import Folders
+from user_interfaces.calibration_tab import Calibration
 
 
 class TableWidget(QtWidgets.QWidget):
@@ -24,7 +25,7 @@ class TableWidget(QtWidgets.QWidget):
         self.tab_folders = Folders(self)
         self.tabs.addTab(self.tab_folders, "Folder")
 
-        self.tab_calibration = QtWidgets.QWidget()
+        self.tab_calibration = Calibration(self)
         self.tabs.addTab(self.tab_calibration, "Calibration")
 
         # Connect signals
