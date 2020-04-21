@@ -24,11 +24,11 @@ class ArduinoSensor(QtCore.QObject):
         self.abort = threading.Event()
         self.abort.clear()
 
-    def start(self, t=30.0, mode='confocal', monitor=None, run_ai=False):
+    def start(self, t=30.0, monitor=None):
         # if monitor is not None:
         #     monitor.register(self)
         if not hasattr(self, 'mes_thread'):
-            self.mes_thread = threading.Thread(target=self.run, args=(t, mode, monitor, run_ai))
+            self.mes_thread = threading.Thread(target=self.run, args=(t, monitor))
             self.mes_thread.start()
         else:
             print('Warning: self.thread already existing.')
