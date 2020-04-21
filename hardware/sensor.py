@@ -7,9 +7,14 @@ import serial
 import threading
 import time
 
-port = 'COM3'
-timeout = 30
+from hardware.arduino_ai import SerialRead
+
+port_name = 'COM3'
+baud_rate = 38400
+max_data_points = 100
+data_num_bytes = 4
 n_ai = 5  # number of analogue inputs (eventually 5?)
+timeout = 30
 
 
 class ArduinoSensor(QtCore.QObject):
@@ -47,20 +52,23 @@ class ArduinoSensor(QtCore.QObject):
         run - main loop for sensor acquisition. This function is started in a thread by start()
         do not call directly, since it will then block the main loop
         """
-        self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
-        self.ser = serial.Serial('COM3', 9600, timeout=1)  # Establish the connection on a specific port
-        time.sleep(1)
-        counter = 0
-        while not self.abort.isSet():
-            b = self.ser.readline()  # read a byte string
-            string_n = b.decode()  # decode byte string into Unicode
-            string = string_n.rstrip()  # remove \n and \r
-            self.ci[counter] = counter
-            self.ai[counter][0] = float(string)*100  # Celsius
-            counter = (counter + 1) % self.ci.size  # reset counter to zero
-            time.sleep(self.dt)
-            self.update.emit()
-        self.ser.close()
+        self.ser = SerialRead(port_name, baud_rate, max_data_points, data_num_bytes, n_ai)
+        self.ser.read_serial_start()
+
+        # self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
+        # self.ser = serial.Serial(port_name, baud_rate, timeout=1)  # Establish the connection on a specific port
+        # time.sleep(1)
+        # counter = 0
+        # while not self.abort.isSet():
+        #     b = self.ser.readline()  # read a byte string
+        #     string_n = b.decode()  # decode byte string into Unicode
+        #     string = string_n.rstrip()  # remove \n and \r
+        #     self.ci[counter] = counter
+        #     self.ai[counter][0] = float(string)*100  # Celsius
+        #     counter = (counter + 1) % self.ci.size  # reset counter to zero
+        #     time.sleep(self.dt)
+        #     self.update.emit()
+        # self.ser.close()
 
     def plot(self, target_fig=None, fname=None, chs=None):
         """
@@ -70,6 +78,8 @@ class ArduinoSensor(QtCore.QObject):
         If a filename string fname is given, the figure is saved to this file and display is suppressed
         fname is an absolute path. No check or indexing is performed to prevent overwriting of existing files
         """
+        plot_interval = 50
+
         if chs is None:
             chs = []
         if target_fig is None:
