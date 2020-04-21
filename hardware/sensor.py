@@ -1,3 +1,4 @@
+import matplotlib.animation as animation
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -88,31 +89,40 @@ class ArduinoSensor(QtCore.QObject):
         else:
             fig = target_fig
         fig.clear()
-        axes = fig.add_subplot(111)
+        axis = fig.add_subplot(111)
         if 'temp' in chs:
-            axes.plot(self.ci*self.dt, self.ai[:, 0]*100, lw=1.3)
-            spread = (self.ai[:, 0].max() - self.ai[:, 0].min())
-            # make sure plotting range is sufficient to display a minimum amount of contrast
-            if spread < 1:
-                spread = 1
-            upper = self.ai[:, 0].max() + .1 * spread
-            lower = self.ai[:, 0].min() - .1 * spread
-            axes.set_ylim([lower, upper])
-            axes.set_xlabel("Time (s)")
-            axes.set_ylabel("Temperature (C)")
+            axis.set_xlabel("Time (s)")
+            axis.set_ylabel("Temperature (C)")
+            lines = axis.plot([], [], 'b-')[0]
+            anim = animation.FuncAnimation(fig, self.update_plot, fargs=(lines, 0), interval=plot_interval)
+            #
+            # # axis.plot(self.ci*self.dt, self.ai[:, 0]*100, lw=1.3)
+            # spread = (self.ai[:, 0].max() - self.ai[:, 0].min())
+            # # make sure plotting range is sufficient to display a minimum amount of contrast
+            # if spread < 1:
+            #     spread = 1
+            # upper = self.ai[:, 0].max() + .1 * spread
+            # lower = self.ai[:, 0].min() - .1 * spread
+            # axis.set_ylim([lower, upper])
         if 'power' in chs:
-            axes.plot(self.ci*self.dt, self.ai[:, 1], lw=1.3)
-            axes.plot(self.ci*self.dt, self.ai[:, 2], lw=1.3)
-            axes.plot(self.ci*self.dt, self.ai[:, 3], lw=1.3)
-            axes.plot(self.ci*self.dt, self.ai[:, 4], lw=1.3)
-            spread = (self.ai[:, 1].max()-self.ai[:, 1].min())
-            if spread < .01:
-                spread = .01
-            upper = self.ci.max() + .1*spread
-            lower = self.ci.min() - .1*spread
-            axes.set_ylim([lower, upper])
-            axes.set_xlabel("Time (s)")
-            axes.set_ylabel("Diode Voltage (V)")
+            axis.set_xlabel("Time (s)")
+            axis.set_ylabel("Diode Voltage (V)")
+            style = ['b-', 'r-', 'g-', 'k']
+            anim = []
+            for i in [1, 2, 3, 4]:
+                lines = axis.plot([], [], style[i])[0]
+                anim.append(animation.FuncAnimation(fig, self.update_plot, fargs=(lines, i), interval=plot_interval))
+
+            # axis.plot(self.ci*self.dt, self.ai[:, 1], lw=1.3)
+            # axis.plot(self.ci*self.dt, self.ai[:, 2], lw=1.3)
+            # axis.plot(self.ci*self.dt, self.ai[:, 3], lw=1.3)
+            # axis.plot(self.ci*self.dt, self.ai[:, 4], lw=1.3)
+            # spread = (self.ai[:, 1].max()-self.ai[:, 1].min())
+            # if spread < .01:
+            #     spread = .01
+            # upper = self.ci.max() + .1*spread
+            # lower = self.ci.min() - .1*spread
+            # axis.set_ylim([lower, upper])
         if target_fig is None:
             if fname is not None:
                 fig.tight_layout()
@@ -122,6 +132,16 @@ class ArduinoSensor(QtCore.QObject):
                 fig.show()
         return fig
 
+    def update_plot(self, frame, lines, plt_number):
+        xval, yval = self.ser.get_serial_data(plt_number)
+        lines.set_data(xval, yval*100)
+        spread = (yval.max() - yval.min())*100
+        # make sure plotting range is sufficient to display a minimum amount of contrast
+        if spread < 1:
+            spread = 1
+        upper = yval.max() + .1 * spread
+        lower = yval.min() - .1 * spread
+        # axis.set_ylim([lower, upper])
 
 
 # def sensor_readout(t_plot=10):
