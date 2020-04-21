@@ -42,7 +42,7 @@ class Calibration(QtWidgets.QWidget):
         vbox.addLayout(hbox2)
         self.setLayout(vbox)
 
-        self.mes = sensor.ArduinoSensor(dt=10e-1, t=30.0)
+        self.mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
         self.register(self.mes)
         self.mes.update.emit()
 
@@ -60,9 +60,9 @@ class Calibration(QtWidgets.QWidget):
     def start(self):
         if self.mes:
             self.mes.stop()
-        self.mes = sensor.ArduinoSensor(dt=10e-1, t=30.0)
+        self.mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
         self.register(self.mes)
-        self.mes.start(t=30.0)
+        self.mes.start(t=10.0)
 
     def stop(self):
         if self.mes:

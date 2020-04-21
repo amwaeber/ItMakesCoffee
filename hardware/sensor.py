@@ -58,7 +58,8 @@ class ArduinoSensor(QtCore.QObject):
             self.ci[counter] = counter
             self.ai[counter][0] = float(string)*100  # Celsius
             counter = (counter + 1) % self.ci.size  # reset counter to zero
-            time.sleep(0.1)
+            time.sleep(self.dt)
+            self.update.emit()
         self.ser.close()
 
     def plot(self, target_fig=None, fname=None, chs=None):
