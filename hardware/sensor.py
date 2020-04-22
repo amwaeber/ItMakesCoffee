@@ -13,7 +13,7 @@ from hardware.arduino_ai import SerialRead
 port_name = 'COM3'
 baud_rate = 38400
 max_data_points = 100
-data_num_bytes = 4
+data_num_bytes = 2
 n_ai = 5  # number of analogue inputs (eventually 5?)
 timeout = 30
 
@@ -97,8 +97,6 @@ class ArduinoSensor(QtCore.QObject):
         if 'temp' in chs:
             axis.set_xlabel("Time (s)")
             axis.set_ylabel("Temperature (C)")
-            # lines = axis.plot([], [], 'b-')[0]
-            # anim = animation.FuncAnimation(fig, self.update_plot, fargs=(lines, 0), interval=plot_interval)
             if not hasattr(self, 'ser'):
                 xval, yval = range(max_data_points), [0] * max_data_points
             else:
@@ -111,41 +109,22 @@ class ArduinoSensor(QtCore.QObject):
             #     spread = 1
             # upper = yval.max() + .1 * spread
             # lower = yval.min() - .1 * spread
-            # # spread = (self.ai[:, 0].max() - self.ai[:, 0].min())
-            # # # make sure plotting range is sufficient to display a minimum amount of contrast
-            # # if spread < 1:
-            # #     spread = 1
-            # # upper = self.ai[:, 0].max() + .1 * spread
-            # # lower = self.ai[:, 0].min() - .1 * spread
             # axis.set_ylim([lower, upper])
         if 'power' in chs:
             axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Diode Voltage (V)")
-        #     # style = ['b-', 'r-', 'g-', 'k']
-        #     # anim = []
+            axis.set_ylabel("Diode Readout Voltage (V)")
             for i in [1, 2, 3, 4]:
                 if not hasattr(self, 'ser'):
                     xval, yval = range(max_data_points), [0] * max_data_points
                 else:
                     xval, yval = self.ser.get_serial_data(i)
                 axis.plot(xval, yval, lw=1.3)
-        #         # lines = axis.plot([], [], style[i])[0]
-        #         # anim.append(animation.FuncAnimation(fig, self.update_plot, fargs=(lines, i), interval=plot_interval))
         #     spread = (yval.max() - yval.min())
         #     # make sure plotting range is sufficient to display a minimum amount of contrast
         #     if spread < 0.01:
         #         spread = 0.01
         #     upper = yval.max() + .1 * spread
         #     lower = yval.min() - .1 * spread
-        #     # axis.plot(self.ci*self.dt, self.ai[:, 1], lw=1.3)
-        #     # axis.plot(self.ci*self.dt, self.ai[:, 2], lw=1.3)
-        #     # axis.plot(self.ci*self.dt, self.ai[:, 3], lw=1.3)
-        #     # axis.plot(self.ci*self.dt, self.ai[:, 4], lw=1.3)
-        #     # spread = (self.ai[:, 1].max()-self.ai[:, 1].min())
-        #     # if spread < .01:
-        #     #     spread = .01
-        #     # upper = self.ci.max() + .1*spread
-        #     # lower = self.ci.min() - .1*spread
         #     axis.set_ylim([lower, upper])
         if target_fig is None:
             if fname is not None:
@@ -155,27 +134,3 @@ class ArduinoSensor(QtCore.QObject):
             else:
                 fig.show()
         return fig
-
-    def update_plot(self, frame, lines, plt_number):
-        xval, yval = self.ser.get_serial_data(plt_number)
-        lines.set_data(xval, yval*100)
-        spread = (yval.max() - yval.min())*100
-        # make sure plotting range is sufficient to display a minimum amount of contrast
-        if spread < 1:
-            spread = 1
-        upper = yval.max() + .1 * spread
-        lower = yval.min() - .1 * spread
-        # axis.set_ylim([lower, upper])
-
-
-# def sensor_readout(t_plot=10):
-#     ser = serial.Serial('COM3', 9600, timeout=1)  # Establish the connection on a specific port
-#     time.sleep(2)
-#     delay = 0.1  # s
-#     for i in range(int(t_plot/delay)):
-#         b = ser.readline()  # read a byte string
-#         string_n = b.decode()  # decode byte string into Unicode
-#         string = string_n.rstrip()  # remove \n and \r
-#         flt = float(string)  # convert string to float
-#         print(flt)
-#         time.sleep(0.1)
