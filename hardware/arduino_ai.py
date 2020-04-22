@@ -22,7 +22,7 @@ class SerialRead:
         self.data = []
         self.private_data = None
         for i in range(num_plots):  # give an array for each type of data and store them in a list
-            self.data.append(collections.deque([0] * read_length, maxlen=read_length))
+            self.data.append(collections.deque([0.1] * read_length, maxlen=read_length))
         self.is_run = True
         self.is_receiving = False
         self.thread = None

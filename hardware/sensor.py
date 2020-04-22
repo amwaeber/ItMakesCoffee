@@ -55,6 +55,10 @@ class ArduinoSensor(QtCore.QObject):
         """
         self.ser = SerialRead(port_name, baud_rate, max_data_points, data_num_bytes, n_ai)
         self.ser.read_serial_start()
+        while not self.abort.isSet():
+            time.sleep(self.dt)
+            self.update.emit()
+        self.ser.close()
 
         # self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
         # self.ser = serial.Serial(port_name, baud_rate, timeout=1)  # Establish the connection on a specific port
@@ -93,36 +97,56 @@ class ArduinoSensor(QtCore.QObject):
         if 'temp' in chs:
             axis.set_xlabel("Time (s)")
             axis.set_ylabel("Temperature (C)")
-            lines = axis.plot([], [], 'b-')[0]
-            anim = animation.FuncAnimation(fig, self.update_plot, fargs=(lines, 0), interval=plot_interval)
-            #
-            # # axis.plot(self.ci*self.dt, self.ai[:, 0]*100, lw=1.3)
-            # spread = (self.ai[:, 0].max() - self.ai[:, 0].min())
+            # lines = axis.plot([], [], 'b-')[0]
+            # anim = animation.FuncAnimation(fig, self.update_plot, fargs=(lines, 0), interval=plot_interval)
+            if not hasattr(self, 'ser'):
+                xval, yval = range(max_data_points), [0] * max_data_points
+            else:
+                xval, yval = self.ser.get_serial_data(0)
+                yval = yval * 100
+            axis.plot(xval, yval, lw=1.3)
+            # spread = (yval.max() - yval.min()) * 100
             # # make sure plotting range is sufficient to display a minimum amount of contrast
             # if spread < 1:
             #     spread = 1
-            # upper = self.ai[:, 0].max() + .1 * spread
-            # lower = self.ai[:, 0].min() - .1 * spread
+            # upper = yval.max() + .1 * spread
+            # lower = yval.min() - .1 * spread
+            # # spread = (self.ai[:, 0].max() - self.ai[:, 0].min())
+            # # # make sure plotting range is sufficient to display a minimum amount of contrast
+            # # if spread < 1:
+            # #     spread = 1
+            # # upper = self.ai[:, 0].max() + .1 * spread
+            # # lower = self.ai[:, 0].min() - .1 * spread
             # axis.set_ylim([lower, upper])
         if 'power' in chs:
             axis.set_xlabel("Time (s)")
             axis.set_ylabel("Diode Voltage (V)")
-            style = ['b-', 'r-', 'g-', 'k']
-            anim = []
+        #     # style = ['b-', 'r-', 'g-', 'k']
+        #     # anim = []
             for i in [1, 2, 3, 4]:
-                lines = axis.plot([], [], style[i])[0]
-                anim.append(animation.FuncAnimation(fig, self.update_plot, fargs=(lines, i), interval=plot_interval))
-
-            # axis.plot(self.ci*self.dt, self.ai[:, 1], lw=1.3)
-            # axis.plot(self.ci*self.dt, self.ai[:, 2], lw=1.3)
-            # axis.plot(self.ci*self.dt, self.ai[:, 3], lw=1.3)
-            # axis.plot(self.ci*self.dt, self.ai[:, 4], lw=1.3)
-            # spread = (self.ai[:, 1].max()-self.ai[:, 1].min())
-            # if spread < .01:
-            #     spread = .01
-            # upper = self.ci.max() + .1*spread
-            # lower = self.ci.min() - .1*spread
-            # axis.set_ylim([lower, upper])
+                if not hasattr(self, 'ser'):
+                    xval, yval = range(max_data_points), [0] * max_data_points
+                else:
+                    xval, yval = self.ser.get_serial_data(i)
+                axis.plot(xval, yval, lw=1.3)
+        #         # lines = axis.plot([], [], style[i])[0]
+        #         # anim.append(animation.FuncAnimation(fig, self.update_plot, fargs=(lines, i), interval=plot_interval))
+        #     spread = (yval.max() - yval.min())
+        #     # make sure plotting range is sufficient to display a minimum amount of contrast
+        #     if spread < 0.01:
+        #         spread = 0.01
+        #     upper = yval.max() + .1 * spread
+        #     lower = yval.min() - .1 * spread
+        #     # axis.plot(self.ci*self.dt, self.ai[:, 1], lw=1.3)
+        #     # axis.plot(self.ci*self.dt, self.ai[:, 2], lw=1.3)
+        #     # axis.plot(self.ci*self.dt, self.ai[:, 3], lw=1.3)
+        #     # axis.plot(self.ci*self.dt, self.ai[:, 4], lw=1.3)
+        #     # spread = (self.ai[:, 1].max()-self.ai[:, 1].min())
+        #     # if spread < .01:
+        #     #     spread = .01
+        #     # upper = self.ci.max() + .1*spread
+        #     # lower = self.ci.min() - .1*spread
+        #     axis.set_ylim([lower, upper])
         if target_fig is None:
             if fname is not None:
                 fig.tight_layout()
