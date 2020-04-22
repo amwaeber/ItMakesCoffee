@@ -1,10 +1,8 @@
-import matplotlib.animation as animation
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5 import QtCore
-import serial
 import threading
 import time
 
@@ -14,7 +12,7 @@ port_name = 'COM3'
 baud_rate = 38400
 max_data_points = 100
 data_num_bytes = 2
-n_ai = 5  # number of analogue inputs (eventually 5?)
+n_ai = 5  # number of analogue inputs
 timeout = 30
 
 
@@ -30,11 +28,9 @@ class ArduinoSensor(QtCore.QObject):
         self.abort = threading.Event()
         self.abort.clear()
 
-    def start(self, t=30.0, monitor=None):
-        # if monitor is not None:
-        #     monitor.register(self)
+    def start(self, t=30.0):
         if not hasattr(self, 'mes_thread'):
-            self.mes_thread = threading.Thread(target=self.run, args=(t, monitor))
+            self.mes_thread = threading.Thread(target=self.run, args=(t,))
             self.mes_thread.start()
         else:
             print('Warning: self.thread already existing.')
@@ -48,7 +44,7 @@ class ArduinoSensor(QtCore.QObject):
             else:
                 print('Warning: failed to stop measurement.')
 
-    def run(self, t=30.0, mode='confocal', monitor=None, run_ai=False):
+    def run(self, t=30.0):
         """
         run - main loop for sensor acquisition. This function is started in a thread by start()
         do not call directly, since it will then block the main loop
@@ -60,21 +56,6 @@ class ArduinoSensor(QtCore.QObject):
             self.update.emit()
         self.ser.close()
 
-        # self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
-        # self.ser = serial.Serial(port_name, baud_rate, timeout=1)  # Establish the connection on a specific port
-        # time.sleep(1)
-        # counter = 0
-        # while not self.abort.isSet():
-        #     b = self.ser.readline()  # read a byte string
-        #     string_n = b.decode()  # decode byte string into Unicode
-        #     string = string_n.rstrip()  # remove \n and \r
-        #     self.ci[counter] = counter
-        #     self.ai[counter][0] = float(string)*100  # Celsius
-        #     counter = (counter + 1) % self.ci.size  # reset counter to zero
-        #     time.sleep(self.dt)
-        #     self.update.emit()
-        # self.ser.close()
-
     def plot(self, target_fig=None, fname=None, chs=None):
         """
         plot - plot the result of an ODMR measurement
@@ -83,7 +64,6 @@ class ArduinoSensor(QtCore.QObject):
         If a filename string fname is given, the figure is saved to this file and display is suppressed
         fname is an absolute path. No check or indexing is performed to prevent overwriting of existing files
         """
-        plot_interval = 50
 
         if chs is None:
             chs = []

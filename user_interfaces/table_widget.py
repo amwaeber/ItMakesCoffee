@@ -2,8 +2,9 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 
 from user_interfaces.analysis_layout import Analysis
-from user_interfaces.folder_layout import Folders
 from user_interfaces.calibration_tab import Calibration
+from user_interfaces.experiment_tab import Experiment
+from user_interfaces.folder_layout import Folders
 
 
 class TableWidget(QtWidgets.QWidget):
@@ -16,7 +17,7 @@ class TableWidget(QtWidgets.QWidget):
         # Initialize tab screen
         self.tabs = QtWidgets.QTabWidget()
 
-        self.tab_experiment = QtWidgets.QWidget()
+        self.tab_experiment = Experiment(self)
         self.tabs.addTab(self.tab_experiment, "Experiment")
 
         self.tab_analysis = Analysis(self)
