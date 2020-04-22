@@ -1,5 +1,6 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 import hardware.sensor as sensor
@@ -165,23 +166,53 @@ class Experiment(QtWidgets.QWidget):
         hbox_source.addLayout(vbox4_source)
         hbox_source.addStretch(1)
         self.source_group_box.setLayout(hbox_source)
-        hbox_bottom.addWidget(self.source_group_box, 6)
+        hbox_bottom.addWidget(self.source_group_box, 5)
 
 
         self.measure_group_box = QtWidgets.QGroupBox('Measure')
         vbox_measure = QtWidgets.QVBoxLayout()
 
         hbox_meas_pars = QtWidgets.QHBoxLayout()
-
         vbox_meas_pars1 = QtWidgets.QVBoxLayout()
+        self.current_cb = QtWidgets.QCheckBox('Current', self)
+        self.current_cb.setChecked(True)
+        vbox_meas_pars1.addWidget(self.current_cb)
+        self.power_cb = QtWidgets.QCheckBox('Power', self)
+        self.power_cb.setChecked(True)
+        vbox_meas_pars1.addWidget(self.power_cb)
+        self.temperature_cb = QtWidgets.QCheckBox('Temperature', self)
+        self.temperature_cb.setChecked(True)
+        vbox_meas_pars1.addWidget(self.temperature_cb)
+        hbox_meas_pars.addLayout(vbox_meas_pars1)
 
         vbox_meas_pars2 = QtWidgets.QVBoxLayout()
+        self.voltage_cb = QtWidgets.QCheckBox('Voltage', self)
+        self.voltage_cb.setChecked(True)
+        vbox_meas_pars2.addWidget(self.voltage_cb)
+        self.resistance_cb = QtWidgets.QCheckBox('Resistance', self)
+        self.resistance_cb.setChecked(True)
+        vbox_meas_pars2.addWidget(self.resistance_cb)
+        self.diodes_cb = QtWidgets.QCheckBox('Diodes', self)
+        self.diodes_cb.setChecked(True)
+        vbox_meas_pars2.addWidget(self.diodes_cb)
+        hbox_meas_pars.addLayout(vbox_meas_pars2)
+        hbox_meas_pars.addStretch(1)
+        vbox_measure.addLayout(hbox_meas_pars)
+        vbox_measure.addStretch(1)
 
         hbox_folder = QtWidgets.QHBoxLayout()
-
-
+        self.folder_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
+        self.folder_button.clicked.connect(self.folder_dialog)
+        self.folder_button.setToolTip('Choose folder')
+        hbox_folder.addWidget(self.folder_button)
+        self.folder_edit = QtWidgets.QLineEdit('\\..', self)
+        self.folder_edit.setFixedWidth(180)
+        self.folder_edit.setDisabled(True)
+        hbox_folder.addWidget(self.folder_edit)
+        vbox_measure.addLayout(hbox_folder)
         self.measure_group_box.setLayout(vbox_measure)
-        hbox_bottom.addWidget(self.measure_group_box, 3)
+        hbox_bottom.addWidget(self.measure_group_box, 2)
         vbox_total.addLayout(hbox_bottom, 1)
 
         self.setLayout(vbox_total)
@@ -199,3 +230,6 @@ class Experiment(QtWidgets.QWidget):
             return
         self.mes.plot(self.iv_canvas.figure, chs=['temp'])
         self.update_plt.emit()
+
+    def folder_dialog(self):
+        pass
