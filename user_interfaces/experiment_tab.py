@@ -72,10 +72,31 @@ class Experiment(QtWidgets.QWidget):
         self.diode4_edit.setDisabled(True)
         hbox_diode4.addWidget(self.diode4_edit)
         vbox_sensors.addLayout(hbox_diode4)
-
         self.sensors_group_box.setLayout(vbox_sensors)
         vbox_sensor_col.addWidget(self.sensors_group_box)
         vbox_sensor_col.addStretch(1)
+
+        hbox_controls = QtWidgets.QHBoxLayout()
+        hbox_controls.addStretch(1)
+        self.start_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'start.png')), '')
+        self.start_button.clicked.connect(self.start)
+        self.start_button.setToolTip('Start Measurement')
+        hbox_controls.addWidget(self.start_button)
+
+        self.pause_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'pause.png')), '')
+        self.pause_button.clicked.connect(self.folder_dialog)
+        self.pause_button.setToolTip('Pause/Unpause')
+        hbox_controls.addWidget(self.pause_button)
+
+        self.stop_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'stop.png')), '')
+        self.stop_button.clicked.connect(self.stop)
+        self.stop_button.setToolTip('Stop Measurement')
+        hbox_controls.addWidget(self.stop_button)
+        hbox_controls.addStretch(1)
+        vbox_sensor_col.addLayout(hbox_controls)
         hbox_top.addLayout(vbox_sensor_col, 2)
         vbox_total.addLayout(hbox_top, 3)
 
@@ -232,4 +253,13 @@ class Experiment(QtWidgets.QWidget):
         self.update_plt.emit()
 
     def folder_dialog(self):
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def pause(self):
         pass
