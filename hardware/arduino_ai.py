@@ -5,6 +5,7 @@ import struct
 import threading
 import time
 
+temp_conv = 100 / 6.82
 
 class SerialRead:
     def __init__(self, serial_port='COM3', serial_baud=38400, read_length=100, data_num_bytes=2, num_plots=5):
@@ -57,7 +58,7 @@ class SerialRead:
                                                                      plt_number * self.data_num_bytes)]
         value,  = struct.unpack(self.data_type, data)
         if plt_number == 0:
-            value = value / 1024. * 5 * 100  # convert to celsius (10mV = 1C)
+            value = value / 1024. * 5 * temp_conv  # convert to celsius (10mV = 1C, amplified 6.82x)
         else:
             value = value / 1024. * 5  # convert to voltage
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array

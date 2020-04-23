@@ -7,6 +7,7 @@ from user_interfaces.main_window import MainWindow
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
+    # app.aboutToQuit.connect()  # close connection?
     window = MainWindow()
     sys.exit(app.exec_())
 

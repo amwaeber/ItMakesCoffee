@@ -200,7 +200,7 @@ class Experiment(QtWidgets.QWidget):
         if not self.sensor_mes:
             return
         tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
-        self.temperature_edit.setText("%.3f" % tval)
+        self.temperature_edit.setText("%.2f" % tval)
         self.diode1_edit.setText("%.3f" % d1val)
         self.diode2_edit.setText("%.3f" % d2val)
         self.diode3_edit.setText("%.3f" % d3val)
@@ -214,6 +214,10 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.start(t=10.0)
+
+    def stop_sensor(self):
+        if self.sensor_mes:
+            self.sensor_mes.stop()
 
     def folder_dialog(self):
         pass
