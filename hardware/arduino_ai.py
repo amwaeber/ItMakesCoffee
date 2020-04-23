@@ -61,7 +61,7 @@ class SerialRead:
         else:
             value = value / 1024. * 5  # convert to voltage
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
-        return self.times[plt_number], self.data[plt_number]
+        return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]
         # self.csvData.append([self.data[0][-1], self.data[1][-1], self.data[2][-1]])
 
     def background_thread(self):  # retrieve data

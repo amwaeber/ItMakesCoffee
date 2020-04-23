@@ -8,7 +8,8 @@ from utility.config import paths
 
 
 class Experiment(QtWidgets.QWidget):
-    update_plt = QtCore.pyqtSignal()
+    update_plt = QtCore.pyqtSignal()  # iv figure signal lane
+    # update_sens = QtCore.pyqtSignal()  # sensor readout signal lane
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
@@ -90,8 +91,6 @@ class Experiment(QtWidgets.QWidget):
         vbox_sensor_col.addLayout(hbox_controls)
         hbox_top.addLayout(vbox_sensor_col, 2)
         vbox_total.addLayout(hbox_top, 4)
-
-
 
         hbox_bottom = QtWidgets.QHBoxLayout()
         self.source_group_box = QtWidgets.QGroupBox('Source')
@@ -189,22 +188,32 @@ class Experiment(QtWidgets.QWidget):
         self.measure_group_box.setLayout(vbox_measure)
         hbox_bottom.addWidget(self.measure_group_box)
         vbox_total.addLayout(hbox_bottom, 1)
-
         self.setLayout(vbox_total)
 
-        self.mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
-        self.register(self.mes)
-        self.mes.update.emit()
+        self.start_sensor()
 
-    def register(self, mes):
-        self.mes = mes
-        self.mes.update.connect(self.update)
+    def sensor_register(self, mes):
+        self.sensor_mes = mes
+        self.sensor_mes.update.connect(self.update_sensor)
 
-    def update(self):
-        if not self.mes:
+    def update_sensor(self):
+        if not self.sensor_mes:
             return
-        self.mes.plot(self.iv_canvas.figure, chs=['temp'])
-        self.update_plt.emit()
+        tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
+        self.temperature_edit.setText("%.3f" % tval)
+        self.diode1_edit.setText("%.3f" % d1val)
+        self.diode2_edit.setText("%.3f" % d2val)
+        self.diode3_edit.setText("%.3f" % d3val)
+        self.diode4_edit.setText("%.3f" % d4val)
+        self.sensor_mes.plot(self.iv_canvas.figure, chs=['temp'])
+        # self.update_sens.emit()
+
+    def start_sensor(self):
+        if hasattr(self, 'sensor_mes') and self.sensor_mes:
+            self.sensor_mes.stop()
+        self.sensor_mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
+        self.sensor_register(self.sensor_mes)
+        self.sensor_mes.start(t=10.0)
 
     def folder_dialog(self):
         pass

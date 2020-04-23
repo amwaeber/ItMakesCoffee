@@ -80,7 +80,7 @@ class ArduinoSensor(QtCore.QObject):
             if not hasattr(self, 'ser'):
                 xval, yval = range(max_data_points), [0] * max_data_points
             else:
-                xval, yval = self.ser.get_serial_data(0)
+                xval, yval, _ = self.ser.get_serial_data(0)
                 yval = yval * 100
             axis.plot(xval, yval, lw=1.3)
             # spread = (yval.max() - yval.min()) * 100
@@ -97,7 +97,7 @@ class ArduinoSensor(QtCore.QObject):
                 if not hasattr(self, 'ser'):
                     xval, yval = range(max_data_points), [0] * max_data_points
                 else:
-                    xval, yval = self.ser.get_serial_data(i)
+                    xval, yval, _ = self.ser.get_serial_data(i)
                 axis.plot(xval, yval, lw=1.3)
         #     spread = (yval.max() - yval.min())
         #     # make sure plotting range is sufficient to display a minimum amount of contrast
@@ -114,3 +114,7 @@ class ArduinoSensor(QtCore.QObject):
             else:
                 fig.show()
         return fig
+
+    def get_sensor_latest(self):
+        sensor_readout = [self.ser.get_serial_data(i)[2] for i in range(5)]
+        return sensor_readout
