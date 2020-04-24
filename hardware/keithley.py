@@ -4,42 +4,59 @@ import pandas as pd
 from time import sleep
 
 # Set the input parameters
-data_points = 50
-averages = 50
-max_current = 0.01
-min_current = -max_current
+data_points = 142
+averages = 5
+max_voltage = 0.7
+min_voltage = -0.01
 
 # Connect and configure the instrument
-sourcemeter = Keithley2400("GPIB::4")
+sourcemeter = Keithley2400("GPIB::24")
 sourcemeter.reset()
 sourcemeter.use_front_terminals()
-sourcemeter.measure_voltage()
-sourcemeter.config_current_source()
-sleep(0.1) # wait here to give the instrument time to react
-sourcemeter.set_buffer(averages)
+sourcemeter.compliance_current = 0.5
+sourcemeter.measure_current()
+sleep(0.1)  # wait here to give the instrument time to react
+sourcemeter.config_buffer(averages)
 
 # Allocate arrays to store the measurement results
-currents = np.linspace(min_current, max_current, num=data_points)
-voltages = np.zeros_like(currents)
-voltage_stds = np.zeros_like(currents)
+voltages = np.linspace(min_voltage, max_voltage, num=data_points)
+currents = np.zeros_like(voltages)
+current_stds = np.zeros_like(voltages)
+resistance = np.zeros_like(voltages)
+resistance_stds = np.zeros_like(voltages)
+
+sourcemeter.enable_source()
 
 # Loop through each current point, measure and record the voltage
 for i in range(data_points):
-    sourcemeter.current = currents[i]
-    sourcemeter.reset_buffer()
-    sleep(0.1)
+    # if i > 0:
+    #     sourcemeter.reset_buffer()
+    sourcemeter.source_voltage = voltages[i]
+    sleep(0.25)
     sourcemeter.start_buffer()
+    # else:
+    #     sourcemeter.reset_buffer()
     sourcemeter.wait_for_buffer()
 
     # Record the average and standard deviation
-    voltages[i] = sourcemeter.means
-    voltage_stds[i] = sourcemeter.standard_devs
+    _, currents[i], resistance[i] = sourcemeter.means
+    _, current_stds[i], resistance_stds[i] = sourcemeter.standard_devs
+
+    print(sourcemeter.means)
+    sourcemeter.reset_buffer()
+    # sourcemeter.adapter.write(":STAT:PRES;")
+    # sourcemeter.adapter.write("*CLS;")
+    # sourcemeter.adapter.write(":TRAC:CLEAR;")
+    # sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
+
 
 # Save the data columns in a CSV file
 data = pd.DataFrame({
-    'Current (A)': currents,
     'Voltage (V)': voltages,
-    'Voltage Std (V)': voltage_stds,
+    'Current (A)': currents,
+    'Current Std (A)': current_stds,
+    'Resistance (Ohm)': resistance,
+    'Resistance Std (Ohm)': resistance_stds,
 })
 data.to_csv('example.csv')
 

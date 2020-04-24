@@ -8,7 +8,6 @@ import time
 
 from hardware.arduino_ai import SerialRead
 
-port_name = 'COM3'
 baud_rate = 38400
 max_data_points = 100
 data_num_bytes = 2
@@ -19,8 +18,9 @@ timeout = 30
 class ArduinoSensor(QtCore.QObject):
     update = QtCore.pyqtSignal()
 
-    def __init__(self, dt=10e-1, t=30.0):
+    def __init__(self, port='COM3', dt=10e-1, t=30.0):
         super(QtCore.QObject, self).__init__()
+        self.port = port
         self.dt = dt
         self.t = t
         self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
@@ -49,12 +49,15 @@ class ArduinoSensor(QtCore.QObject):
         run - main loop for sensor acquisition. This function is started in a thread by start()
         do not call directly, since it will then block the main loop
         """
-        self.ser = SerialRead(port_name, baud_rate, max_data_points, data_num_bytes, n_ai)
-        self.ser.read_serial_start()
-        while not self.abort.isSet():
-            time.sleep(self.dt)
-            self.update.emit()
-        self.ser.close()
+        if not self.port == 'dummy':
+            self.ser = SerialRead(self.port, baud_rate, max_data_points, data_num_bytes, n_ai)
+            self.ser.read_serial_start()
+            while not self.abort.isSet():
+                time.sleep(self.dt)
+                self.update.emit()
+            self.ser.close()
+        else:
+            pass
 
     def plot(self, target_fig=None, fname=None, chs=None):
         """
@@ -77,7 +80,7 @@ class ArduinoSensor(QtCore.QObject):
         if 'temp' in chs:
             axis.set_xlabel("Time (s)")
             axis.set_ylabel("Temperature (C)")
-            if not hasattr(self, 'ser'):
+            if not hasattr(self, 'ser') or self.port == 'dummy':
                 xval, yval = range(max_data_points), [0] * max_data_points
             else:
                 xval, yval, _ = self.ser.get_serial_data(0)
@@ -94,7 +97,7 @@ class ArduinoSensor(QtCore.QObject):
             axis.set_xlabel("Time (s)")
             axis.set_ylabel("Diode Readout Voltage (V)")
             for i in [1, 2, 3, 4]:
-                if not hasattr(self, 'ser'):
+                if not hasattr(self, 'ser') or self.port == 'dummy':
                     xval, yval = range(max_data_points), [0] * max_data_points
                 else:
                     xval, yval, _ = self.ser.get_serial_data(i)
@@ -116,5 +119,8 @@ class ArduinoSensor(QtCore.QObject):
         return fig
 
     def get_sensor_latest(self):
-        sensor_readout = [self.ser.get_serial_data(i)[2] for i in range(5)]
+        if not self.port == 'dummy':
+            sensor_readout = [self.ser.get_serial_data(i)[2] for i in range(5)]
+        else:
+            sensor_readout = [-1.0 for _ in range(5)]
         return sensor_readout

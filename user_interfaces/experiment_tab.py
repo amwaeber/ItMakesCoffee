@@ -4,6 +4,7 @@ import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 import hardware.sensor as sensor
+from utility import ports
 from utility.config import paths
 
 
@@ -66,6 +67,27 @@ class Experiment(QtWidgets.QWidget):
 
         self.sensors_group_box.setLayout(grid_sensors)
         vbox_sensor_col.addWidget(self.sensors_group_box)
+
+        self.ports_group_box = QtWidgets.QGroupBox('Ports')
+        grid_ports = QtWidgets.QGridLayout()
+        self.sensor_label = QtWidgets.QLabel("Arduino", self)
+        grid_ports.addWidget(self.sensor_label, 0, 0)
+        self.sensor_cb = QtWidgets.QComboBox()
+        self.sensor_cb.setFixedWidth(120)
+        self.sensor_cb.addItem('dummy')
+        for port in ports.get_serial_ports():
+            self.sensor_cb.addItem(port)
+        self.sensor_cb.currentTextChanged.connect(self.sensor_port_changed)
+        grid_ports.addWidget(self.sensor_cb, 0, 1)
+        self.source_label = QtWidgets.QLabel("Keithley", self)
+        grid_ports.addWidget(self.source_label, 1, 0)
+        self.source_cb = QtWidgets.QComboBox()
+        self.source_cb.setFixedWidth(120)
+        self.source_cb.addItem('dummy')
+        self.source_cb.addItem('GPIB::24')
+        grid_ports.addWidget(self.source_cb, 1, 1)
+        self.ports_group_box.setLayout(grid_ports)
+        vbox_sensor_col.addWidget(self.ports_group_box)
         vbox_sensor_col.addStretch(-1)
 
         hbox_controls = QtWidgets.QHBoxLayout()
@@ -190,7 +212,9 @@ class Experiment(QtWidgets.QWidget):
         vbox_total.addLayout(hbox_bottom, 1)
         self.setLayout(vbox_total)
 
-        self.start_sensor()
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25, t=10.0)
+        self.sensor_register(self.sensor_mes)
+        self.sensor_mes.update.emit()
 
     def sensor_register(self, mes):
         self.sensor_mes = mes
@@ -209,15 +233,18 @@ class Experiment(QtWidgets.QWidget):
         # self.update_sens.emit()
 
     def start_sensor(self):
-        if hasattr(self, 'sensor_mes') and self.sensor_mes:
+        if self.sensor_mes:
             self.sensor_mes.stop()
-        self.sensor_mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25, t=10.0)
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.start(t=10.0)
 
     def stop_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
+
+    def sensor_port_changed(self):
+        self.start_sensor()
 
     def folder_dialog(self):
         pass
