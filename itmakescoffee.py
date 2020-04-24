@@ -7,7 +7,7 @@ from user_interfaces.main_window import MainWindow
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    # app.aboutToQuit.connect()  # close connection?
+    # app.aboutToQuit.connect()  # TODO: sort orderly shutdown, disconnecting COM port etc
     window = MainWindow()
     sys.exit(app.exec_())
 

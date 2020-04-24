@@ -21,28 +21,12 @@ class Calibration(QtWidgets.QWidget):
         self.power_canvas.figure.tight_layout(pad=0.3)
         self.update_plt.connect(self.power_canvas.figure.canvas.draw)
 
-        self.start_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'start.png')), '')
-        self.start_button.clicked.connect(self.start)
-        self.start_button.setToolTip('Run acquisition')
-        self.stop_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'stop.png')), '')
-        self.stop_button.clicked.connect(self.stop)
-        self.stop_button.setToolTip('Stop acquisition')
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(self.temperature_canvas)
+        hbox.addWidget(self.power_canvas)
+        self.setLayout(hbox)
 
-        hbox1 = QtWidgets.QHBoxLayout()
-        hbox1.addWidget(self.temperature_canvas)
-        hbox1.addWidget(self.power_canvas)
-        hbox2 = QtWidgets.QHBoxLayout()
-        hbox2.addWidget(self.start_button)
-        hbox2.addWidget(self.stop_button)
-        hbox2.addStretch(1)
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addLayout(hbox1)
-        vbox.addLayout(hbox2)
-        self.setLayout(vbox)
-
-        self.mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
+        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25, t=10.0)
         self.register(self.mes)
         self.mes.update.emit()
 
@@ -60,7 +44,7 @@ class Calibration(QtWidgets.QWidget):
     def start(self):
         if self.mes:
             self.mes.stop()
-        self.mes = sensor.ArduinoSensor(dt=0.25, t=10.0)
+        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25, t=10.0)
         self.register(self.mes)
         self.mes.start(t=10.0)
 
