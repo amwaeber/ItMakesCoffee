@@ -29,7 +29,7 @@ class SerialRead:
         self.start_time = time.time()
         self.is_run = True
         self.is_receiving = False
-        self.thread = None
+        self.serial_thread = None
         self.plot_timer = 0
         self.previous_timer = 0
         # self.csvData = []
@@ -42,9 +42,9 @@ class SerialRead:
             print("Failed to connect with " + str(serial_port) + ' at ' + str(serial_baud) + ' BAUD.')
 
     def read_serial_start(self):
-        if self.thread is None:
-            self.thread = threading.Thread(target=self.background_thread)
-            self.thread.start()
+        if self.serial_thread is None:
+            self.serial_thread = threading.Thread(target=self.background_thread)
+            self.serial_thread.start()
             # Block till we start receiving values
             while not self.is_receiving:
                 time.sleep(0.1)
@@ -75,7 +75,7 @@ class SerialRead:
 
     def close(self):
         self.is_run = False
-        self.thread.join()
+        self.serial_thread.join()
         self.serialConnection.close()
         print('Disconnected...')
         # df = pd.DataFrame(self.csvData)

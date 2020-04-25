@@ -1,22 +1,57 @@
 from pymeasure.instruments.keithley import Keithley2400
 import numpy as np
 import pandas as pd
+import threading
 import time
 
-# Set the input parameters
-data_points = 20
-averages = 5
-max_voltage = 0.7
-min_voltage = -0.01
 
-# Connect and configure the instrument
-sourcemeter = Keithley2400("GPIB::24")
-sourcemeter.reset()
-sourcemeter.use_front_terminals()
-sourcemeter.compliance_current = 0.5
-sourcemeter.measure_current()
-time.sleep(0.1)  # wait here to give the instrument time to react
-sourcemeter.config_buffer(averages)
+
+class KeithleyRead:
+    def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, min_voltage=-0.01, max_voltage=0.7,
+                 compliance_current=0.5):
+        self.gpib_port = gpib_port
+        self.data_points = data_points
+        self.averages = averages
+        self.max_voltage = max_voltage
+        self.min_voltage = min_voltage
+        self.compliance_current = compliance_current
+
+        self.is_run = True
+        self.is_receiving = False
+        self.gpib_thread = None
+
+        print('Trying to connect to: ' + str(self.gpib_port) + '.')
+        try:
+            self.sourcemeter = Keithley2400("GPIB::24")
+            print('Connected to ' + str(self.gpib_port) + '.')
+        except:
+            print("Failed to connect with " + str(self.gpib_port) + '.')
+
+    def config_keithley(self, **kwargs):
+        self.sourcemeter.reset()
+        self.sourcemeter.use_front_terminals()
+        self.sourcemeter.compliance_current = kwargs.get('compliance_current', self.compliance_current)
+        self.sourcemeter.measure_current()
+        time.sleep(0.1)  # wait here to give the instrument time to react
+        self.averages = kwargs.get('averages', self.averages)
+        self.sourcemeter.config_buffer(self.averages)
+        self.sourcemeter.enable_source()
+
+    def read_keithley_start(self):
+        if self.gpib_thread is None:
+            self.gpib_thread = threading.Thread(target=self.background_thread)
+            self.gpib_thread.start()
+            # Block till we start receiving values
+            while not self.is_receiving:
+                time.sleep(0.1)
+
+    def background_thread(self):  # retrieve data
+        time.sleep(1.0)  # give some buffer time for retrieving data
+        self.config_keithley()
+        while self.is_run:
+            self.serialConnection.readinto(self.raw_data)
+            self.is_receiving = True
+
 
 # Allocate arrays to store the measurement results
 voltage_set = np.linspace(min_voltage, max_voltage, num=data_points)
@@ -26,8 +61,6 @@ currents = np.zeros_like(voltage_set)
 current_stds = np.zeros_like(voltage_set)
 resistances = np.zeros_like(voltage_set)
 powers = np.zeros_like(voltage_set)
-
-sourcemeter.enable_source()
 
 # Loop through each current point, measure and record the voltage
 for i in range(data_points):

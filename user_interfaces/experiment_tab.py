@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+import hardware.keithley as keithley
 import hardware.sensor as sensor
 from utility import ports
 from utility.config import paths
@@ -100,7 +101,7 @@ class Experiment(QtWidgets.QWidget):
 
         self.pause_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'pause.png')), '')
-        self.pause_button.clicked.connect(self.folder_dialog)
+        self.pause_button.clicked.connect(self.pause)
         self.pause_button.setToolTip('Pause/Unpause')
         hbox_controls.addWidget(self.pause_button)
 
@@ -167,6 +168,11 @@ class Experiment(QtWidgets.QWidget):
         self.reps_edit = QtWidgets.QLineEdit('5', self)
         self.reps_edit.setFixedWidth(80)
         grid_source.addWidget(self.reps_edit, 1, 5)
+        self.naverage_label = QtWidgets.QLabel("# Averages", self)
+        grid_source.addWidget(self.naverage_label, 1, 6)
+        self.naverage_edit = QtWidgets.QLineEdit('5', self)  # adjust to update with NSteps
+        self.naverage_edit.setFixedWidth(80)
+        grid_source.addWidget(self.naverage_edit, 1, 7)
         vbox_source.addLayout(grid_source)
         self.source_group_box.setLayout(vbox_source)
         hbox_bottom.addWidget(self.source_group_box)
@@ -249,10 +255,28 @@ class Experiment(QtWidgets.QWidget):
     def folder_dialog(self):
         pass
 
+    def iv_register(self, mes):
+        self.iv_mes = mes
+        self.iv_mes.update.connect(self.update_iv)
+
     def start(self):
+        if self.iv_mes:
+            self.iv_mes.stop()  # TODO: implement
+        self.iv_mes = keithley.KeithleyRead(gpib_port=str(self.source_cb.currentText()),
+                                            data_points=int(self.nstep_edit.text()),
+                                            averages=int(self.naverage_edit.text()),
+                                            min_voltage=float(self.start_edit.text()),
+                                            max_voltage=float(self.end_edit.text()),
+                                            compliance_current=float(self.ilimit_edit.text()))
+        self.iv_register(self.iv_mes)
+        self.iv_mes.start(t=10.0)  # TODO: implement
+
+    def update_iv(self):
+        if not self.iv_mes:
+            return
         pass
 
-    def stop(self):
+    def stop(self):  # TODO: implement
         pass
 
     def pause(self):
