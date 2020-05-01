@@ -5,7 +5,8 @@ import struct
 import threading
 import time
 
-temp_conv = 100 / 6.82
+import helper_classes.conversions as conversions
+
 
 class SerialRead:
     def __init__(self, serial_port='COM3', serial_baud=38400, read_length=100, data_num_bytes=2, num_plots=5):
@@ -24,8 +25,8 @@ class SerialRead:
         self.times = []
         self.private_data = None
         for i in range(num_plots):  # give an array for each type of data and store them in a list
-            self.data.append(collections.deque([0] * read_length, maxlen=read_length))
-            self.times.append(collections.deque([0.1] * read_length, maxlen=read_length))
+            self.data.append(collections.deque([0] * self.plot_max_length, maxlen=self.plot_max_length))
+            self.times.append(collections.deque([0.1] * self.plot_max_length, maxlen=self.plot_max_length))
         self.start_time = time.time()
         self.is_run = True
         self.is_receiving = False
@@ -58,9 +59,9 @@ class SerialRead:
                                                                      plt_number * self.data_num_bytes)]
         value,  = struct.unpack(self.data_type, data)
         if plt_number == 0:
-            value = value / 1024. * 5 * temp_conv  # convert to celsius (10mV = 1C, amplified 6.82x)
+            value = conversions.voltage_to_temperature(conversions.digital_to_voltage(value, bits=10))
         else:
-            value = value / 1024. * 5  # convert to voltage
+            value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=10))
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
         return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]
         # self.csvData.append([self.data[0][-1], self.data[1][-1], self.data[2][-1]])

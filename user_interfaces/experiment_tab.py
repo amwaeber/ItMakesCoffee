@@ -38,30 +38,30 @@ class Experiment(QtWidgets.QWidget):
         self.temperature_edit.setDisabled(True)
         grid_sensors.addWidget(self.temperature_edit, 0, 1)
 
-        self.diode1_label = QtWidgets.QLabel("Diode 1 (V)", self)
+        self.diode1_label = QtWidgets.QLabel("Diode 1 (W/m2)", self)
         grid_sensors.addWidget(self.diode1_label, 1, 0)
-        self.diode1_edit = QtWidgets.QLineEdit('0.1', self)
+        self.diode1_edit = QtWidgets.QLineEdit('0', self)
         self.diode1_edit.setFixedWidth(60)
         self.diode1_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode1_edit, 1, 1)
 
-        self.diode2_label = QtWidgets.QLabel("Diode 2 (V)", self)
+        self.diode2_label = QtWidgets.QLabel("Diode 2 (W/m2)", self)
         grid_sensors.addWidget(self.diode2_label, 2, 0)
-        self.diode2_edit = QtWidgets.QLineEdit('0.1', self)
+        self.diode2_edit = QtWidgets.QLineEdit('0', self)
         self.diode2_edit.setFixedWidth(60)
         self.diode2_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode2_edit, 2, 1)
 
-        self.diode3_label = QtWidgets.QLabel("Diode 3 (V)", self)
+        self.diode3_label = QtWidgets.QLabel("Diode 3 (W/m2)", self)
         grid_sensors.addWidget(self.diode3_label, 3, 0)
-        self.diode3_edit = QtWidgets.QLineEdit('0.1', self)
+        self.diode3_edit = QtWidgets.QLineEdit('0', self)
         self.diode3_edit.setFixedWidth(60)
         self.diode3_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode3_edit, 3, 1)
 
-        self.diode4_label = QtWidgets.QLabel("Diode 4 (V)", self)
+        self.diode4_label = QtWidgets.QLabel("Diode 4 (W/m2)", self)
         grid_sensors.addWidget(self.diode4_label, 4, 0)
-        self.diode4_edit = QtWidgets.QLineEdit('0.1', self)
+        self.diode4_edit = QtWidgets.QLineEdit('0', self)
         self.diode4_edit.setFixedWidth(60)
         self.diode4_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode4_edit, 4, 1)
@@ -231,10 +231,10 @@ class Experiment(QtWidgets.QWidget):
             return
         tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
         self.temperature_edit.setText("%.2f" % tval)
-        self.diode1_edit.setText("%.3f" % d1val)
-        self.diode2_edit.setText("%.3f" % d2val)
-        self.diode3_edit.setText("%.3f" % d3val)
-        self.diode4_edit.setText("%.3f" % d4val)
+        self.diode1_edit.setText("%02d" % d1val)
+        self.diode2_edit.setText("%02d" % d2val)
+        self.diode3_edit.setText("%02d" % d3val)
+        self.diode4_edit.setText("%02d" % d4val)
         self.sensor_mes.plot(self.iv_canvas.figure, chs=['temp'])
         # self.update_sens.emit()
 
@@ -269,15 +269,16 @@ class Experiment(QtWidgets.QWidget):
                                             max_voltage=float(self.end_edit.text()),
                                             compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.iv_mes.start(t=10.0)  # TODO: implement
+        self.iv_mes.start(repetitions=int(self.reps_edit.text()))  # TODO: implement
 
     def update_iv(self):
         if not self.iv_mes:
             return
         pass
 
-    def stop(self):  # TODO: implement
-        pass
+    def stop(self):
+        if self.iv_mes:
+            self.iv_mes.stop()
 
-    def pause(self):
+    def pause(self):  # TODO: implement
         pass

@@ -20,14 +20,13 @@ class KeithleyRead:
         self.is_receiving = False
         self.gpib_thread = None
 
+    def config_keithley(self, **kwargs):
         print('Trying to connect to: ' + str(self.gpib_port) + '.')
         try:
             self.sourcemeter = Keithley2400("GPIB::24")
             print('Connected to ' + str(self.gpib_port) + '.')
         except:
             print("Failed to connect with " + str(self.gpib_port) + '.')
-
-    def config_keithley(self, **kwargs):
         self.sourcemeter.reset()
         self.sourcemeter.use_front_terminals()
         self.sourcemeter.compliance_current = kwargs.get('compliance_current', self.compliance_current)
