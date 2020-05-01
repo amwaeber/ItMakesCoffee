@@ -52,7 +52,7 @@ class SerialRead:
 
     def get_serial_data(self, plt_number):
         current_time = time.time() - self.start_time
-        self.times[plt_number].append(current_time)
+        self.times[plt_number].append(current_time)  # TODO: change timing structure to get absolute values
         self.private_data = copy.deepcopy(
             self.raw_data)  # so that the 5 values in our plots will be synchronized to the same sample time
         data = self.private_data[(plt_number * self.data_num_bytes):(self.data_num_bytes +
@@ -63,7 +63,7 @@ class SerialRead:
         else:
             value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=10))
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
-        return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]
+        return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]  # TODO: change to get value from array
         # self.csvData.append([self.data[0][-1], self.data[1][-1], self.data[2][-1]])
 
     def background_thread(self):  # retrieve data

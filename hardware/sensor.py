@@ -1,7 +1,6 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import numpy as np
 from PyQt5 import QtCore
 import threading
 import time
@@ -18,19 +17,16 @@ timeout = 30
 class ArduinoSensor(QtCore.QObject):
     update = QtCore.pyqtSignal()
 
-    def __init__(self, port='COM3', dt=10e-1, t=30.0):
+    def __init__(self, port='COM3', dt=10e-1):
         super(QtCore.QObject, self).__init__()
         self.port = port
         self.dt = dt
-        self.t = t
-        self.ai = np.zeros((int(self.t / self.dt) - 1, n_ai))  # analog in data
-        self.ci = np.zeros(int(self.t / self.dt) - 1)  # counter in data
         self.abort = threading.Event()
         self.abort.clear()
 
-    def start(self, t=30.0):
+    def start(self):
         if not hasattr(self, 'mes_thread'):
-            self.mes_thread = threading.Thread(target=self.run, args=(t,))
+            self.mes_thread = threading.Thread(target=self.run)
             self.mes_thread.start()
         else:
             print('Warning: self.thread already existing.')
@@ -44,7 +40,7 @@ class ArduinoSensor(QtCore.QObject):
             else:
                 print('Warning: failed to stop measurement.')
 
-    def run(self, t=30.0):
+    def run(self):
         """
         run - main loop for sensor acquisition. This function is started in a thread by start()
         do not call directly, since it will then block the main loop

@@ -1,12 +1,14 @@
 from pymeasure.instruments.keithley import Keithley2400
 import numpy as np
 import pandas as pd
+from PyQt5 import QtCore
 import threading
 import time
 
 
-
 class Keithley:
+    update = QtCore.pyqtSignal()
+
     def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, delay=0.25,
                  min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         self.gpib_port = gpib_port
@@ -21,6 +23,8 @@ class Keithley:
         self.voltages = np.zeros_like(self.voltages_set)
         self.currents = np.zeros_like(self.voltages_set)
         self.currents_std = np.zeros_like(self.voltages_set)
+        self.resistances = np.zeros_like(self.voltages_set)
+        self.powers = np.zeros_like(self.voltages_set)
 
         self.is_run = True
         self.is_receiving = False
@@ -50,20 +54,32 @@ class Keithley:
             while not self.is_receiving:
                 time.sleep(0.1)
 
+    def get_keithley_data(self):
+        data = pd.DataFrame({
+            'Time (s)': self.times,
+            'Voltage (V)': self.voltages,
+            'Current (A)': self.currents,
+            'Current Std (A)': self.currents_std,
+            'Resistance (Ohm)': self.resistances,
+            'Power (W)': self.powers})
+        return data
+
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
         self.config_keithley()
         while self.is_run:
             for dp in range(self.data_points):
                 self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
-                self.sourcemeter.source_voltage = self.voltages_set[i]
+                self.sourcemeter.source_voltage = self.voltages_set[dp]
                 time.sleep(self.delay)
                 self.sourcemeter.start_buffer()
                 self.sourcemeter.wait_for_buffer()
-                self.times[i] = time.time()
-                self.voltages[i] = self.sourcemeter.mean_voltage
-                self.currents[i] = - self.sourcemeter.mean_current
-                self.currents_std[i] = self.sourcemeter.std_current
+                self.times[dp] = time.time()
+                self.voltages[dp] = self.sourcemeter.mean_voltage
+                self.currents[dp] = - self.sourcemeter.mean_current
+                self.currents_std[dp] = self.sourcemeter.std_current
+                self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
+                self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
                 self.is_receiving = True
             self.is_run = False
 
@@ -73,16 +89,4 @@ class Keithley:
         self.sourcemeter.shutdown()
         print('Disconnected Keithley...')
         # df = pd.DataFrame(self.csvData)
-        # df.to_csv('/home/rikisenia/Desktop/data.csv')
-        
-# Save the data columns in a CSV file
-data = pd.DataFrame({
-    'Time (s)': times,
-    'Voltage (V)': voltages,
-    'Current (A)': currents,
-    'Current Std (A)': current_stds,
-    'Resistance (Ohm)': resistances,
-    'Power (W)': powers,
-})
-data.to_csv('example.csv')
-
+        # data.to_csv('example.csv')

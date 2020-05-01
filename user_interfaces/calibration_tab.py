@@ -26,7 +26,7 @@ class Calibration(QtWidgets.QWidget):
         hbox.addWidget(self.power_canvas)
         self.setLayout(hbox)
 
-        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25, t=10.0)
+        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25)
         self.register(self.mes)
         self.mes.update.emit()
 
@@ -44,9 +44,9 @@ class Calibration(QtWidgets.QWidget):
     def start(self):
         if self.mes:
             self.mes.stop()
-        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25, t=10.0)
+        self.mes = sensor.ArduinoSensor(port="COM3", dt=0.25)
         self.register(self.mes)
-        self.mes.start(t=10.0)
+        self.mes.start()
 
     def stop(self):
         if self.mes:

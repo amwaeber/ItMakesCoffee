@@ -218,7 +218,7 @@ class Experiment(QtWidgets.QWidget):
         vbox_total.addLayout(hbox_bottom, 1)
         self.setLayout(vbox_total)
 
-        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25, t=10.0)
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25)
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.update.emit()
 
@@ -241,9 +241,9 @@ class Experiment(QtWidgets.QWidget):
     def start_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
-        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25, t=10.0)
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25)
         self.sensor_register(self.sensor_mes)
-        self.sensor_mes.start(t=10.0)
+        self.sensor_mes.start()
 
     def stop_sensor(self):
         if self.sensor_mes:
