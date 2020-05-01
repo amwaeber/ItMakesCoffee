@@ -1,6 +1,9 @@
-from pymeasure.instruments.keithley import Keithley2400
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pymeasure.instruments.keithley import Keithley2400
 from PyQt5 import QtCore
 import threading
 import time
@@ -90,3 +93,44 @@ class Keithley:
         print('Disconnected Keithley...')
         # df = pd.DataFrame(self.csvData)
         # data.to_csv('example.csv')
+
+    def plot(self, target_fig=None, fname=None):
+        """
+        plot - plot the result of an IV measurement
+        if ax is supplied, plot into ax. Create a new figure otherwise
+        if ax is none (new figure), the new figure is displayed by default.
+        If a filename string fname is given, the figure is saved to this file and display is suppressed
+        fname is an absolute path. No check or indexing is performed to prevent overwriting of existing files
+        """
+
+        if target_fig is None:
+            fig = Figure()
+            canvas = FigureCanvas(fig)
+        else:
+            fig = target_fig
+        fig.clear()
+        axis = fig.add_subplot(111)
+        axis.set_xlabel("Voltage (V)")
+        axis.set_ylabel("Current (A)")
+        if not hasattr(self, 'sourcemeter') or self.gpib_port == 'dummy':
+            xval = self.voltages_set
+            yval = [0] * self.data_points
+        else:
+            xval = self.voltages
+            yval = self.currents
+        axis.plot(xval, yval, lw=1.3)
+            # spread = (yval.max() - yval.min()) * 100
+            # # make sure plotting range is sufficient to display a minimum amount of contrast
+            # if spread < 1:
+            #     spread = 1
+            # upper = yval.max() + .1 * spread
+            # lower = yval.min() - .1 * spread
+            # axis.set_ylim([lower, upper])
+        if target_fig is None:
+            if fname is not None:
+                fig.tight_layout()
+                fig.savefig(fname)
+                plt.close(fig)
+            else:
+                fig.show()
+        return fig
