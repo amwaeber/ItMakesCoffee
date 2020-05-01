@@ -16,6 +16,8 @@ class Experiment(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
 
+        self.directory = paths['last_save']
+
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
         self.iv_group_box = QtWidgets.QGroupBox('I-V Curve')
@@ -208,7 +210,7 @@ class Experiment(QtWidgets.QWidget):
         self.folder_button.clicked.connect(self.folder_dialog)
         self.folder_button.setToolTip('Choose folder')
         hbox_folder.addWidget(self.folder_button)
-        self.folder_edit = QtWidgets.QLineEdit('\\..', self)
+        self.folder_edit = QtWidgets.QLineEdit(self.directory, self)
         self.folder_edit.setMinimumWidth(180)
         self.folder_edit.setDisabled(True)
         hbox_folder.addWidget(self.folder_edit)
@@ -257,7 +259,8 @@ class Experiment(QtWidgets.QWidget):
         self.start_sensor()
 
     def folder_dialog(self):
-        pass
+        self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
+        self.folder_edit.setText(self.directory)
 
     def iv_register(self, mes):
         self.iv_mes = mes

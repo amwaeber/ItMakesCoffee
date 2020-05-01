@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.Qt import Qt
 
 from helper_classes.csv_import import CsvFile
 from helper_classes import data_analysis

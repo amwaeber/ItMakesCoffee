@@ -13,7 +13,8 @@ def write_config():
                          }
 
     config['paths'] = {'icons': os.path.join(project_path, 'icons'),
-                       'last_data': 'C:\\Users\\amwae\\Python\\Lambda\\test\\03-04-2020'
+                       'last_data': 'C:\\Users\\amwae\\Python\\Lambda\\test\\03-04-2020',
+                       'last_save': 'C:\\Users\\amwae\\Python\\ItMakesCoffee'
                        }
 
     with open(config_path, 'w') as f:
