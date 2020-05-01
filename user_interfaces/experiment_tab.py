@@ -1,6 +1,8 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import numpy as np
 import os
+import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 import hardware.keithley as keithley
@@ -17,6 +19,8 @@ class Experiment(QtWidgets.QWidget):
         super(Experiment, self).__init__(parent)
 
         self.directory = paths['last_save']
+        self.data_iv = np.zeros((5,1))
+        self.data_sensor = pd.DataFrame()
 
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
@@ -226,12 +230,13 @@ class Experiment(QtWidgets.QWidget):
 
         self.iv_mes = keithley.Keithley(gpib_port='dummy')
         self.iv_register(self.iv_mes)
-        self.iv_mes.update.emit()
+        self.iv_mes.update.emit(-1)
 
     def sensor_register(self, mes):
         self.sensor_mes = mes
         self.sensor_mes.update.connect(self.update_sensor)
 
+    @QtCore.pyqtSlot()
     def update_sensor(self):
         if not self.sensor_mes:
             return
@@ -279,11 +284,17 @@ class Experiment(QtWidgets.QWidget):
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
+        self.data_sensor = np.zeros((5,self.iv_mes.data_points))
         self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
-    def update_iv(self):
+    @QtCore.pyqtSlot(int)
+    def update_iv(self, datapoint):
         if not self.iv_mes:
             return
+        if datapoint != -1:
+            sensor_latest = self.sensor_mes.get_sensor_latest()
+            for ai, val in enumerate(sensor_latest):
+                self.data_sensor[ai, datapoint] = val
         self.iv_mes.plot(self.iv_canvas.figure)
         self.update_plt.emit()
 
@@ -294,6 +305,12 @@ class Experiment(QtWidgets.QWidget):
     def pause(self):  # TODO: implement iv scan pause
         pass
 
+    @QtCore.pyqtSlot(int)
     def save(self, repetition):
-        data_iv = self.iv_mes.get_keithley_data()
-        data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
+        self.data_iv = self.iv_mes.get_keithley_data()
+        self.data_iv['Temperature (C)'] = self.data_sensor[0]
+        self.data_iv['Power 1 (W/m2)'] = self.data_sensor[1]
+        self.data_iv['Power 2 (W/m2)'] = self.data_sensor[2]
+        self.data_iv['Power 3 (W/m2)'] = self.data_sensor[3]
+        self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
+        self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))

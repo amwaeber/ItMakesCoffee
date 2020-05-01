@@ -10,8 +10,8 @@ import time
 
 
 class Keithley(QtCore.QObject):
-    update = QtCore.pyqtSignal()
-    save = QtCore.pyqtSignal()
+    update = QtCore.pyqtSignal(int)
+    save = QtCore.pyqtSignal(int)
 
     def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, repetitions=1, delay=0.25,
                  min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
@@ -97,7 +97,7 @@ class Keithley(QtCore.QObject):
                     self.currents_std[dp] = self.sourcemeter.std_current
                     self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
                     self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
-                    self.update.emit()
+                    self.update.emit(dp)
                     self.is_receiving = True
             self.is_run = False
         self.close(repetition)
