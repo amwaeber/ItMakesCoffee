@@ -222,6 +222,10 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.update.emit()
 
+        self.iv_mes = keithley.Keithley(gpib_port='dummy')
+        self.iv_register(self.iv_mes)
+        self.iv_mes.update.emit()
+
     def sensor_register(self, mes):
         self.sensor_mes = mes
         self.sensor_mes.update.connect(self.update_sensor)
@@ -235,7 +239,7 @@ class Experiment(QtWidgets.QWidget):
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        self.sensor_mes.plot(self.iv_canvas.figure, chs=['temp'])
+        # self.sensor_mes.plot(self.iv_canvas.figure, chs=['temp'])
         # self.update_sens.emit()
 
     def start_sensor(self):

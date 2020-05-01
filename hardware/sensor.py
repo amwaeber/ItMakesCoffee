@@ -18,7 +18,7 @@ class ArduinoSensor(QtCore.QObject):
     update = QtCore.pyqtSignal()
 
     def __init__(self, port='COM3', dt=10e-1):
-        super(QtCore.QObject, self).__init__()
+        super(ArduinoSensor, self).__init__()
         self.port = port
         self.dt = dt
         self.abort = threading.Event()

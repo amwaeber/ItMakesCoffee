@@ -9,11 +9,12 @@ import threading
 import time
 
 
-class Keithley:
+class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal()
 
     def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, repetitions=1, delay=0.25,
                  min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
+        super(Keithley, self).__init__()
         self.gpib_port = gpib_port
         self.data_points = data_points
         self.averages = averages
@@ -36,11 +37,15 @@ class Keithley:
 
     def config_keithley(self, **kwargs):
         print('Trying to connect to: ' + str(self.gpib_port) + '.')
+        if str(self.gpib_port) == 'dummy':
+            return
         try:
-            self.sourcemeter = Keithley2400("GPIB::24")
+            self.sourcemeter = Keithley2400(str(self.gpib_port))
             print('Connected to ' + str(self.gpib_port) + '.')
         except:
             print("Failed to connect with " + str(self.gpib_port) + '.')
+            self.gpib_port = 'dummy'
+            return
         self.sourcemeter.reset()
         self.sourcemeter.use_front_terminals()
         self.sourcemeter.compliance_current = kwargs.get('compliance_current', self.compliance_current)
@@ -54,6 +59,7 @@ class Keithley:
         self.repetitions = repetitions
         for repetition in range(self.repetitions):
             self.is_run = True
+            self.is_receiving = False
             if self.gpib_thread is None:
                 self.gpib_thread = threading.Thread(target=self.background_thread, args=(repetition,))
                 self.gpib_thread.start()
@@ -75,27 +81,31 @@ class Keithley:
         time.sleep(1.0)  # give some buffer time for retrieving data
         self.config_keithley()
         while self.is_run:
-            for dp in range(self.data_points):
-                self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
-                self.sourcemeter.source_voltage = self.voltages_set[dp]
-                time.sleep(self.delay)
-                self.sourcemeter.start_buffer()
-                self.sourcemeter.wait_for_buffer()
-                self.times[dp] = time.time()
-                self.voltages[dp] = self.sourcemeter.mean_voltage
-                self.currents[dp] = - self.sourcemeter.mean_current
-                self.currents_std[dp] = self.sourcemeter.std_current
-                self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
-                self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
+            if str(self.gpib_port) == 'dummy':
                 self.is_receiving = True
+            else:
+                for dp in range(self.data_points):
+                    self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
+                    self.sourcemeter.source_voltage = self.voltages_set[dp]
+                    time.sleep(self.delay)
+                    self.sourcemeter.start_buffer()
+                    self.sourcemeter.wait_for_buffer()
+                    self.times[dp] = time.time()
+                    self.voltages[dp] = self.sourcemeter.mean_voltage
+                    self.currents[dp] = - self.sourcemeter.mean_current
+                    self.currents_std[dp] = self.sourcemeter.std_current
+                    self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
+                    self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
+                    self.is_receiving = True
             self.is_run = False
         self.close(repetition)
 
     def close(self, repetition=0):
         self.is_run = False
         self.gpib_thread.join()
-        self.sourcemeter.shutdown()
-        print('Disconnected Keithley...')
+        if not str(self.gpib_port) == 'dummy':
+            self.sourcemeter.shutdown()
+            print('Disconnected Keithley...')
         # df = pd.DataFrame(self.csvData)
         # data.to_csv('example.csv')
 
@@ -117,7 +127,7 @@ class Keithley:
         axis = fig.add_subplot(111)
         axis.set_xlabel("Voltage (V)")
         axis.set_ylabel("Current (A)")
-        if not hasattr(self, 'sourcemeter') or self.gpib_port == 'dummy':
+        if self.gpib_port == 'dummy':
             xval = self.voltages_set
             yval = [0] * self.data_points
         else:
