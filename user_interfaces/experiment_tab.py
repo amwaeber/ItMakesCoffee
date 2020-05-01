@@ -142,7 +142,7 @@ class Experiment(QtWidgets.QWidget):
         self.end_edit = QtWidgets.QLineEdit('0.7', self)
         self.end_edit.setFixedWidth(80)
         grid_source.addWidget(self.end_edit, 0, 3)
-        self.step_label = QtWidgets.QLabel("Step (V)", self)
+        self.step_label = QtWidgets.QLabel("Step (V)", self)  # TODO: remove or couple to nsteps
         grid_source.addWidget(self.step_label, 0, 4)
         self.step_edit = QtWidgets.QLineEdit('0.01', self)  # adjust to update with NSteps
         self.step_edit.setFixedWidth(80)
@@ -262,12 +262,13 @@ class Experiment(QtWidgets.QWidget):
     def start(self):
         if self.iv_mes:
             self.iv_mes.stop()  # TODO: implement
-        self.iv_mes = keithley.KeithleyRead(gpib_port=str(self.source_cb.currentText()),
-                                            data_points=int(self.nstep_edit.text()),
-                                            averages=int(self.naverage_edit.text()),
-                                            min_voltage=float(self.start_edit.text()),
-                                            max_voltage=float(self.end_edit.text()),
-                                            compliance_current=float(self.ilimit_edit.text()))
+        self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
+                                        data_points=int(self.nstep_edit.text()),
+                                        averages=int(self.naverage_edit.text()),
+                                        delay=float(self.delay_edit.text()),
+                                        min_voltage=float(self.start_edit.text()),
+                                        max_voltage=float(self.end_edit.text()),
+                                        compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
         self.iv_mes.start(repetitions=int(self.reps_edit.text()))  # TODO: implement
 
