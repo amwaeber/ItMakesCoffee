@@ -144,7 +144,7 @@ class Experiment(QtWidgets.QWidget):
         self.end_edit = QtWidgets.QLineEdit('0.7', self)
         self.end_edit.setFixedWidth(80)
         grid_source.addWidget(self.end_edit, 0, 3)
-        self.step_label = QtWidgets.QLabel("Step (V)", self)  # TODO: remove or couple to nsteps
+        self.step_label = QtWidgets.QLabel("Step (V)", self)  # TODO: remove step size or couple it to nsteps
         grid_source.addWidget(self.step_label, 0, 4)
         self.step_edit = QtWidgets.QLineEdit('0.01', self)  # adjust to update with NSteps
         self.step_edit.setFixedWidth(80)
@@ -265,6 +265,7 @@ class Experiment(QtWidgets.QWidget):
     def iv_register(self, mes):
         self.iv_mes = mes
         self.iv_mes.update.connect(self.update_iv)
+        self.iv_mes.save.connect(self.save)
 
     def start(self):
         if self.iv_mes:
@@ -290,5 +291,9 @@ class Experiment(QtWidgets.QWidget):
         if self.iv_mes:
             self.iv_mes.close()
 
-    def pause(self):  # TODO: implement
+    def pause(self):  # TODO: implement iv scan pause
         pass
+
+    def save(self, repetition):
+        data_iv = self.iv_mes.get_keithley_data()
+        data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
