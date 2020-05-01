@@ -12,11 +12,12 @@ import time
 class Keithley:
     update = QtCore.pyqtSignal()
 
-    def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, delay=0.25,
+    def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, repetitions=1, delay=0.25,
                  min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         self.gpib_port = gpib_port
         self.data_points = data_points
         self.averages = averages
+        self.repetitions = repetitions
         self.delay = delay
         self.max_voltage = max_voltage
         self.min_voltage = min_voltage
@@ -49,13 +50,16 @@ class Keithley:
         self.sourcemeter.config_buffer(self.averages)
         self.sourcemeter.enable_source()
 
-    def read_keithley_start(self):
-        if self.gpib_thread is None:
-            self.gpib_thread = threading.Thread(target=self.background_thread)
-            self.gpib_thread.start()
-            # Block till we start receiving values
-            while not self.is_receiving:
-                time.sleep(0.1)
+    def read_keithley_start(self, repetitions=1):
+        self.repetitions = repetitions
+        for repetition in range(self.repetitions):
+            self.is_run = True
+            if self.gpib_thread is None:
+                self.gpib_thread = threading.Thread(target=self.background_thread, args=(repetition,))
+                self.gpib_thread.start()
+                # Block till we start receiving values
+                while not self.is_receiving:
+                    time.sleep(0.1)
 
     def get_keithley_data(self):
         data = pd.DataFrame({
@@ -67,7 +71,7 @@ class Keithley:
             'Power (W)': self.powers})
         return data
 
-    def background_thread(self):  # retrieve data
+    def background_thread(self, repetition=0):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
         self.config_keithley()
         while self.is_run:
@@ -85,8 +89,9 @@ class Keithley:
                 self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
                 self.is_receiving = True
             self.is_run = False
+        self.close(repetition)
 
-    def close(self):
+    def close(self, repetition=0):
         self.is_run = False
         self.gpib_thread.join()
         self.sourcemeter.shutdown()
@@ -119,13 +124,13 @@ class Keithley:
             xval = self.voltages
             yval = self.currents
         axis.plot(xval, yval, lw=1.3)
-            # spread = (yval.max() - yval.min()) * 100
-            # # make sure plotting range is sufficient to display a minimum amount of contrast
-            # if spread < 1:
-            #     spread = 1
-            # upper = yval.max() + .1 * spread
-            # lower = yval.min() - .1 * spread
-            # axis.set_ylim([lower, upper])
+        # spread = (yval.max() - yval.min()) * 100
+        # # make sure plotting range is sufficient to display a minimum amount of contrast
+        # if spread < 1:
+        #     spread = 1
+        # upper = yval.max() + .1 * spread
+        # lower = yval.min() - .1 * spread
+        # axis.set_ylim([lower, upper])
         if target_fig is None:
             if fname is not None:
                 fig.tight_layout()

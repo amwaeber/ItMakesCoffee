@@ -261,25 +261,27 @@ class Experiment(QtWidgets.QWidget):
 
     def start(self):
         if self.iv_mes:
-            self.iv_mes.stop()  # TODO: implement
+            self.iv_mes.close()
         self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
                                         data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
+                                        repetitions=int(self.reps_edit.text()),
                                         delay=float(self.delay_edit.text()),
                                         min_voltage=float(self.start_edit.text()),
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.iv_mes.start(repetitions=int(self.reps_edit.text()))  # TODO: implement
+        self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
     def update_iv(self):
         if not self.iv_mes:
             return
-        pass
+        self.iv_mes.plot(self.iv_canvas.figure)
+        self.update_plt.emit()
 
     def stop(self):
         if self.iv_mes:
-            self.iv_mes.stop()
+            self.iv_mes.close()
 
     def pause(self):  # TODO: implement
         pass
