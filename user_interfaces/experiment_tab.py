@@ -104,7 +104,7 @@ class Experiment(QtWidgets.QWidget):
         self.baud_edit.setFixedWidth(60)
         self.baud_edit.setDisabled(True)
         grid_arduino.addWidget(self.baud_edit, 0, 1)
-        self.datapoints_label = QtWidgets.QLabel("Data points", self)
+        self.datapoints_label = QtWidgets.QLabel("# Data points", self)
         grid_arduino.addWidget(self.datapoints_label, 1, 0)
         self.datapoints_edit = QtWidgets.QLineEdit('100', self)
         self.datapoints_edit.setFixedWidth(60)
@@ -128,6 +128,12 @@ class Experiment(QtWidgets.QWidget):
         self.ais_edit.setFixedWidth(60)
         self.ais_edit.setDisabled(True)
         grid_arduino.addWidget(self.ais_edit, 4, 1)
+        self.query_label = QtWidgets.QLabel("Query period (s)", self)
+        grid_arduino.addWidget(self.query_label, 5, 0)
+        self.query_edit = QtWidgets.QLineEdit('0.25', self)
+        self.query_edit.setFixedWidth(60)
+        self.query_edit.setDisabled(True)
+        grid_arduino.addWidget(self.query_edit, 5, 1)
         self.arduino_group_box.setLayout(grid_arduino)
         vbox_sensor_col.addWidget(self.arduino_group_box)
         vbox_sensor_col.addStretch(-1)
@@ -263,7 +269,13 @@ class Experiment(QtWidgets.QWidget):
         vbox_total.addLayout(hbox_bottom, 1)
         self.setLayout(vbox_total)
 
-        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25)
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
+                                               baud=int(self.baud_edit.text()),
+                                               n_data_points=int(self.datapoints_edit.text()),
+                                               data_num_bytes=int(self.databytes_edit.text()),
+                                               n_ai=int(self.ais_edit.text()),
+                                               timeout=float(self.timeout_edit.text()),
+                                               query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.update.emit()
 
@@ -291,7 +303,13 @@ class Experiment(QtWidgets.QWidget):
     def start_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
-        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()), dt=0.25)
+        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
+                                               baud=int(self.baud_edit.text()),
+                                               n_data_points=int(self.datapoints_edit.text()),
+                                               data_num_bytes=int(self.databytes_edit.text()),
+                                               n_ai=int(self.ais_edit.text()),
+                                               timeout=float(self.timeout_edit.text()),
+                                               query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.start()
 
