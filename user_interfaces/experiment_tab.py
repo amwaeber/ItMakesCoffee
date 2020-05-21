@@ -302,7 +302,7 @@ class Experiment(QtWidgets.QWidget):
 
     def start_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.stop()
+            self.sensor_mes.close()
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -311,11 +311,11 @@ class Experiment(QtWidgets.QWidget):
                                                timeout=float(self.timeout_edit.text()),
                                                query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
-        self.sensor_mes.start()
+        self.sensor_mes.read_serial_start()
 
     def stop_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.stop()
+            self.sensor_mes.close()
 
     def sensor_port_changed(self):
         self.start_sensor()

@@ -44,11 +44,11 @@ class Calibration(QtWidgets.QWidget):
 
     def start(self):
         if self.mes:
-            self.mes.stop()
+            self.mes.close()
         self.mes = sensor.ArduinoSensor(port="COM3", query_period=0.25)
         self.register(self.mes)
-        self.mes.start()
+        self.mes.read_serial_start()
 
     def stop(self):
         if self.mes:
-            self.mes.stop()
+            self.mes.close()

@@ -15,7 +15,7 @@ class SerialRead:
         self.plot_max_length = read_length
         self.data_num_bytes = data_num_bytes
         self.num_plots = num_plots
-        self.raw_data = bytearray(num_plots * data_num_bytes)
+        self.raw_data = bytearray(self.num_plots * data_num_bytes)
         self.data_type = None
         if data_num_bytes == 2:
             self.data_type = 'h'  # 2 byte integer
@@ -24,15 +24,13 @@ class SerialRead:
         self.data = []
         self.times = []
         self.private_data = None
-        for i in range(num_plots):  # give an array for each type of data and store them in a list
+        for i in range(self.num_plots):  # give an array for each type of data and store them in a list
             self.data.append(collections.deque([0] * self.plot_max_length, maxlen=self.plot_max_length))
             self.times.append(collections.deque([0.1] * self.plot_max_length, maxlen=self.plot_max_length))
         self.start_time = time.time()
         self.is_run = True
         self.is_receiving = False
         self.serial_thread = None
-        self.plot_timer = 0
-        self.previous_timer = 0
 
         print('Trying to connect to: ' + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
         try:
