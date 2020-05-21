@@ -13,18 +13,18 @@ class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal(int)
     save = QtCore.pyqtSignal(int)
 
-    def __init__(self, gpib_port='GPIB::24', data_points=100, averages=5, repetitions=1, delay=0.25,
+    def __init__(self, gpib_port='GPIB::24', n_data_points=100, averages=5, repetitions=1, delay=0.25,
                  min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         super(Keithley, self).__init__()
         self.gpib_port = gpib_port
-        self.data_points = data_points
+        self.n_data_points = n_data_points
         self.averages = averages
         self.repetitions = repetitions
         self.delay = delay
         self.max_voltage = max_voltage
         self.min_voltage = min_voltage
         self.compliance_current = compliance_current
-        self.voltages_set = np.linspace(self.min_voltage, self.max_voltage, num=self.data_points)
+        self.voltages_set = np.linspace(self.min_voltage, self.max_voltage, num=self.n_data_points)
         self.times = np.zeros_like(self.voltages_set)
         self.voltages = np.zeros_like(self.voltages_set)
         self.currents = np.zeros_like(self.voltages_set)
@@ -85,7 +85,7 @@ class Keithley(QtCore.QObject):
             if str(self.gpib_port) == 'dummy':
                 self.is_receiving = True
             else:
-                for dp in range(self.data_points):
+                for dp in range(self.n_data_points):
                     self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
                     self.sourcemeter.source_voltage = self.voltages_set[dp]
                     time.sleep(self.delay)
@@ -109,8 +109,6 @@ class Keithley(QtCore.QObject):
             self.sourcemeter.shutdown()
             print('Disconnected Keithley...')
         self.save.emit(repetition)
-        # df = pd.DataFrame(self.csvData)
-        # data.to_csv('example.csv')
 
     def plot(self, target_fig=None, fname=None):
         """
@@ -132,7 +130,7 @@ class Keithley(QtCore.QObject):
         axis.set_ylabel("Current (A)")
         if self.gpib_port == 'dummy':
             xval = self.voltages_set
-            yval = [0] * self.data_points
+            yval = [0] * self.n_data_points
         else:
             xval = self.voltages
             yval = self.currents

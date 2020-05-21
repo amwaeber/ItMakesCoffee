@@ -33,14 +33,13 @@ class SerialRead:
         self.serial_thread = None
         self.plot_timer = 0
         self.previous_timer = 0
-        # self.csvData = []
 
-        print('Trying to connect to: ' + str(serial_port) + ' at ' + str(serial_baud) + ' BAUD.')
+        print('Trying to connect to: ' + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
         try:
-            self.serialConnection = serial.Serial(serial_port, serial_baud, timeout=4)
-            print('Connected to ' + str(serial_port) + ' at ' + str(serial_baud) + ' BAUD.')
+            self.serialConnection = serial.Serial(self.port, self.baud, timeout=4)
+            print('Connected to ' + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
         except:
-            print("Failed to connect with " + str(serial_port) + ' at ' + str(serial_baud) + ' BAUD.')
+            print("Failed to connect with " + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
 
     def read_serial_start(self):
         if self.serial_thread is None:
@@ -64,7 +63,6 @@ class SerialRead:
             value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=10))
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
         return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]  # TODO: change to get value from array
-        # self.csvData.append([self.data[0][-1], self.data[1][-1], self.data[2][-1]])
 
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
@@ -79,5 +77,3 @@ class SerialRead:
         self.serial_thread.join()
         self.serialConnection.close()
         print('Disconnected...')
-        # df = pd.DataFrame(self.csvData)
-        # df.to_csv('/home/rikisenia/Desktop/data.csv')

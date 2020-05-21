@@ -333,7 +333,7 @@ class Experiment(QtWidgets.QWidget):
         if self.iv_mes:
             self.iv_mes.close()
         self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
-                                        data_points=int(self.nstep_edit.text()),
+                                        n_data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
                                         repetitions=int(self.reps_edit.text()),
                                         delay=float(self.delay_edit.text()),
@@ -341,7 +341,7 @@ class Experiment(QtWidgets.QWidget):
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.data_sensor = np.zeros((5, self.iv_mes.data_points))
+        self.data_sensor = np.zeros((5, self.iv_mes.n_data_points))
         self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
     @QtCore.pyqtSlot(int)

@@ -25,6 +25,8 @@ class ArduinoSensor(QtCore.QObject):
         self.abort = threading.Event()
         self.abort.clear()
 
+
+
     def start(self):
         if not hasattr(self, 'mes_thread'):
             self.mes_thread = threading.Thread(target=self.run)
