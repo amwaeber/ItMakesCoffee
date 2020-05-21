@@ -32,9 +32,10 @@ class Calibration(QtWidgets.QWidget):
 
     def register(self, mes):
         self.mes = mes
-        self.mes.update.connect(self.update)
+        self.mes.update[list, list].connect(self.update)
 
-    def update(self):
+    @QtCore.pyqtSlot(list, list)
+    def update(self, times, data):
         if not self.mes:
             return
         self.mes.plot(self.temperature_canvas.figure, chs=['temp'])

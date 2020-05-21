@@ -13,13 +13,13 @@ from utility.config import paths
 
 class Experiment(QtWidgets.QWidget):
     update_plt = QtCore.pyqtSignal()  # iv figure signal lane
-    # update_sens = QtCore.pyqtSignal()  # sensor readout signal lane
+    update_sensor_plt = QtCore.pyqtSignal(list, list)  # sensor calibration plot signal lane
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
 
         self.directory = paths['last_save']
-        self.data_iv = np.zeros((5,1))
+        self.data_iv = np.zeros((5, 1))
         self.data_sensor = pd.DataFrame()
 
         vbox_total = QtWidgets.QVBoxLayout()
@@ -142,21 +142,25 @@ class Experiment(QtWidgets.QWidget):
         grid_source.addWidget(self.start_label, 0, 0)
         self.start_edit = QtWidgets.QLineEdit('-0.01', self)
         self.start_edit.setFixedWidth(80)
+        self.start_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.start_edit, 0, 1)
         self.end_label = QtWidgets.QLabel("End (V)", self)
         grid_source.addWidget(self.end_label, 0, 2)
         self.end_edit = QtWidgets.QLineEdit('0.7', self)
         self.end_edit.setFixedWidth(80)
+        self.end_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.end_edit, 0, 3)
-        self.step_label = QtWidgets.QLabel("Step (V)", self)  # TODO: remove step size or couple it to nsteps
+        self.step_label = QtWidgets.QLabel("Step (V)", self)
         grid_source.addWidget(self.step_label, 0, 4)
-        self.step_edit = QtWidgets.QLineEdit('0.01', self)  # adjust to update with NSteps
+        self.step_edit = QtWidgets.QLineEdit('0.01', self)
         self.step_edit.setFixedWidth(80)
+        self.step_edit.setDisabled(True)
         grid_source.addWidget(self.step_edit, 0, 5)
         self.nstep_label = QtWidgets.QLabel("# Steps", self)
         grid_source.addWidget(self.nstep_label, 0, 6)
-        self.nstep_edit = QtWidgets.QLineEdit('142', self)  # adjust to update with NSteps
+        self.nstep_edit = QtWidgets.QLineEdit('142', self)
         self.nstep_edit.setFixedWidth(80)
+        self.nstep_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.nstep_edit, 0, 7)
 
         self.ilimit_label = QtWidgets.QLabel("I Limit (A)", self)
@@ -284,7 +288,7 @@ class Experiment(QtWidgets.QWidget):
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.data_sensor = np.zeros((5,self.iv_mes.data_points))
+        self.data_sensor = np.zeros((5, self.iv_mes.data_points))
         self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
     @QtCore.pyqtSlot(int)
@@ -314,3 +318,11 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Power 3 (W/m2)'] = self.data_sensor[3]
         self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
+
+    @QtCore.pyqtSlot()
+    def update_steps(self):
+        try:  # capture empty cells, typos etc during data entry
+            steps = (float(self.end_edit.text()) - float(self.start_edit.text())) / float(self.nstep_edit.text())
+            self.step_edit.setText("%.3f" % steps)
+        except:
+            pass

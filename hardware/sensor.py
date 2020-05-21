@@ -15,7 +15,7 @@ timeout = 30
 
 
 class ArduinoSensor(QtCore.QObject):
-    update = QtCore.pyqtSignal()
+    update = QtCore.pyqtSignal([], [list, list])
 
     def __init__(self, port='COM3', dt=10e-1):
         super(ArduinoSensor, self).__init__()
