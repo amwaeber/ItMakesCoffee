@@ -13,7 +13,7 @@ import helper_classes.conversions as conversions
 
 
 class ArduinoSensor(QtCore.QObject):
-    update = QtCore.pyqtSignal([], [list, list])
+    update = QtCore.pyqtSignal()
 
     def __init__(self, port='COM3', baud=38400, n_data_points=100, data_num_bytes=2, n_ai=5, timeout=30.0,
                  query_period=0.25):
@@ -72,7 +72,7 @@ class ArduinoSensor(QtCore.QObject):
         else:
             value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=10))
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
-        return self.times[plt_number], self.data[plt_number]
+        return [list(self.times[plt_number]), list(self.data[plt_number])]
 
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
@@ -131,7 +131,7 @@ class ArduinoSensor(QtCore.QObject):
             # axis.set_ylim([lower, upper])
         if 'power' in chs:
             axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Diode Readout Voltage (V)")
+            axis.set_ylabel("Illumination (W/m2)")
             for i in [1, 2, 3, 4]:
                 if not hasattr(self, 'ser') or self.port == 'dummy':
                     xval, yval = range(self.n_data_points), [0] * self.n_data_points
@@ -156,7 +156,14 @@ class ArduinoSensor(QtCore.QObject):
 
     def get_sensor_latest(self):
         if not self.port == 'dummy':
-            sensor_readout = [self.get_serial_data(i)[1][-1] for i in range(5)]
+            sensor_readout = [self.get_serial_data(i)[1][-1] for i in range(self.n_ai)]
         else:
-            sensor_readout = [-1.0 for _ in range(5)]
+            sensor_readout = [-1.0 for _ in range(self.n_ai)]
         return sensor_readout
+
+    def get_sensor_traces(self):
+        if not self.port == 'dummy':
+            sensor_traces = [self.get_serial_data(i) for i in range(self.n_ai)]
+        else:
+            sensor_traces = [[list(range(self.n_data_points)), [0] * self.n_data_points] for _ in range(self.n_ai)]
+        return sensor_traces

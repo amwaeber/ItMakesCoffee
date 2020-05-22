@@ -13,7 +13,7 @@ from utility.config import paths
 
 class Experiment(QtWidgets.QWidget):
     update_plt = QtCore.pyqtSignal()  # iv figure signal lane
-    update_sensor_plt = QtCore.pyqtSignal(list, list)  # sensor calibration plot signal lane
+    update_sensor_plt = QtCore.pyqtSignal(list)  # sensor calibration plot signal lane
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
@@ -297,8 +297,8 @@ class Experiment(QtWidgets.QWidget):
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        # self.sensor_mes.plot(self.iv_canvas.figure, chs=['temp'])
-        # self.update_sens.emit()
+        sensor_traces = self.sensor_mes.get_sensor_traces()
+        self.update_sensor_plt.emit(sensor_traces)
 
     def start_sensor(self):
         if self.sensor_mes:
