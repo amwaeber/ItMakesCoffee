@@ -1,8 +1,4 @@
 import collections
-import copy
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 from PyQt5 import QtCore
 import serial
 import struct
@@ -40,6 +36,7 @@ class ArduinoSensor(QtCore.QObject):
         self.is_run = True
         self.is_receiving = False
         self.serial_thread = None
+        self.serialConnection = None
 
     def read_serial_start(self):
         if self.serial_thread is None:
@@ -49,14 +46,14 @@ class ArduinoSensor(QtCore.QObject):
             while not self.is_receiving:
                 time.sleep(0.1)
 
-    def config_sensor(self, **kwargs):
+    def config_sensor(self):
         print('Trying to connect to: ' + str(self.port) + ' at ' + str(self.baud_rate) + ' BAUD.')
         if str(self.port) == 'dummy':
             return
         try:
             self.serialConnection = serial.Serial(self.port, self.baud_rate, timeout=4)
             print('Connected to ' + str(self.port) + ' at ' + str(self.baud_rate) + ' BAUD.')
-        except:
+        except serial.serialutil.SerialException:
             print("Failed to connect with " + str(self.port) + ' at ' + str(self.baud_rate) + ' BAUD.')
             self.port = 'dummy'
             return
@@ -94,65 +91,6 @@ class ArduinoSensor(QtCore.QObject):
         if not str(self.port) == 'dummy':
             self.serialConnection.close()
             print('Disconnected serial port...')
-
-    def plot(self, target_fig=None, fname=None, chs=None):
-        """
-        plot - plot the result of an ODMR measurement
-        if ax is supplied, plot into ax. Create a new figure otherwise
-        if ax is none (new figure), the new figure is displayed by default.
-        If a filename string fname is given, the figure is saved to this file and display is suppressed
-        fname is an absolute path. No check or indexing is performed to prevent overwriting of existing files
-        """
-
-        if chs is None:
-            chs = []
-        if target_fig is None:
-            fig = Figure()
-            canvas = FigureCanvas(fig)
-        else:
-            fig = target_fig
-        fig.clear()
-        axis = fig.add_subplot(111)
-        if 'temp' in chs:
-            axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Temperature (C)")
-            if not hasattr(self, 'ser') or self.port == 'dummy':
-                xval, yval = range(self.n_data_points), [0] * self.n_data_points
-            else:
-                xval, yval = self.get_serial_data(0)
-                yval = yval * 100
-            axis.plot(xval, yval, lw=1.3)
-            # spread = (yval.max() - yval.min()) * 100
-            # # make sure plotting range is sufficient to display a minimum amount of contrast
-            # if spread < 1:
-            #     spread = 1
-            # upper = yval.max() + .1 * spread
-            # lower = yval.min() - .1 * spread
-            # axis.set_ylim([lower, upper])
-        if 'power' in chs:
-            axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Illumination (W/m2)")
-            for i in [1, 2, 3, 4]:
-                if not hasattr(self, 'ser') or self.port == 'dummy':
-                    xval, yval = range(self.n_data_points), [0] * self.n_data_points
-                else:
-                    xval, yval = self.get_serial_data(i)
-                axis.plot(xval, yval, lw=1.3)
-        #     spread = (yval.max() - yval.min())
-        #     # make sure plotting range is sufficient to display a minimum amount of contrast
-        #     if spread < 0.01:
-        #         spread = 0.01
-        #     upper = yval.max() + .1 * spread
-        #     lower = yval.min() - .1 * spread
-        #     axis.set_ylim([lower, upper])
-        if target_fig is None:
-            if fname is not None:
-                fig.tight_layout()
-                fig.savefig(fname)
-                plt.close(fig)
-            else:
-                fig.show()
-        return fig
 
     def get_sensor_latest(self):
         if not self.port == 'dummy':

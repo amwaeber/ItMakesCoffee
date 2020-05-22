@@ -27,7 +27,7 @@ class Calibration(QtWidgets.QWidget):
         self.update_plt.emit()
 
     @QtCore.pyqtSlot(list)
-    def update(self, sensor_traces):
+    def update(self, sensor_traces):  # TODO: move into separate thread?
         time.sleep(0.01)
         self.plot(target_fig=self.temperature_canvas.figure, chs=['temp'], data=sensor_traces)
         self.plot(target_fig=self.power_canvas.figure, chs=['power'], data=sensor_traces)
