@@ -292,12 +292,15 @@ class Experiment(QtWidgets.QWidget):
         if not self.sensor_mes:
             return
         tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
+        print('got here')
         self.temperature_edit.setText("%.2f" % tval)
         self.diode1_edit.setText("%02d" % d1val)
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
+        print('b')
         sensor_traces = self.sensor_mes.get_sensor_traces()
+        print('c')
         self.update_sensor_plt.emit(sensor_traces)
 
     def start_sensor(self):
@@ -377,5 +380,5 @@ class Experiment(QtWidgets.QWidget):
         try:  # capture empty cells, typos etc during data entry
             steps = (float(self.end_edit.text()) - float(self.start_edit.text())) / float(self.nstep_edit.text())
             self.step_edit.setText("%.3f" % steps)
-        except:
+        except (ZeroDivisionError, ValueError):
             pass
