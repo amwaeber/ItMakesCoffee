@@ -86,12 +86,11 @@ class ArduinoSensor(QtCore.QObject):
                     self.update.emit()
                     self.update_timer = time.time()
                 self.is_receiving = True
-            # self.is_run = False
-        self.close()
 
     def close(self):
         self.is_run = False
-        self.serial_thread.join()
+        if self.serial_thread is not None:
+            self.serial_thread.join()
         if not str(self.port) == 'dummy':
             self.serialConnection.close()
             print('Disconnected serial port...')

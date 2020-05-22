@@ -317,7 +317,7 @@ class Experiment(QtWidgets.QWidget):
         if self.sensor_mes:
             self.sensor_mes.close()
 
-    def sensor_port_changed(self):
+    def sensor_port_changed(self):  # TODO: stop previous sensor first?
         self.start_sensor()
 
     def folder_dialog(self):
