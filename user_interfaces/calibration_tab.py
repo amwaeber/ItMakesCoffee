@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
+import time
 
 import hardware.sensor as sensor
 from utility.config import paths
@@ -42,15 +43,13 @@ class Calibration(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(list)
     def update(self, sensor_traces):
-        # if not self.mes:
-        #     return
-        # self.sensor_traces = sensor_traces  # sometimes seems to cause crash?
-        # print(sensor_traces[0])
+        time.sleep(0.01)
         self.plot(target_fig=self.temperature_canvas.figure, chs=['temp'], data=sensor_traces)
         self.plot(target_fig=self.power_canvas.figure, chs=['power'], data=sensor_traces)
         self.update_plt.emit()
 
-    def plot(self, target_fig=None, chs=None, data=None):
+    @staticmethod
+    def plot(target_fig=None, chs=None, data=None):
         if chs is None:
             chs = []
         if data is None:
