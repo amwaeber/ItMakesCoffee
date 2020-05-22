@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pymeasure.instruments.keithley import Keithley2400
 from PyQt5 import QtCore
+import pyvisa
 import threading
 import time
 
@@ -35,6 +36,7 @@ class Keithley(QtCore.QObject):
         self.is_run = True
         self.is_receiving = False
         self.gpib_thread = None
+        self.sourcemeter = None
 
     def config_keithley(self, **kwargs):
         print('Trying to connect to: ' + str(self.gpib_port) + '.')
@@ -43,7 +45,7 @@ class Keithley(QtCore.QObject):
         try:
             self.sourcemeter = Keithley2400(str(self.gpib_port))
             print('Connected to ' + str(self.gpib_port) + '.')
-        except:
+        except pyvisa.errors.VisaIOError:
             print("Failed to connect with " + str(self.gpib_port) + '.')
             self.gpib_port = 'dummy'
             return
@@ -121,7 +123,6 @@ class Keithley(QtCore.QObject):
 
         if target_fig is None:
             fig = Figure()
-            canvas = FigureCanvas(fig)
         else:
             fig = target_fig
         fig.clear()

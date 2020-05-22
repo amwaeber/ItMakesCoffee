@@ -1,5 +1,4 @@
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot
 
 from user_interfaces.analysis_tab import Analysis
 from user_interfaces.calibration_tab import Calibration
