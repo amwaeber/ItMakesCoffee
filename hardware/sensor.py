@@ -86,7 +86,7 @@ class ArduinoSensor(QtCore.QObject):
                     self.update.emit()
                     self.update_timer = time.time()
                 self.is_receiving = True
-            self.is_run = False
+            # self.is_run = False
         self.close()
 
     def close(self):

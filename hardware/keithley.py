@@ -99,7 +99,7 @@ class Keithley(QtCore.QObject):
                     self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
                     self.update.emit(dp)
                     self.is_receiving = True
-            self.is_run = False
+            self.is_run = False  # TODO: Turn into for loop or fix otherwise
         self.close(repetition)
 
     def close(self, repetition=0):
