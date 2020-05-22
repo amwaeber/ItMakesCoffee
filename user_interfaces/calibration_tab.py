@@ -1,12 +1,7 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import numpy as np
-import os
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 import time
-
-import hardware.sensor as sensor
-from utility.config import paths
 
 
 class Calibration(QtWidgets.QWidget):
@@ -22,8 +17,6 @@ class Calibration(QtWidgets.QWidget):
         self.power_canvas.figure.tight_layout(pad=0.3)
         self.update_plt.connect(self.power_canvas.figure.canvas.draw)
 
-        # self.sensor_traces = [[list(range(100)), [0] * 100] for _ in range(5)]
-
         hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.temperature_canvas)
         hbox.addWidget(self.power_canvas)
@@ -32,14 +25,6 @@ class Calibration(QtWidgets.QWidget):
         self.plot(target_fig=self.temperature_canvas.figure, chs=['temp'])
         self.plot(target_fig=self.power_canvas.figure, chs=['power'])
         self.update_plt.emit()
-
-        # self.mes = sensor.ArduinoSensor(port="COM3", query_period=0.25)
-        # self.register(self.mes)
-        # self.mes.update.emit()
-
-    # def register(self, mes):
-    #     self.mes = mes
-    #     self.mes.update[list, list].connect(self.update)
 
     @QtCore.pyqtSlot(list)
     def update(self, sensor_traces):
@@ -50,15 +35,15 @@ class Calibration(QtWidgets.QWidget):
 
     @staticmethod
     def plot(target_fig=None, chs=None, data=None):
+        if target_fig is None:
+            fig = Figure()
+        else:
+            fig = target_fig
         if chs is None:
             chs = []
         if data is None:
             data = [[list(range(100)), [0] * 100] for _ in range(5)]
-        if target_fig is None:
-            fig = Figure()
-            canvas = FigureCanvas(fig)
-        else:
-            fig = target_fig
+
         fig.clear()
         axis = fig.add_subplot(111)
         if 'temp' in chs:
@@ -73,14 +58,3 @@ class Calibration(QtWidgets.QWidget):
                 xval, yval = data[i]
                 axis.plot(xval, yval, lw=1.3)
         return fig
-
-    # def start(self):
-    #     if self.mes:
-    #         self.mes.close()
-    #     self.mes = sensor.ArduinoSensor(port="COM3", query_period=0.25)
-    #     self.register(self.mes)
-    #     self.mes.read_serial_start()
-    #
-    # def stop(self):
-    #     if self.mes:
-    #         self.mes.close()
