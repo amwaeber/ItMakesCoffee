@@ -217,11 +217,16 @@ class Experiment(QtWidgets.QWidget):
         self.reps_edit = QtWidgets.QLineEdit('5', self)
         self.reps_edit.setFixedWidth(80)
         grid_source.addWidget(self.reps_edit, 1, 5)
+        self.rep_delay_label = QtWidgets.QLabel("Rep. Delay (s)", self)
+        grid_source.addWidget(self.rep_delay_label, 1, 6)
+        self.rep_delay_edit = QtWidgets.QLineEdit('2.0', self)
+        self.rep_delay_edit.setFixedWidth(80)
+        grid_source.addWidget(self.rep_delay_edit, 1, 7)
         self.naverage_label = QtWidgets.QLabel("# Averages", self)
-        grid_source.addWidget(self.naverage_label, 1, 6)
+        grid_source.addWidget(self.naverage_label, 1, 8)
         self.naverage_edit = QtWidgets.QLineEdit('5', self)  # adjust to update with NSteps
         self.naverage_edit.setFixedWidth(80)
-        grid_source.addWidget(self.naverage_edit, 1, 7)
+        grid_source.addWidget(self.naverage_edit, 1, 9)
         vbox_source.addLayout(grid_source)
         self.source_group_box.setLayout(vbox_source)
         hbox_bottom.addWidget(self.source_group_box)
@@ -335,6 +340,7 @@ class Experiment(QtWidgets.QWidget):
                                         n_data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
                                         repetitions=int(self.reps_edit.text()),
+                                        repetition_delay=float(self.rep_delay_edit.text()),
                                         delay=float(self.delay_edit.text()),
                                         min_voltage=float(self.start_edit.text()),
                                         max_voltage=float(self.end_edit.text()),

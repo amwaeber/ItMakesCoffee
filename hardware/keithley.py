@@ -13,13 +13,14 @@ class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal(int)
     save = QtCore.pyqtSignal(int)
 
-    def __init__(self, gpib_port='GPIB::24', n_data_points=100, averages=5, repetitions=1, delay=0.25,
-                 min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
+    def __init__(self, gpib_port='GPIB::24', n_data_points=100, averages=5, repetitions=1, repetition_delay=2.0,
+                 delay= 0.25, min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         super(Keithley, self).__init__()
         self.gpib_port = gpib_port
         self.n_data_points = n_data_points
         self.averages = averages
         self.repetitions = repetitions
+        self.repetition_delay = repetition_delay
         self.delay = delay
         self.max_voltage = max_voltage
         self.min_voltage = min_voltage
@@ -68,6 +69,8 @@ class Keithley(QtCore.QObject):
                 # Block till we start receiving values
                 while not self.is_receiving:
                     time.sleep(0.1)
+            time.sleep(self.repetition_delay)
+            print(repetition, ' is done')
 
     def get_keithley_data(self):
         data = pd.DataFrame({
@@ -102,8 +105,8 @@ class Keithley(QtCore.QObject):
                     self.is_receiving = True
             self.is_run = False  # TODO: Turn into for loop or fix otherwise
         self.save.emit(repetition)
-        time.sleep(1.0)
-        self.close()
+        # time.sleep(1.0)
+        # self.close()
 
     def close(self):
         self.is_run = False
