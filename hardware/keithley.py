@@ -102,12 +102,15 @@ class Keithley(QtCore.QObject):
                     self.is_receiving = True
             self.is_run = False  # TODO: Turn into for loop or fix otherwise
         self.save.emit(repetition)
+        time.sleep(1.0)
         self.close()
 
     def close(self):
         self.is_run = False
         if self.gpib_thread is not None:
+            print('will join thread')
             self.gpib_thread.join()
+            print('thread joined')
         if not str(self.gpib_port) == 'dummy':
             self.sourcemeter.shutdown()
             print('Disconnected Keithley...')

@@ -267,7 +267,7 @@ class Experiment(QtWidgets.QWidget):
         vbox_total.addLayout(hbox_bottom, 1)
         self.setLayout(vbox_total)
 
-        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.datapoints_edit.text())))
+        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -340,7 +340,7 @@ class Experiment(QtWidgets.QWidget):
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.datapoints_edit.text())))
+        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
     @QtCore.pyqtSlot(int)
