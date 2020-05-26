@@ -58,19 +58,15 @@ class Keithley(QtCore.QObject):
         self.sourcemeter.config_buffer(self.averages)
         self.sourcemeter.enable_source()
 
-    def read_keithley_start(self, repetitions=1):
-        self.repetitions = repetitions
-        for repetition in range(self.repetitions):
-            self.is_run = True
-            self.is_receiving = False
-            if self.gpib_thread is None:
-                self.gpib_thread = threading.Thread(target=self.background_thread, args=(repetition,))
-                self.gpib_thread.start()
-                # Block till we start receiving values
-                while not self.is_receiving:
-                    time.sleep(0.1)
-            time.sleep(self.repetition_delay)
-            print(repetition, ' is done')
+    def read_keithley_start(self):
+        self.is_run = True
+        self.is_receiving = False
+        if self.gpib_thread is None:
+            self.gpib_thread = threading.Thread(target=self.background_thread)
+            self.gpib_thread.start()
+            # Block till we start receiving values
+            while not self.is_receiving:
+                time.sleep(0.1)
 
     def get_keithley_data(self):
         data = pd.DataFrame({
@@ -82,44 +78,41 @@ class Keithley(QtCore.QObject):
             'Power (W)': self.powers})
         return data
 
-    def background_thread(self, repetition=0):  # retrieve data
+    def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
         self.config_keithley()
         while self.is_run:
-            if str(self.gpib_port) == 'dummy':
-                self.is_receiving = True
-            else:
-                for dp in range(self.n_data_points):
-                    self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
-                    self.sourcemeter.source_voltage = self.voltages_set[dp]
-                    time.sleep(self.delay)
-                    self.sourcemeter.start_buffer()
-                    self.sourcemeter.wait_for_buffer()
-                    self.times[dp] = time.time()
-                    self.voltages[dp] = self.sourcemeter.mean_voltage
-                    self.currents[dp] = - self.sourcemeter.mean_current
-                    self.currents_std[dp] = self.sourcemeter.std_current
-                    self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
-                    self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
-                    self.update.emit(dp)
+            for repetition in range(self.repetitions):
+                if str(self.gpib_port) == 'dummy':
                     self.is_receiving = True
-            self.is_run = False  # TODO: Turn into for loop or fix otherwise
-        self.save.emit(repetition)
-        # time.sleep(1.0)
-        # self.close()
+                else:
+                    for dp in range(self.n_data_points):
+                        self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
+                        self.sourcemeter.source_voltage = self.voltages_set[dp]
+                        time.sleep(self.delay)
+                        self.sourcemeter.start_buffer()
+                        self.sourcemeter.wait_for_buffer()
+                        self.times[dp] = time.time()
+                        self.voltages[dp] = self.sourcemeter.mean_voltage
+                        self.currents[dp] = - self.sourcemeter.mean_current
+                        self.currents_std[dp] = self.sourcemeter.std_current
+                        self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
+                        self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
+                        self.update.emit(dp)
+                        self.is_receiving = True
+                self.save.emit(repetition)
+                time.sleep(self.repetition_delay)
+            self.is_run = False
 
     def close(self):
         self.is_run = False
         if self.gpib_thread is not None:
-            print('will join thread')
             self.gpib_thread.join()
-            print('thread joined')
         if not str(self.gpib_port) == 'dummy':
             self.sourcemeter.shutdown()
             print('Disconnected Keithley...')
 
     def plot(self, target_fig=None, fname=None):
-
         if target_fig is None:
             fig = Figure()
         else:
