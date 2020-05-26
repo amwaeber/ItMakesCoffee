@@ -2,7 +2,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
 import os
-import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 import hardware.keithley as keithley
@@ -20,7 +19,6 @@ class Experiment(QtWidgets.QWidget):
 
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
-        self.data_sensor = pd.DataFrame()
 
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
@@ -269,6 +267,7 @@ class Experiment(QtWidgets.QWidget):
         vbox_total.addLayout(hbox_bottom, 1)
         self.setLayout(vbox_total)
 
+        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.datapoints_edit.text())))
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -292,20 +291,17 @@ class Experiment(QtWidgets.QWidget):
         if not self.sensor_mes:
             return
         tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
-        print('got here')
         self.temperature_edit.setText("%.2f" % tval)
         self.diode1_edit.setText("%02d" % d1val)
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        print('b')
         sensor_traces = self.sensor_mes.get_sensor_traces()
-        print('c')
         self.update_sensor_plt.emit(sensor_traces)
 
     def start_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.close()
+            self.sensor_mes.ser.close()
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -314,11 +310,11 @@ class Experiment(QtWidgets.QWidget):
                                                timeout=float(self.timeout_edit.text()),
                                                query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
-        self.sensor_mes.read_serial_start()
+        self.sensor_mes.ser.read_serial_start()
 
     def stop_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.close()
+            self.sensor_mes.ser.close()
 
     def sensor_port_changed(self):  # TODO: stop previous sensor first?
         self.start_sensor()
@@ -344,7 +340,7 @@ class Experiment(QtWidgets.QWidget):
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
-        self.data_sensor = np.zeros((5, self.iv_mes.n_data_points))
+        self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.datapoints_edit.text())))
         self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
 
     @QtCore.pyqtSlot(int)

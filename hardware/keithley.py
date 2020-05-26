@@ -1,4 +1,3 @@
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,24 +101,18 @@ class Keithley(QtCore.QObject):
                     self.update.emit(dp)
                     self.is_receiving = True
             self.is_run = False  # TODO: Turn into for loop or fix otherwise
-        self.close(repetition)
+        self.save.emit(repetition)
+        self.close()
 
-    def close(self, repetition=0):
+    def close(self):
         self.is_run = False
-        self.gpib_thread.join()
+        if self.gpib_thread is not None:
+            self.gpib_thread.join()
         if not str(self.gpib_port) == 'dummy':
             self.sourcemeter.shutdown()
             print('Disconnected Keithley...')
-        self.save.emit(repetition)
 
     def plot(self, target_fig=None, fname=None):
-        """
-        plot - plot the result of an IV measurement
-        if ax is supplied, plot into ax. Create a new figure otherwise
-        if ax is none (new figure), the new figure is displayed by default.
-        If a filename string fname is given, the figure is saved to this file and display is suppressed
-        fname is an absolute path. No check or indexing is performed to prevent overwriting of existing files
-        """
 
         if target_fig is None:
             fig = Figure()
@@ -133,16 +126,9 @@ class Keithley(QtCore.QObject):
             xval = self.voltages_set
             yval = [0] * self.n_data_points
         else:
-            xval = self.voltages
+            xval = self.voltages_set
             yval = self.currents
         axis.plot(xval, yval, lw=1.3)
-        # spread = (yval.max() - yval.min()) * 100
-        # # make sure plotting range is sufficient to display a minimum amount of contrast
-        # if spread < 1:
-        #     spread = 1
-        # upper = yval.max() + .1 * spread
-        # lower = yval.min() - .1 * spread
-        # axis.set_ylim([lower, upper])
         if target_fig is None:
             if fname is not None:
                 fig.tight_layout()

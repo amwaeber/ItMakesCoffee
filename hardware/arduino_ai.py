@@ -7,6 +7,7 @@ import time
 
 import helper_classes.conversions as conversions
 
+
 class SerialRead:
     def __init__(self, serial_port='COM3', serial_baud=38400, n_data_points=100, data_num_bytes=2, n_ai=5):
         self.port = serial_port
