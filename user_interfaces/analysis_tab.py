@@ -26,8 +26,13 @@ class Analysis(QtWidgets.QWidget):
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
         self.refresh_button.clicked.connect(self.load_selection)
         self.refresh_button.setToolTip('Load selected files')
-        self.toggle_stats_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'stats_avg.png')), '')
+        stats_icon = QtGui.QIcon()
+        stats_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'stats_avg.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        stats_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'stats_delta.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.toggle_stats_button = QtWidgets.QPushButton(QtGui.QIcon(stats_icon), '')
+        self.toggle_stats_button.setCheckable(True)
         self.toggle_stats_button.clicked.connect(self.toggle_table)
         self.toggle_stats_button.setToolTip('Show average / relative values')
         self.save_tables_button = QtWidgets.QPushButton(
@@ -85,9 +90,11 @@ class Analysis(QtWidgets.QWidget):
     def toggle_table(self):
         if self.table_select == 'averaged':
             self.table_select = 'efficiency'
+            self.toggle_stats_button.setChecked(True)
             self.update_tables()
         elif self.table_select == 'efficiency':
             self.table_select = 'averaged'
+            self.toggle_stats_button.setChecked(False)
             self.update_tables()
 
     def update_data(self):
