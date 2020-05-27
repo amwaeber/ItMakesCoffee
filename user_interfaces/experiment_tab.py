@@ -228,24 +228,43 @@ class Experiment(QtWidgets.QWidget):
         self.controls_group_box = QtWidgets.QGroupBox('Ctrl')
         vbox_controls = QtWidgets.QVBoxLayout()
         vbox_controls.addStretch(-1)
-        self.start_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'start.png')), '')
+        start_icon = QtGui.QIcon()
+        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'start.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'start_on.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.start_button = QtWidgets.QPushButton(QtGui.QIcon(start_icon), '')
+        self.start_button.setIconSize(QtCore.QSize(40, 40))
+        self.start_button.setCheckable(True)
         self.start_button.clicked.connect(self.start)
         self.start_button.setToolTip('Start Measurement')
         vbox_controls.addWidget(self.start_button)
         self.stop_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'stop.png')), '')
+        self.stop_button.setIconSize(QtCore.QSize(40, 40))
         self.stop_button.clicked.connect(self.stop)
         self.stop_button.setToolTip('Stop Measurement')
         vbox_controls.addWidget(self.stop_button)
         vbox_controls.addStretch(-1)
-        self.temp_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'temp.png')), '')
+        temp_icon = QtGui.QIcon()
+        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_off.png')),
+                            QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_on.png')),
+                            QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.temp_button = QtWidgets.QPushButton(QtGui.QIcon(temp_icon), '')
+        self.temp_button.setIconSize(QtCore.QSize(40, 40))
+        self.temp_button.setCheckable(True)
         self.temp_button.clicked.connect(self.plot_temp)
         self.temp_button.setToolTip('Plot temperature')
         vbox_controls.addWidget(self.temp_button)
-        self.power_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'power.png')), '')
+        power_icon = QtGui.QIcon()
+        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_off.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_on.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.power_button = QtWidgets.QPushButton(QtGui.QIcon(power_icon), '')
+        self.power_button.setIconSize(QtCore.QSize(40, 40))
+        self.power_button.setCheckable(True)
         self.power_button.clicked.connect(self.plot_pow)
         self.power_button.setToolTip('Plot power')
         vbox_controls.addWidget(self.power_button)
@@ -321,16 +340,20 @@ class Experiment(QtWidgets.QWidget):
     def plot_temp(self):
         if not self.plot_temperature:
             self.plot_temperature = True
+            self.temp_button.setChecked(True)
         else:
             self.plot_temperature = False
+            self.temp_button.setChecked(False)
             self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
             self.update_sensor_plt.emit()
 
     def plot_pow(self):
         if not self.plot_power:
             self.plot_power = True
+            self.power_button.setChecked(True)
         else:
             self.plot_power = False
+            self.power_button.setChecked(False)
             self.dummy_plot(self.power_canvas.figure, chs=['power'])
             self.update_sensor_plt.emit()
 
@@ -367,6 +390,7 @@ class Experiment(QtWidgets.QWidget):
     def start(self):
         if self.iv_mes:
             self.iv_mes.close()
+        self.start_button.setChecked(True)
         self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
                                         n_data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
@@ -394,6 +418,7 @@ class Experiment(QtWidgets.QWidget):
     def stop(self):  # TODO: implement iv scan pause
         if self.iv_mes:
             self.iv_mes.close()
+        self.power_button.setChecked(False)
 
     @QtCore.pyqtSlot(int)
     def save(self, repetition):
@@ -404,6 +429,8 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Power 3 (W/m2)'] = self.data_sensor[3]
         self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
+        if repetition == (self.iv_mes.repetitions - 1):
+            self.power_button.setChecked(False)
 
     @QtCore.pyqtSlot(str)
     def logger(self, string):

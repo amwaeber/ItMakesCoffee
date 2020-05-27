@@ -27,7 +27,7 @@ class Analysis(QtWidgets.QWidget):
         self.refresh_button.clicked.connect(self.load_selection)
         self.refresh_button.setToolTip('Load selected files')
         self.toggle_stats_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'statistics.png')), '')
+            QtGui.QIcon(os.path.join(paths['icons'], 'stats_avg.png')), '')
         self.toggle_stats_button.clicked.connect(self.toggle_table)
         self.toggle_stats_button.setToolTip('Show average / relative values')
         self.save_tables_button = QtWidgets.QPushButton(
