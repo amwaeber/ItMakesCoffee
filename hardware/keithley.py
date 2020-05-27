@@ -12,9 +12,10 @@ import time
 class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal(int)
     save = QtCore.pyqtSignal(int)
+    to_log = QtCore.pyqtSignal(str)
 
     def __init__(self, gpib_port='GPIB::24', n_data_points=100, averages=5, repetitions=1, repetition_delay=2.0,
-                 delay= 0.25, min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
+                 delay=0.25, min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         super(Keithley, self).__init__()
         self.gpib_port = gpib_port
         self.n_data_points = n_data_points
@@ -39,14 +40,14 @@ class Keithley(QtCore.QObject):
         self.sourcemeter = None
 
     def config_keithley(self, **kwargs):
-        print('Trying to connect to: ' + str(self.gpib_port) + '.')
+        self.to_log.emit('<span style=\" color:#000000;\" >Trying to connect to: ' + str(self.gpib_port) + '.</span>')
         if str(self.gpib_port) == 'dummy':
             return
         try:
             self.sourcemeter = Keithley2400(str(self.gpib_port))
-            print('Connected to ' + str(self.gpib_port) + '.')
+            self.to_log.emit('<span style=\" color:#32cd32;\" >Connected to ' + str(self.gpib_port) + '.</span>')
         except pyvisa.errors.VisaIOError:
-            print("Failed to connect with " + str(self.gpib_port) + '.')
+            self.to_log.emit('<span style=\" color:#ff0000;\" >Failed to connect with ' + str(self.gpib_port) + '.</span>')
             self.gpib_port = 'dummy'
             return
         self.sourcemeter.reset()
@@ -101,7 +102,11 @@ class Keithley(QtCore.QObject):
                         self.update.emit(dp)
                         self.is_receiving = True
                 self.save.emit(repetition)
-                time.sleep(self.repetition_delay)
+                self.to_log.emit('<span style=\" color:#1e90ff;\" >Finished curve #%s</span>' % str(repetition + 1))
+                if repetition < self.repetitions - 1:
+                    time.sleep(self.repetition_delay)
+                else:
+                    self.to_log.emit('<span style=\" color:#32cd32;\" >Finished IV scan.</span>')
             self.is_run = False
 
     def close(self):
@@ -110,7 +115,7 @@ class Keithley(QtCore.QObject):
             self.gpib_thread.join()
         if not str(self.gpib_port) == 'dummy':
             self.sourcemeter.shutdown()
-            print('Disconnected Keithley...')
+            self.to_log.emit('<span style=\" color:#000000;\" >Disconnected Keithley...</span>')
 
     def plot(self, target_fig=None, fname=None):
         if target_fig is None:

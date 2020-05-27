@@ -1,5 +1,6 @@
 import collections
 import copy
+from PyQt5 import QtCore
 import serial
 import struct
 import threading
@@ -8,8 +9,11 @@ import time
 import helper_classes.conversions as conversions
 
 
-class SerialRead:
+class SerialRead(QtCore.QObject):
+    to_log = QtCore.pyqtSignal(str)
+
     def __init__(self, serial_port='COM3', serial_baud=38400, n_data_points=100, data_num_bytes=2, n_ai=5):
+        super(SerialRead, self).__init__()
         self.port = serial_port
         self.baud = serial_baud
         self.n_data_points = n_data_points
@@ -30,15 +34,20 @@ class SerialRead:
         self.is_run = True
         self.is_receiving = False
         self.thread = None
+        self.serialConnection = None
 
+    def connect(self):
         if str(self.port) == 'dummy':
             return
-        print('Trying to connect to: ' + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
+        self.to_log.emit('<span style=\" color:#000000;\" >Trying to connect to: ' + str(self.port) + ' at '
+                         + str(self.baud) + ' BAUD.</span>')
         try:
             self.serialConnection = serial.Serial(self.port, self.baud, timeout=4)
-            print('Connected to ' + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
+            self.to_log.emit('<span style=\" color:#32cd32;\" >Connected to ' + str(self.port) + ' at ' +
+                             str(self.baud) + ' BAUD.</span>')
         except serial.serialutil.SerialException:
-            print("Failed to connect with " + str(self.port) + ' at ' + str(self.baud) + ' BAUD.')
+            self.to_log.emit('<span style=\" color:#ff0000;\" >Failed to connect with ' + str(self.port) +
+                             ' at ' + str(self.baud) + ' BAUD.</span>')
 
     def read_serial_start(self):
         if self.thread is None:
@@ -64,11 +73,11 @@ class SerialRead:
 
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
-        self.serialConnection.reset_input_buffer()
         while self.is_run:
             if str(self.port) == 'dummy':
                 self.is_receiving = True
             else:
+                self.serialConnection.reset_input_buffer()
                 self.serialConnection.readinto(self.raw_data)
                 self.is_receiving = True
 
@@ -78,4 +87,4 @@ class SerialRead:
             self.thread.join()
         if not str(self.port) == 'dummy':
             self.serialConnection.close()
-            print('Disconnected serial port...')
+            self.to_log.emit('<span style=\" color:#000000;\" >Disconnected serial port...</span>')

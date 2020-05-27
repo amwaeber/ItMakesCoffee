@@ -120,6 +120,7 @@ from hardware.arduino_ai import SerialRead
 
 class ArduinoSensor(QtCore.QObject):
     update = QtCore.pyqtSignal()
+    to_log = QtCore.pyqtSignal(str)
 
     def __init__(self, port='COM3', baud=38400, n_data_points=100, data_num_bytes=2, n_ai=5, timeout=30.0,
                  query_period=0.25):
@@ -133,16 +134,18 @@ class ArduinoSensor(QtCore.QObject):
         self.timeout = timeout
         self.abort = threading.Event()
         self.abort.clear()
+        self.ser = None
+        self.mes_thread = None
 
     def start(self):
-        if not hasattr(self, 'mes_thread'):
+        if self.mes_thread is None:
             self.mes_thread = threading.Thread(target=self.run)
             self.mes_thread.start()
         else:
             print('Warning: self.thread already existing.')
 
     def stop(self):
-        if hasattr(self, 'mes_thread'):
+        if self.mes_thread is not None:
             self.abort.set()
             self.mes_thread.join(self.timeout)
             if not self.mes_thread.is_alive():
@@ -156,11 +159,17 @@ class ArduinoSensor(QtCore.QObject):
         do not call directly, since it will then block the main loop
         """
         self.ser = SerialRead(self.port, self.baud_rate, self.n_data_points, self.data_num_bytes, self.n_ai)
+        self.ser.to_log.connect(self.log_pipeline)
+        self.ser.connect()
         self.ser.read_serial_start()
         while not self.abort.isSet():
             time.sleep(self.query_period)
             self.update.emit()
         self.ser.close()
+
+    @QtCore.pyqtSlot(str)
+    def log_pipeline(self, string):
+        self.to_log.emit(string)
 
     def plot(self, target_fig=None, fname=None, chs=None):
         """

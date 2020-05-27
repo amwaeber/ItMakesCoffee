@@ -134,7 +134,7 @@ class Experiment(QtWidgets.QWidget):
         grid_arduino.addWidget(self.query_edit, 5, 1)
         self.arduino_group_box.setLayout(grid_arduino)
         vbox_sensor_col.addWidget(self.arduino_group_box)
-        vbox_sensor_col.addStretch(-1)
+        # vbox_sensor_col.addStretch(-1)
 
         hbox_controls = QtWidgets.QHBoxLayout()
         hbox_controls.addStretch(-1)
@@ -157,6 +157,13 @@ class Experiment(QtWidgets.QWidget):
         hbox_controls.addWidget(self.stop_button)
         hbox_controls.addStretch(-1)
         vbox_sensor_col.addLayout(hbox_controls)
+
+        self.log_group_box = QtWidgets.QGroupBox('Log')
+        grid_log = QtWidgets.QGridLayout()
+        self.log_edit = QtWidgets.QTextEdit("Ready to measure...\n", self)
+        grid_log.addWidget(self.log_edit, 0, 0)
+        self.log_group_box.setLayout(grid_log)
+        vbox_sensor_col.addWidget(self.log_group_box)
         hbox_top.addLayout(vbox_sensor_col, 2)
         vbox_total.addLayout(hbox_top, 4)
 
@@ -273,15 +280,17 @@ class Experiment(QtWidgets.QWidget):
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
-        self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
-                                               baud=int(self.baud_edit.text()),
-                                               n_data_points=int(self.datapoints_edit.text()),
-                                               data_num_bytes=int(self.databytes_edit.text()),
-                                               n_ai=int(self.ais_edit.text()),
-                                               timeout=float(self.timeout_edit.text()),
-                                               query_period=float(self.query_edit.text()))
-        self.sensor_register(self.sensor_mes)
-        self.sensor_mes.update.emit()
+        # self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
+        #                                        baud=int(self.baud_edit.text()),
+        #                                        n_data_points=int(self.datapoints_edit.text()),
+        #                                        data_num_bytes=int(self.databytes_edit.text()),
+        #                                        n_ai=int(self.ais_edit.text()),
+        #                                        timeout=float(self.timeout_edit.text()),
+        #                                        query_period=float(self.query_edit.text()))
+        # self.sensor_register(self.sensor_mes)
+        # self.sensor_mes.update.emit()
+        self.sensor_mes = None
+        self.start_sensor()
 
         self.iv_mes = keithley.Keithley(gpib_port='dummy')
         self.iv_register(self.iv_mes)
@@ -290,6 +299,7 @@ class Experiment(QtWidgets.QWidget):
     def sensor_register(self, mes):
         self.sensor_mes = mes
         self.sensor_mes.update.connect(self.update_sensor)
+        self.sensor_mes.to_log.connect(self.logger)
 
     @QtCore.pyqtSlot()
     def update_sensor(self):
@@ -306,7 +316,8 @@ class Experiment(QtWidgets.QWidget):
 
     def start_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.ser.close()
+            self.sensor_mes.stop()
+            # self.sensor_mes.ser.close()
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -315,13 +326,15 @@ class Experiment(QtWidgets.QWidget):
                                                timeout=float(self.timeout_edit.text()),
                                                query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
-        self.sensor_mes.ser.read_serial_start()
+        self.sensor_mes.start()
+        # self.sensor_mes.ser.read_serial_start()
 
     def stop_sensor(self):
         if self.sensor_mes:
-            self.sensor_mes.ser.close()
+            self.sensor_mes.stop()
+            # self.sensor_mes.ser.close()
 
-    def sensor_port_changed(self):  # TODO: stop previous sensor first?
+    def sensor_port_changed(self):
         self.start_sensor()
 
     def folder_dialog(self):
@@ -332,6 +345,7 @@ class Experiment(QtWidgets.QWidget):
         self.iv_mes = mes
         self.iv_mes.update.connect(self.update_iv)
         self.iv_mes.save.connect(self.save)
+        self.iv_mes.to_log.connect(self.logger)
 
     def start(self):
         if self.iv_mes:
@@ -347,7 +361,7 @@ class Experiment(QtWidgets.QWidget):
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
-        self.iv_mes.read_keithley_start(repetitions=int(self.reps_edit.text()))
+        self.iv_mes.read_keithley_start()
 
     @QtCore.pyqtSlot(int)
     def update_iv(self, datapoint):
@@ -376,6 +390,11 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Power 3 (W/m2)'] = self.data_sensor[3]
         self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
+
+    @QtCore.pyqtSlot(str)
+    def logger(self, string):
+        self.log_edit.append(string)
+        self.log_edit.moveCursor(QtGui.QTextCursor.End)
 
     @QtCore.pyqtSlot()
     def update_steps(self):
