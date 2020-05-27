@@ -1,7 +1,6 @@
 from PyQt5 import QtWidgets
 
 from user_interfaces.analysis_tab import Analysis
-from user_interfaces.calibration_tab import Calibration
 from user_interfaces.experiment_tab import Experiment
 from user_interfaces.folder_tab import Folders
 
@@ -24,9 +23,6 @@ class TableWidget(QtWidgets.QWidget):
 
         self.tab_folders = Folders(self)
         self.tabs.addTab(self.tab_folders, "Folder")
-
-        self.tab_calibration = Calibration(self)
-        self.tabs.addTab(self.tab_calibration, "Calibration")
 
         # Connect signals
         self.tab_analysis.get_file_paths.connect(self.tab_folders.get_ticked_paths)
