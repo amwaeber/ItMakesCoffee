@@ -33,6 +33,7 @@ class Experiment(QtWidgets.QWidget):
 
         vbox_sensor_col = QtWidgets.QVBoxLayout()
         self.sensors_group_box = QtWidgets.QGroupBox('Sensors')
+        vbox_sensors = QtWidgets.QVBoxLayout()
         grid_sensors = QtWidgets.QGridLayout()
         self.temperature_label = QtWidgets.QLabel("Temperature (C)", self)
         grid_sensors.addWidget(self.temperature_label, 0, 0)
@@ -64,10 +65,9 @@ class Experiment(QtWidgets.QWidget):
         self.diode4_edit.setFixedWidth(60)
         self.diode4_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode4_edit, 4, 1)
-        self.sensors_group_box.setLayout(grid_sensors)
-        vbox_sensor_col.addWidget(self.sensors_group_box)
+        vbox_sensors.addLayout(grid_sensors)
+        vbox_sensors.addStretch(-1)
 
-        self.sens_plot_group_box = QtWidgets.QGroupBox('Sensor Plots')
         hbox_sens_plot = QtWidgets.QHBoxLayout()
         self.temp_canvas = FigureCanvas(Figure(figsize=(2, 2)))
         self.temp_canvas.figure.tight_layout(pad=0.3)
@@ -77,8 +77,9 @@ class Experiment(QtWidgets.QWidget):
         self.power_canvas.figure.tight_layout(pad=0.3)
         self.update_sensor_plt.connect(self.power_canvas.figure.canvas.draw)
         hbox_sens_plot.addWidget(self.power_canvas)
-        self.sens_plot_group_box.setLayout(hbox_sens_plot)
-        vbox_sensor_col.addWidget(self.sens_plot_group_box)
+        vbox_sensors.addLayout(hbox_sens_plot)
+        self.sensors_group_box.setLayout(vbox_sensors)
+        vbox_sensor_col.addWidget(self.sensors_group_box)
 
         self.arduino_group_box = QtWidgets.QGroupBox('Sensor Parameters')
         grid_arduino = QtWidgets.QGridLayout()
@@ -128,18 +129,6 @@ class Experiment(QtWidgets.QWidget):
         vbox_bottom_left = QtWidgets.QVBoxLayout()
         self.source_group_box = QtWidgets.QGroupBox('Source')
         vbox_source = QtWidgets.QVBoxLayout()
-        hbox_sweep = QtWidgets.QHBoxLayout()
-        self.sweep_label = QtWidgets.QLabel("Sweep", self)
-        hbox_sweep.addWidget(self.sweep_label)
-        self.sweep_cb = QtWidgets.QComboBox()
-        self.sweep_cb.setFixedWidth(120)
-        self.sweep_cb.addItem("Linear")
-        self.sweep_cb.addItem("Up-Down")
-        self.sweep_cb.addItem("Random")
-        hbox_sweep.addWidget(self.sweep_cb)
-        hbox_sweep.addStretch(-1)
-        vbox_source.addLayout(hbox_sweep)
-        vbox_source.addStretch(-1)
 
         grid_source = QtWidgets.QGridLayout()
         self.start_label = QtWidgets.QLabel("Start (V)", self)
@@ -244,17 +233,22 @@ class Experiment(QtWidgets.QWidget):
         self.start_button.clicked.connect(self.start)
         self.start_button.setToolTip('Start Measurement')
         vbox_controls.addWidget(self.start_button)
-        self.pause_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'pause.png')), '')
-        self.pause_button.clicked.connect(self.pause)
-        self.pause_button.setToolTip('Pause/Unpause')
-        vbox_controls.addWidget(self.pause_button)
         self.stop_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'stop.png')), '')
         self.stop_button.clicked.connect(self.stop)
         self.stop_button.setToolTip('Stop Measurement')
         vbox_controls.addWidget(self.stop_button)
         vbox_controls.addStretch(-1)
+        self.temp_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'temp.png')), '')
+        self.temp_button.clicked.connect(self.plot_temp)
+        self.temp_button.setToolTip('Plot temperature')
+        vbox_controls.addWidget(self.temp_button)
+        self.power_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'power.png')), '')
+        self.power_button.clicked.connect(self.plot_pow)
+        self.power_button.setToolTip('Plot power')
+        vbox_controls.addWidget(self.power_button)
         self.controls_group_box.setLayout(vbox_controls)
         hbox_bottom.addWidget(self.controls_group_box)
 
@@ -268,6 +262,12 @@ class Experiment(QtWidgets.QWidget):
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
+        self.plot_temperature = False
+        self.plot_power = False
+        self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
+        self.dummy_plot(self.power_canvas.figure, chs=['power'])
+        self.update_sensor_plt.emit()
+
         self.sensor_mes = None
         self.start_sensor()
 
@@ -290,9 +290,13 @@ class Experiment(QtWidgets.QWidget):
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
-        self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
-        self.update_sensor_plt.emit()
+        # Could enable plotting permanently as long as port is not dummy
+        if self.plot_temperature and not self.sensor_mes.port == 'dummy':
+            self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
+            self.update_sensor_plt.emit()
+        if self.plot_power and not self.sensor_mes.port == 'dummy':
+            self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
+            self.update_sensor_plt.emit()
 
     def start_sensor(self):
         if self.sensor_mes:
@@ -313,6 +317,42 @@ class Experiment(QtWidgets.QWidget):
 
     def sensor_port_changed(self):
         self.start_sensor()
+
+    def plot_temp(self):
+        if not self.plot_temperature:
+            self.plot_temperature = True
+        else:
+            self.plot_temperature = False
+            self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
+            self.update_sensor_plt.emit()
+
+    def plot_pow(self):
+        if not self.plot_power:
+            self.plot_power = True
+        else:
+            self.plot_power = False
+            self.dummy_plot(self.power_canvas.figure, chs=['power'])
+            self.update_sensor_plt.emit()
+
+    @staticmethod
+    def dummy_plot(target_fig=None, chs=None):
+        if chs is None:
+            chs = []
+        if target_fig is None:
+            fig = Figure()
+        else:
+            fig = target_fig
+        fig.clear()
+        axis = fig.add_subplot(111)
+        if 'temp' in chs:
+            axis.set_xlabel("Time (s)")
+            axis.set_ylabel("Temperature (C)")
+        if 'power' in chs:
+            axis.set_xlabel("Time (s)")
+            axis.set_ylabel("Illumination (W/m2)")
+        xval, yval = range(100), [0] * 100
+        axis.plot(xval, yval, lw=1.3)
+        return fig
 
     def folder_dialog(self):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
@@ -354,9 +394,6 @@ class Experiment(QtWidgets.QWidget):
     def stop(self):  # TODO: implement iv scan pause
         if self.iv_mes:
             self.iv_mes.close()
-
-    def pause(self):  # TODO: implement iv scan pause
-        pass
 
     @QtCore.pyqtSlot(int)
     def save(self, repetition):

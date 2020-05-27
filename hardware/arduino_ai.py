@@ -19,11 +19,11 @@ class SerialRead(QtCore.QObject):
         self.n_data_points = n_data_points
         self.data_num_bytes = data_num_bytes
         self.n_ai = n_ai
-        self.raw_data = bytearray(self.n_ai * data_num_bytes)
+        self.raw_data = bytearray(self.n_ai * self.data_num_bytes)
         self.data_type = None
-        if data_num_bytes == 2:
+        if self.data_num_bytes == 2:
             self.data_type = 'h'  # 2 byte integer
-        elif data_num_bytes == 4:
+        elif self.data_num_bytes == 4:
             self.data_type = 'f'  # 4 byte float
         self.data = []
         self.times = []

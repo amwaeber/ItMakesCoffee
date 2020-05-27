@@ -1,4 +1,3 @@
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from PyQt5 import QtCore
@@ -74,7 +73,6 @@ class ArduinoSensor(QtCore.QObject):
             chs = []
         if target_fig is None:
             fig = Figure()
-            canvas = FigureCanvas(fig)
         else:
             fig = target_fig
         fig.clear()
@@ -90,7 +88,7 @@ class ArduinoSensor(QtCore.QObject):
             axis.plot(xval, yval, lw=1.3)
         if 'power' in chs:
             axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Diode Readout Voltage (V)")
+            axis.set_ylabel("Illumination (W/m2)")
             for i in [1, 2, 3, 4]:
                 if self.ser is None:
                     xval, yval = range(self.n_data_points), [0] * self.n_data_points
