@@ -12,7 +12,7 @@ from utility.config import paths
 
 class Experiment(QtWidgets.QWidget):
     update_plt = QtCore.pyqtSignal()  # iv figure signal lane
-    update_sensor_plt = QtCore.pyqtSignal(list)  # sensor calibration plot signal lane
+    update_sensor_plt = QtCore.pyqtSignal()  # sensor calibration plot signal lane
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
@@ -280,15 +280,6 @@ class Experiment(QtWidgets.QWidget):
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
-        # self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
-        #                                        baud=int(self.baud_edit.text()),
-        #                                        n_data_points=int(self.datapoints_edit.text()),
-        #                                        data_num_bytes=int(self.databytes_edit.text()),
-        #                                        n_ai=int(self.ais_edit.text()),
-        #                                        timeout=float(self.timeout_edit.text()),
-        #                                        query_period=float(self.query_edit.text()))
-        # self.sensor_register(self.sensor_mes)
-        # self.sensor_mes.update.emit()
         self.sensor_mes = None
         self.start_sensor()
 
@@ -311,13 +302,11 @@ class Experiment(QtWidgets.QWidget):
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        sensor_traces = self.sensor_mes.get_sensor_traces()
-        self.update_sensor_plt.emit(sensor_traces)
+        self.update_sensor_plt.emit()
 
     def start_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
-            # self.sensor_mes.ser.close()
         self.sensor_mes = sensor.ArduinoSensor(port=str(self.sensor_cb.currentText()),
                                                baud=int(self.baud_edit.text()),
                                                n_data_points=int(self.datapoints_edit.text()),
@@ -327,12 +316,10 @@ class Experiment(QtWidgets.QWidget):
                                                query_period=float(self.query_edit.text()))
         self.sensor_register(self.sensor_mes)
         self.sensor_mes.start()
-        # self.sensor_mes.ser.read_serial_start()
 
     def stop_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
-            # self.sensor_mes.ser.close()
 
     def sensor_port_changed(self):
         self.start_sensor()

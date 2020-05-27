@@ -31,7 +31,6 @@ class TableWidget(QtWidgets.QWidget):
         # Connect signals
         self.tab_analysis.get_file_paths.connect(self.tab_folders.get_ticked_paths)
         self.tab_folders.file_paths.connect(self.tab_analysis.set_paths)
-        self.tab_experiment.update_sensor_plt.connect(self.tab_calibration.update)  # TODO: implement calibration plots
 
         # Add tabs to widget
         self.layout.addWidget(self.tabs)

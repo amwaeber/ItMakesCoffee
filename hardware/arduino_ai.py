@@ -69,7 +69,7 @@ class SerialRead(QtCore.QObject):
         else:
             value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=10))
         self.data[plt_number].append(value)    # we get the latest data point and append it to our array
-        return [list(self.times[plt_number]), list(self.data[plt_number])]
+        return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]
 
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
