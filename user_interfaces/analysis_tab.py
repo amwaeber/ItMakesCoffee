@@ -100,7 +100,7 @@ class Analysis(QtWidgets.QWidget):
         hbox_plot_set2 = QtWidgets.QHBoxLayout()
         self.plot_save_folder_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
-        self.plot_save_folder_button.clicked.connect(lambda: self.save_folder_dialog('plot'))
+        self.plot_save_folder_button.clicked.connect(lambda: self.folder_dialog('plot'))
         self.plot_save_folder_button.setToolTip('Choose folder')
         hbox_plot_set2.addWidget(self.plot_save_folder_button)
         self.plot_save_folder_edit = QtWidgets.QLineEdit(self.plot_directory, self)
@@ -138,7 +138,7 @@ class Analysis(QtWidgets.QWidget):
         hbox_stats_set2 = QtWidgets.QHBoxLayout()
         self.stats_save_folder_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
-        self.stats_save_folder_button.clicked.connect(lambda: self.save_folder_dialog('stats'))
+        self.stats_save_folder_button.clicked.connect(lambda: self.folder_dialog('stats'))
         self.stats_save_folder_button.setToolTip('Choose folder')
         hbox_stats_set2.addWidget(self.stats_save_folder_button)
         self.stats_save_folder_edit = QtWidgets.QLineEdit(self.stats_directory, self)
@@ -154,12 +154,48 @@ class Analysis(QtWidgets.QWidget):
         self.stats_settings_group_box.setLayout(vbox_stats_set)
         vbox_right.addWidget(self.stats_settings_group_box)
 
-        vbox_right.addStretch(-1)
+        self.reference_group_box = QtWidgets.QGroupBox('Reference data')
+        vbox_reference = QtWidgets.QVBoxLayout()
+        hbox_reference = QtWidgets.QHBoxLayout()
+        self.reference_folder_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
+        self.reference_folder_button.clicked.connect(lambda: self.folder_dialog('reference'))
+        self.reference_folder_button.setToolTip('Choose reference folder')
+        hbox_reference.addWidget(self.reference_folder_button)
+        hbox_reference.addStretch(-1)
+        vbox_reference.addLayout(hbox_reference)
+        self.reference_tree = QtWidgets.QTreeWidget()
+        self.reference_tree.header().hide()
+        vbox_reference.addWidget(self.reference_tree)
+        self.reference_group_box.setLayout(vbox_reference)
+        vbox_right.addWidget(self.reference_group_box)
 
+        self.analysis_group_box = QtWidgets.QGroupBox('Analysis data')
+        vbox_analysis = QtWidgets.QVBoxLayout()
+        hbox_analysis = QtWidgets.QHBoxLayout()
+        self.analysis_add_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'plus.png')), '')
+        self.analysis_add_button.clicked.connect(self.add_analysis_folders)
+        self.analysis_add_button.setToolTip('Add analysis folder')
+        hbox_analysis.addWidget(self.analysis_add_button)
+        self.analysis_remove_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'minus.png')), '')
+        self.analysis_remove_button.clicked.connect(self.remove_analysis_folders)
+        self.analysis_remove_button.setToolTip('Remove analysis folder')
+        hbox_analysis.addWidget(self.analysis_remove_button)
+        hbox_analysis.addStretch(-1)
+        vbox_analysis.addLayout(hbox_analysis)
+        self.analysis_tree = QtWidgets.QTreeWidget()
+        self.analysis_tree.header().hide()
+        vbox_analysis.addWidget(self.analysis_tree)
+        self.analysis_group_box.setLayout(vbox_analysis)
+        vbox_right.addWidget(self.analysis_group_box)
         hbox_total.addLayout(vbox_right, 3)
         self.setLayout(hbox_total)
 
-    def save_folder_dialog(self, origin):
+        self.update_plot()
+
+    def folder_dialog(self, origin):
         if origin == 'plot':
             self.plot_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
                                                                                  paths['last_save']))
@@ -168,6 +204,14 @@ class Analysis(QtWidgets.QWidget):
             self.stats_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
                                                                                   paths['last_save']))
             self.stats_save_folder_edit.setText(self.stats_directory)
+        elif origin == 'reference':
+            pass  # TODO: Handling of reference folder as in folder tab
+
+    def add_analysis_folders(self):
+        pass
+
+    def remove_analysis_folders(self):
+        pass
 
     def load_selection(self):
         # Load file data for selection from folder tab
@@ -206,7 +250,13 @@ class Analysis(QtWidgets.QWidget):
         self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
 
     def update_plot(self):
-        pass
+        self.plot_canvas.figure.clear()
+        axis = self.plot_canvas.figure.add_subplot(111)
+        axis.set_xlabel(self.xaxis_cb.currentText())
+        axis.set_ylabel(self.yaxis_cb.currentText())
+        xval, yval = range(100), [0] * 100
+        axis.plot(xval, yval, lw=1.3)
+        self.update_plt.emit()
 
     def update_stats(self):
         if self.table_select == 'default':  # TODO: sort table settings
