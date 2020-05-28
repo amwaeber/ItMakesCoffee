@@ -101,6 +101,7 @@ class Keithley(QtCore.QObject):
                         self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
                         self.update.emit(dp)
                         self.is_receiving = True
+                    self.sourcemeter.source_voltage = 0
                 self.save.emit(repetition)
                 self.to_log.emit('<span style=\" color:#1e90ff;\" >Finished curve #%s</span>' % str(repetition + 1))
                 if repetition < self.repetitions - 1:
