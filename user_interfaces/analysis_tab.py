@@ -112,6 +112,11 @@ class Analysis(QtWidgets.QWidget):
         self.plot_save_button.clicked.connect(self.save_plot)
         self.plot_save_button.setToolTip('Save plot')
         hbox_plot_set2.addWidget(self.plot_save_button)
+        self.clipboard_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
+        self.clipboard_button.clicked.connect(self.clipboard)
+        self.clipboard_button.setToolTip('Save plot to clipboard')
+        hbox_plot_set2.addWidget(self.clipboard_button)
         vbox_plot_set.addLayout(hbox_plot_set2)
         self.plot_settings_group_box.setLayout(vbox_plot_set)
         vbox_right.addWidget(self.plot_settings_group_box)
@@ -235,6 +240,10 @@ class Analysis(QtWidgets.QWidget):
     def save_plot(self):
         # save current plot
         pass
+
+    def clipboard(self):
+        pixmap = QtWidgets.QWidget.grab(self.plot_canvas)
+        QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
     @QtCore.pyqtSlot(list, list)
     def set_paths(self, reference_path, selection_path):

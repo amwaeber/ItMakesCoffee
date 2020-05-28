@@ -222,6 +222,11 @@ class Experiment(QtWidgets.QWidget):
         hbox_folder.addWidget(self.folder_edit)
         vbox_measure.addLayout(hbox_folder)
         self.measure_group_box.setLayout(vbox_measure)
+        self.clipboard_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
+        self.clipboard_button.clicked.connect(self.clipboard)
+        self.clipboard_button.setToolTip('Save plot to clipboard')
+        hbox_folder.addWidget(self.clipboard_button)
         vbox_bottom_left.addWidget(self.measure_group_box)
         hbox_bottom.addLayout(vbox_bottom_left)
 
@@ -421,6 +426,10 @@ class Experiment(QtWidgets.QWidget):
         if self.iv_mes:
             self.iv_mes.close()
         self.power_button.setChecked(False)
+
+    def clipboard(self):
+        pixmap = QtWidgets.QWidget.grab(self.iv_canvas)
+        QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
     @QtCore.pyqtSlot(int)
     def save(self, repetition):
