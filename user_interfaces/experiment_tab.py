@@ -388,6 +388,8 @@ class Experiment(QtWidgets.QWidget):
         self.iv_mes.to_log.connect(self.logger)
 
     def start(self):
+        if self.check_iv_parameters() is False:
+            return
         if self.iv_mes:
             self.iv_mes.close()
         self.start_button.setChecked(True)
@@ -444,3 +446,34 @@ class Experiment(QtWidgets.QWidget):
             self.step_edit.setText("%.3f" % steps)
         except (ZeroDivisionError, ValueError):
             pass
+
+    def check_iv_parameters(self):
+        try:
+            int(self.nstep_edit.text())
+            int(self.naverage_edit.text())
+            int(self.reps_edit.text())
+            float(self.rep_delay_edit.text())
+            float(self.delay_edit.text())
+            float(self.start_edit.text())
+            float(self.end_edit.text())
+            float(self.ilimit_edit.text())
+        except (ZeroDivisionError, ValueError):
+            self.warning('Some parameters are not in the right format. Please check before starting measurement.')
+            return False
+        if any([float(self.end_edit.text()) > 0.75,
+                float(self.start_edit.text()) < -0.15,
+                float(self.start_edit.text()) > float(self.end_edit.text()),
+                float(self.delay_edit.text()) < 0.1,
+                float(self.rep_delay_edit.text()) < 0.5,
+                float(self.ilimit_edit.text()) > 0.5,
+                float(self.ilimit_edit.text()) <= 0.,
+                int(self.naverage_edit.text()) < 1,
+                int(self.reps_edit.text()) < 1
+                ]):
+            self.warning('Parameters are out of bounds. Please check before starting the measurement. Keep positive '
+                         'though, at least you didn\'t barbeque the sample :)')
+            return False
+        return True
+
+    def warning(self, string):
+        QtWidgets.QMessageBox.warning(self, 'Warning', string, QtWidgets.QMessageBox.Ok)
