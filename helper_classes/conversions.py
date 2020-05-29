@@ -13,6 +13,8 @@ def voltage_to_temperature_thermocouple(voltage=0):
 
 def voltage_to_temperature(voltage=0, voltage_range=5):  # with 100kOhm thermistor
     serial_resistance = 58
+    if voltage <= 0:
+        return -1
     resistance = voltage * serial_resistance / (voltage_range - voltage)
     temperature = - 21.39443 * np.log(resistance) + 123.62807
     return temperature
