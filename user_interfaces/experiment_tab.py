@@ -373,18 +373,13 @@ class Experiment(QtWidgets.QWidget):
 
     def update_ports(self):
         self.stop_sensor()
-        print('a')
         self.block_sensor = True
         self.sensor_cb.clear()
-        print('b')
         self.sensor_cb.addItem('dummy')
-        print('c')
         for port in ports.get_serial_ports():
             self.sensor_cb.addItem(port)
         self.block_sensor = False
-        print(str(self.sensor_cb.currentText()))
         self.start_sensor()
-        print('e')
 
     def plot_temp(self):
         if not self.plot_temperature:
