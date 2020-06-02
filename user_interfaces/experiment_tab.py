@@ -185,6 +185,7 @@ class Experiment(QtWidgets.QWidget):
         self.source_group_box.setLayout(vbox_source)
         vbox_bottom_left.addWidget(self.source_group_box)
 
+        hbox_port_meas = QtWidgets.QHBoxLayout()
         self.ports_group_box = QtWidgets.QGroupBox('Ports')
         hbox_ports = QtWidgets.QHBoxLayout()
         self.sensor_label = QtWidgets.QLabel("Arduino", self)
@@ -205,10 +206,29 @@ class Experiment(QtWidgets.QWidget):
         hbox_ports.addWidget(self.source_cb)
         hbox_ports.addStretch(-1)
         self.ports_group_box.setLayout(hbox_ports)
-        vbox_bottom_left.addWidget(self.ports_group_box)
+        hbox_port_meas.addWidget(self.ports_group_box)
+
+        self.readout_group_box = QtWidgets.QGroupBox('I-V Readout')
+        hbox_readout = QtWidgets.QHBoxLayout()
+        self.read_volt_label = QtWidgets.QLabel("Voltage (mV)", self)
+        hbox_readout.addWidget(self.read_volt_label)
+        self.read_volt_edit = QtWidgets.QLineEdit('-1', self)
+        self.read_volt_edit.setFixedWidth(60)
+        self.read_volt_edit.setDisabled(True)
+        hbox_readout.addWidget(self.read_volt_edit)
+        self.read_curr_label = QtWidgets.QLabel("Current (mA)", self)
+        hbox_readout.addWidget(self.read_curr_label)
+        self.read_curr_edit = QtWidgets.QLineEdit('-1', self)
+        self.read_curr_edit.setFixedWidth(60)
+        self.read_curr_edit.setDisabled(True)
+        hbox_readout.addWidget(self.read_curr_edit)
+        hbox_readout.addStretch(-1)
+        self.readout_group_box.setLayout(hbox_readout)
+        hbox_port_meas.addWidget(self.readout_group_box)
+        vbox_bottom_left.addLayout(hbox_port_meas)
         vbox_bottom_left.addStretch(-1)
 
-        self.measure_group_box = QtWidgets.QGroupBox('Measure')
+        self.save_group_box = QtWidgets.QGroupBox('Save')
         vbox_measure = QtWidgets.QVBoxLayout()
         hbox_folder = QtWidgets.QHBoxLayout()
         self.folder_button = QtWidgets.QPushButton(
@@ -221,13 +241,13 @@ class Experiment(QtWidgets.QWidget):
         self.folder_edit.setDisabled(True)
         hbox_folder.addWidget(self.folder_edit)
         vbox_measure.addLayout(hbox_folder)
-        self.measure_group_box.setLayout(vbox_measure)
+        self.save_group_box.setLayout(vbox_measure)
         self.clipboard_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
         self.clipboard_button.clicked.connect(self.clipboard)
         self.clipboard_button.setToolTip('Save plot to clipboard')
         hbox_folder.addWidget(self.clipboard_button)
-        vbox_bottom_left.addWidget(self.measure_group_box)
+        vbox_bottom_left.addWidget(self.save_group_box)
         hbox_bottom.addLayout(vbox_bottom_left)
 
         self.controls_group_box = QtWidgets.QGroupBox('Ctrl')
@@ -419,6 +439,8 @@ class Experiment(QtWidgets.QWidget):
             sensor_latest = self.sensor_mes.get_sensor_latest()
             for ai, val in enumerate(sensor_latest):
                 self.data_sensor[ai, datapoint] = val
+            self.read_volt_edit.setText("%02d" % 1e3*self.iv_mes.voltages_set[datapoint])
+            self.read_curr_edit.setText("%02d" % 1e3*self.iv_mes.currents[datapoint])
         self.iv_mes.plot(self.iv_canvas.figure)
         self.update_plt.emit()
 
@@ -472,7 +494,7 @@ class Experiment(QtWidgets.QWidget):
         if any([float(self.end_edit.text()) > 0.75,
                 float(self.start_edit.text()) < -0.15,
                 float(self.start_edit.text()) > float(self.end_edit.text()),
-                float(self.delay_edit.text()) < 0.1,
+                float(self.delay_edit.text()) < 0.01,
                 float(self.rep_delay_edit.text()) < 0.5,
                 float(self.ilimit_edit.text()) > 0.5,
                 float(self.ilimit_edit.text()) <= 0.,
