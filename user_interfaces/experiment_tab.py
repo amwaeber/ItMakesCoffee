@@ -439,8 +439,8 @@ class Experiment(QtWidgets.QWidget):
             sensor_latest = self.sensor_mes.get_sensor_latest()
             for ai, val in enumerate(sensor_latest):
                 self.data_sensor[ai, datapoint] = val
-            self.read_volt_edit.setText("%02d" % 1e3*self.iv_mes.voltages_set[datapoint])
-            self.read_curr_edit.setText("%02d" % 1e3*self.iv_mes.currents[datapoint])
+            self.read_volt_edit.setText("%02f" % (1e3*self.iv_mes.voltages_set[datapoint]))
+            self.read_curr_edit.setText("%02f" % (1e3*self.iv_mes.currents[datapoint]))
         self.iv_mes.plot(self.iv_canvas.figure)
         self.update_plt.emit()
 
