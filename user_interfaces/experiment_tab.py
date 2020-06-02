@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
+import time
 
 import hardware.keithley as keithley
 import hardware.sensor as sensor
@@ -19,6 +20,7 @@ class Experiment(QtWidgets.QWidget):
 
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
+        self.block_sensor = False
 
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
@@ -205,6 +207,11 @@ class Experiment(QtWidgets.QWidget):
         self.source_cb.addItem('GPIB::24')
         hbox_ports.addWidget(self.source_cb)
         hbox_ports.addStretch(-1)
+        self.refresh_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
+        self.refresh_button.clicked.connect(self.update_ports)
+        self.refresh_button.setToolTip('Update Ports')
+        hbox_ports.addWidget(self.refresh_button)
         self.ports_group_box.setLayout(hbox_ports)
         hbox_port_meas.addWidget(self.ports_group_box)
 
@@ -240,13 +247,13 @@ class Experiment(QtWidgets.QWidget):
         self.folder_edit.setMinimumWidth(180)
         self.folder_edit.setDisabled(True)
         hbox_folder.addWidget(self.folder_edit)
-        vbox_measure.addLayout(hbox_folder)
-        self.save_group_box.setLayout(vbox_measure)
         self.clipboard_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
         self.clipboard_button.clicked.connect(self.clipboard)
         self.clipboard_button.setToolTip('Save plot to clipboard')
         hbox_folder.addWidget(self.clipboard_button)
+        vbox_measure.addLayout(hbox_folder)
+        self.save_group_box.setLayout(vbox_measure)
         vbox_bottom_left.addWidget(self.save_group_box)
         hbox_bottom.addLayout(vbox_bottom_left)
 
@@ -358,9 +365,26 @@ class Experiment(QtWidgets.QWidget):
     def stop_sensor(self):
         if self.sensor_mes:
             self.sensor_mes.stop()
+            self.sensor_mes = None
 
     def sensor_port_changed(self):
+        if self.block_sensor is False:  # if combobox update is in progress, sensor_port_changed is not triggered
+            self.start_sensor()
+
+    def update_ports(self):
+        self.stop_sensor()
+        print('a')
+        self.block_sensor = True
+        self.sensor_cb.clear()
+        print('b')
+        self.sensor_cb.addItem('dummy')
+        print('c')
+        for port in ports.get_serial_ports():
+            self.sensor_cb.addItem(port)
+        self.block_sensor = False
+        print(str(self.sensor_cb.currentText()))
         self.start_sensor()
+        print('e')
 
     def plot_temp(self):
         if not self.plot_temperature:

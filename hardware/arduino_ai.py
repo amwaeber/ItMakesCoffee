@@ -77,9 +77,16 @@ class SerialRead(QtCore.QObject):
             if str(self.port) == 'dummy':
                 self.is_receiving = True
             else:
-                self.serialConnection.reset_input_buffer()
-                self.serialConnection.readinto(self.raw_data)
-                self.is_receiving = True
+                try:
+                    self.serialConnection.reset_input_buffer()
+                    self.serialConnection.readinto(self.raw_data)
+                    self.is_receiving = True
+                except serial.serialutil.SerialException:
+                    self.port = 'dummy'
+                    self.is_run = False
+                    self.to_log.emit('<span style=\" color:#ff0000;\" >Lost connection to Arduino. Check connection '
+                                     'and refresh COM ports.</span>')
+
 
     def close(self):
         self.is_run = False
