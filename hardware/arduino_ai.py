@@ -46,6 +46,7 @@ class SerialRead(QtCore.QObject):
             self.to_log.emit('<span style=\" color:#32cd32;\" >Connected to ' + str(self.port) + ' at ' +
                              str(self.baud) + ' BAUD.</span>')
         except serial.serialutil.SerialException:
+            self.port = 'dummy'
             self.to_log.emit('<span style=\" color:#ff0000;\" >Failed to connect with ' + str(self.port) +
                              ' at ' + str(self.baud) + ' BAUD.</span>')
 
@@ -81,12 +82,11 @@ class SerialRead(QtCore.QObject):
                     self.serialConnection.reset_input_buffer()
                     self.serialConnection.readinto(self.raw_data)
                     self.is_receiving = True
-                except serial.serialutil.SerialException:
+                except (AttributeError, serial.serialutil.SerialException):
                     self.port = 'dummy'
                     self.is_run = False
                     self.to_log.emit('<span style=\" color:#ff0000;\" >Lost connection to Arduino. Check connection '
                                      'and refresh COM ports.</span>')
-
 
     def close(self):
         self.is_run = False

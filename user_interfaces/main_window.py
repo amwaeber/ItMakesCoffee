@@ -20,3 +20,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table_widget = TableWidget(self)  # create multiple document interface widget
         self.setCentralWidget(self.table_widget)
         self.showMaximized()
+
+    def closeEvent(self, *args, **kwargs):
+        super(QtWidgets.QMainWindow, self).closeEvent(*args, **kwargs)
+        self.table_widget.tab_experiment.stop_sensor()  # disconnect sensor before shutdown
