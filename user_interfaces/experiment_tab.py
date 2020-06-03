@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
+import pyqtgraph as pg
 import time
 
 import hardware.keithley as keithley
@@ -21,6 +22,10 @@ class Experiment(QtWidgets.QWidget):
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
         self.block_sensor = False
+        self.red_pen = pg.mkPen(color=(255, 0, 0))
+        self.orange_pen = pg.mkPen(color=(255, 140, 0))
+        self.green_pen = pg.mkPen(color=(50, 205, 50))
+        self.blue_pen = pg.mkPen(color=(30, 144, 255))
 
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
@@ -71,14 +76,25 @@ class Experiment(QtWidgets.QWidget):
         vbox_sensors.addStretch(-1)
 
         hbox_sens_plot = QtWidgets.QHBoxLayout()
-        self.temp_canvas = FigureCanvas(Figure(figsize=(2, 2)))
-        self.temp_canvas.figure.tight_layout(pad=0.3)
-        self.update_sensor_plt.connect(self.temp_canvas.figure.canvas.draw)
-        hbox_sens_plot.addWidget(self.temp_canvas)
-        self.power_canvas = FigureCanvas(Figure(figsize=(2, 2)))
-        self.power_canvas.figure.tight_layout(pad=0.3)
-        self.update_sensor_plt.connect(self.power_canvas.figure.canvas.draw)
-        hbox_sens_plot.addWidget(self.power_canvas)
+        self.temp_graph = pg.PlotWidget()
+        self.temp_graph.setBackground('w')
+        self.temp_data_line = self.temp_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
+        hbox_sens_plot.addWidget(self.temp_graph)
+        self.power_graph = pg.PlotWidget()
+        self.power_graph.setBackground('w')
+        self.power_data_line1 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
+        self.power_data_line2 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.red_pen)
+        self.power_data_line3 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.green_pen)
+        self.power_data_line4 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.orange_pen)
+        hbox_sens_plot.addWidget(self.power_graph)
+        # self.temp_canvas = FigureCanvas(Figure(figsize=(2, 2)))
+        # self.temp_canvas.figure.tight_layout(pad=0.3)
+        # self.update_sensor_plt.connect(self.temp_canvas.figure.canvas.draw)
+        # hbox_sens_plot.addWidget(self.temp_canvas)
+        # self.power_canvas = FigureCanvas(Figure(figsize=(2, 2)))
+        # self.power_canvas.figure.tight_layout(pad=0.3)
+        # self.update_sensor_plt.connect(self.power_canvas.figure.canvas.draw)
+        # hbox_sens_plot.addWidget(self.power_canvas)
         vbox_sensors.addLayout(hbox_sens_plot)
         self.sensors_group_box.setLayout(vbox_sensors)
         vbox_sensor_col.addWidget(self.sensors_group_box)
@@ -351,9 +367,9 @@ class Experiment(QtWidgets.QWidget):
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.plot_temperature = False
         self.plot_power = False
-        self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
-        self.dummy_plot(self.power_canvas.figure, chs=['power'])
-        self.update_sensor_plt.emit()
+        # self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
+        # self.dummy_plot(self.power_canvas.figure, chs=['power'])
+        # self.update_sensor_plt.emit()
 
         self.sensor_mes = None
         self.start_sensor()
@@ -379,10 +395,10 @@ class Experiment(QtWidgets.QWidget):
         self.diode4_edit.setText("%02d" % d4val)
         # Could enable plotting permanently as long as port is not dummy
         if self.plot_temperature and not self.sensor_mes.port == 'dummy':
-            self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
+            # self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
             self.update_sensor_plt.emit()
         if self.plot_power and not self.sensor_mes.port == 'dummy':
-            self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
+            # self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
             self.update_sensor_plt.emit()
 
     def start_sensor(self):
@@ -424,8 +440,9 @@ class Experiment(QtWidgets.QWidget):
         else:
             self.plot_temperature = False
             self.temp_button.setChecked(False)
-            self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
-            self.update_sensor_plt.emit()
+            self.temp_data_line.setData(list(range(100)), [0] * 100)
+            # self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
+            # self.update_sensor_plt.emit()
 
     def plot_pow(self):
         if not self.plot_power:
@@ -434,8 +451,12 @@ class Experiment(QtWidgets.QWidget):
         else:
             self.plot_power = False
             self.power_button.setChecked(False)
-            self.dummy_plot(self.power_canvas.figure, chs=['power'])
-            self.update_sensor_plt.emit()
+            self.power_data_line1.setData(list(range(100)), [0] * 100)
+            self.power_data_line2.setData(list(range(100)), [0] * 100)
+            self.power_data_line3.setData(list(range(100)), [0] * 100)
+            self.power_data_line4.setData(list(range(100)), [0] * 100)
+            # self.dummy_plot(self.power_canvas.figure, chs=['power'])
+            # self.update_sensor_plt.emit()
 
     @staticmethod
     def dummy_plot(target_fig=None, chs=None):
