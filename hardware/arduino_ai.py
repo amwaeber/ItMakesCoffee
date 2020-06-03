@@ -27,6 +27,7 @@ class SerialRead(QtCore.QObject):
             self.data_type = 'f'  # 4 byte float
         self.data = []
         self.times = []
+        self.init_time = time.time()
         self.private_data = None
         for i in range(self.n_ai):  # give an array for each type of data and store them in a list
             self.data.append(collections.deque([0] * self.n_data_points, maxlen=self.n_data_points))
@@ -59,7 +60,7 @@ class SerialRead(QtCore.QObject):
                 time.sleep(0.1)
 
     def get_serial_data(self, plt_number):
-        self.times[plt_number].append(time.time())
+        self.times[plt_number].append(time.time() - self.init_time)
         self.private_data = copy.deepcopy(
             self.raw_data)  # so that the 5 values in our plots will be synchronized to the same sample time
         data = self.private_data[(plt_number * self.data_num_bytes):(self.data_num_bytes +
