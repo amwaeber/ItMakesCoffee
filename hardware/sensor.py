@@ -1,6 +1,7 @@
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from PyQt5 import QtCore
+import pyqtgraph as pg
 import threading
 import time
 
@@ -59,6 +60,27 @@ class ArduinoSensor(QtCore.QObject):
     @QtCore.pyqtSlot(str)
     def log_pipeline(self, string):
         self.to_log.emit(string)
+
+    def line_plot(self, target_line=None, channel=None):
+        if target_line is None:
+            graph = pg.PlotWidget()
+            target_line = graph.plot()
+        if self.ser is None:
+            xval, yval = list(range(self.n_data_points)), [0] * self.n_data_points
+        elif channel == 'temp':
+            xval, yval, _ = self.ser.get_serial_data(0)
+            yval = yval * 100
+        elif channel == 'power1':
+            xval, yval, _ = self.ser.get_serial_data(1)
+        elif channel == 'power2':
+            xval, yval, _ = self.ser.get_serial_data(2)
+        elif channel == 'power3':
+            xval, yval, _ = self.ser.get_serial_data(3)
+        elif channel == 'power4':
+            xval, yval, _ = self.ser.get_serial_data(4)
+        else:
+            xval, yval = list(range(self.n_data_points)), [0] * self.n_data_points
+        target_line.setData(xval, yval)
 
     def plot(self, target_fig=None, fname=None, chs=None):
         """

@@ -4,7 +4,6 @@ import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 import pyqtgraph as pg
-import time
 
 import hardware.keithley as keithley
 import hardware.sensor as sensor
@@ -395,11 +394,16 @@ class Experiment(QtWidgets.QWidget):
         self.diode4_edit.setText("%02d" % d4val)
         # Could enable plotting permanently as long as port is not dummy
         if self.plot_temperature and not self.sensor_mes.port == 'dummy':
+            self.sensor_mes.line_plot(self.temp_data_line, channel='temp')
             # self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
-            self.update_sensor_plt.emit()
+            # self.update_sensor_plt.emit()
         if self.plot_power and not self.sensor_mes.port == 'dummy':
+            self.sensor_mes.line_plot(self.power_data_line1, channel='power1')
+            self.sensor_mes.line_plot(self.power_data_line2, channel='power2')
+            self.sensor_mes.line_plot(self.power_data_line3, channel='power3')
+            self.sensor_mes.line_plot(self.power_data_line4, channel='power4')
             # self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
-            self.update_sensor_plt.emit()
+            # self.update_sensor_plt.emit()
 
     def start_sensor(self):
         if self.sensor_mes:
