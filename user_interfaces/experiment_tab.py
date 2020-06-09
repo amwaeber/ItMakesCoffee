@@ -495,7 +495,7 @@ class Experiment(QtWidgets.QWidget):
     def stop(self):  # TODO: implement iv scan pause
         if self.iv_mes:
             self.iv_mes.close()
-        self.power_button.setChecked(False)
+        self.start_button.setChecked(False)
 
     def clipboard(self):
         pixmap = QtWidgets.QWidget.grab(self.iv_graph)
@@ -511,7 +511,7 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
         if repetition == (self.iv_mes.repetitions - 1):
-            self.power_button.setChecked(False)
+            self.start_button.setChecked(False)
 
     @QtCore.pyqtSlot(str)
     def logger(self, string):
