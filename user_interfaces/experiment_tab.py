@@ -462,11 +462,14 @@ class Experiment(QtWidgets.QWidget):
     #     pass
 
     def start(self):
+        if not self.start_button.isChecked():
+            self.logger('<span style=\" color:#ff0000;\" >Experiment running. Stop current experiment first.</span>')
+            self.start_button.setChecked(True)
+            return
         if self.check_iv_parameters() is False:
             return
         if self.iv_mes:
             self.iv_mes.close()
-        self.start_button.setChecked(True)
         self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
                                         n_data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
