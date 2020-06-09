@@ -147,7 +147,7 @@ class Experiment(QtWidgets.QWidget):
         hbox_sens_ctrl.addStretch(-1)
         self.sensor_clipboard_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
-        self.sensor_clipboard_button.setIconSize(QtCore.QSize(40, 40))
+        # self.sensor_clipboard_button.setIconSize(QtCore.QSize(40, 40))
         self.sensor_clipboard_button.clicked.connect(lambda: self.clipboard('sensor'))
         self.sensor_clipboard_button.setToolTip('Save plot to clipboard')
         hbox_sens_ctrl.addWidget(self.sensor_clipboard_button)
@@ -202,8 +202,8 @@ class Experiment(QtWidgets.QWidget):
 
         hbox_bottom = QtWidgets.QHBoxLayout()
         vbox_bottom_left = QtWidgets.QVBoxLayout()
-        self.source_group_box = QtWidgets.QGroupBox('Source')
-        vbox_source = QtWidgets.QVBoxLayout()
+        self.source_group_box = QtWidgets.QGroupBox('I-V Measure')
+        hbox_source = QtWidgets.QHBoxLayout()
 
         grid_source = QtWidgets.QGridLayout()
         self.start_label = QtWidgets.QLabel("Start (V)", self)
@@ -256,10 +256,29 @@ class Experiment(QtWidgets.QWidget):
         self.naverage_edit = QtWidgets.QLineEdit('5', self)  # adjust to update with NSteps
         self.naverage_edit.setFixedWidth(80)
         grid_source.addWidget(self.naverage_edit, 1, 9)
-        vbox_source.addLayout(grid_source)
-        self.source_group_box.setLayout(vbox_source)
+        hbox_source.addLayout(grid_source)
+        hbox_source.addStretch(-1)
+
+        vbox_source_ctrl = QtWidgets.QVBoxLayout()
+        vbox_source_ctrl.addStretch(-1)
+        start_icon = QtGui.QIcon()
+        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'iv_off.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'iv_on.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.start_button = QtWidgets.QPushButton(QtGui.QIcon(start_icon), '')
+        self.start_button.setIconSize(QtCore.QSize(48, 48))
+        self.start_button.setCheckable(True)
+        self.start_button.clicked.connect(self.start)
+        self.start_button.setToolTip('Start Measurement')
+        vbox_source_ctrl.addWidget(self.start_button)
+        vbox_source_ctrl.addStretch(-1)
+        hbox_source.addLayout(vbox_source_ctrl)
+        self.source_group_box.setLayout(hbox_source)
         vbox_bottom_left.addWidget(self.source_group_box)
 
+        hbox_port_meas_folder = QtWidgets.QHBoxLayout()
+        vbox_port_meas_folder = QtWidgets.QVBoxLayout()
         hbox_port_meas = QtWidgets.QHBoxLayout()
         self.ports_group_box = QtWidgets.QGroupBox('Ports')
         hbox_ports = QtWidgets.QHBoxLayout()
@@ -282,6 +301,7 @@ class Experiment(QtWidgets.QWidget):
         hbox_ports.addStretch(-1)
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
+        # self.refresh_button.setIconSize(QtCore.QSize(20, 20))
         self.refresh_button.clicked.connect(self.update_ports)
         self.refresh_button.setToolTip('Update Ports')
         hbox_ports.addWidget(self.refresh_button)
@@ -305,8 +325,7 @@ class Experiment(QtWidgets.QWidget):
         hbox_readout.addStretch(-1)
         self.readout_group_box.setLayout(hbox_readout)
         hbox_port_meas.addWidget(self.readout_group_box)
-        vbox_bottom_left.addLayout(hbox_port_meas)
-        vbox_bottom_left.addStretch(-1)
+        vbox_port_meas_folder.addLayout(hbox_port_meas)
 
         self.save_group_box = QtWidgets.QGroupBox('Save')
         vbox_measure = QtWidgets.QVBoxLayout()
@@ -327,40 +346,26 @@ class Experiment(QtWidgets.QWidget):
         hbox_folder.addWidget(self.clipboard_button)
         vbox_measure.addLayout(hbox_folder)
         self.save_group_box.setLayout(vbox_measure)
-        vbox_bottom_left.addWidget(self.save_group_box)
-        hbox_bottom.addLayout(vbox_bottom_left)
+        vbox_port_meas_folder.addWidget(self.save_group_box)
+        hbox_port_meas_folder.addLayout(vbox_port_meas_folder)
+        hbox_port_meas_folder.addStretch(-1)
 
-        self.controls_group_box = QtWidgets.QGroupBox('Ctrl')
-        vbox_controls = QtWidgets.QVBoxLayout()
-        vbox_controls.addStretch(-1)
-        start_icon = QtGui.QIcon()
-        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'start.png')),
-                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        start_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'start_on.png')),
-                             QtGui.QIcon.Normal, QtGui.QIcon.On)
-        self.start_button = QtWidgets.QPushButton(QtGui.QIcon(start_icon), '')
-        self.start_button.setIconSize(QtCore.QSize(40, 40))
-        self.start_button.setCheckable(True)
-        self.start_button.clicked.connect(self.start)
-        self.start_button.setToolTip('Start Measurement')
-        vbox_controls.addWidget(self.start_button)
-        self.stop_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'stop.png')), '')
-        self.stop_button.setIconSize(QtCore.QSize(40, 40))
-        self.stop_button.clicked.connect(self.stop)
-        self.stop_button.setToolTip('Stop Measurement')
-        vbox_controls.addWidget(self.stop_button)
-        vbox_controls.addStretch(-1)
-        self.controls_group_box.setLayout(vbox_controls)
-        hbox_bottom.addWidget(self.controls_group_box)
+        self.logo_label = QtWidgets.QLabel(self)
+        logo_pixmap = QtGui.QPixmap(os.path.join(paths['icons'], 'lambda.png'))
+        self.logo_label.setPixmap(logo_pixmap)
+        hbox_port_meas_folder.addWidget(self.logo_label)
+        hbox_port_meas_folder.addStretch(-1)
+        vbox_bottom_left.addLayout(hbox_port_meas_folder)
+        vbox_bottom_left.addStretch(-1)
+        hbox_bottom.addLayout(vbox_bottom_left, 5)
 
         self.log_group_box = QtWidgets.QGroupBox('Log')
         grid_log = QtWidgets.QGridLayout()
         self.log_edit = QtWidgets.QTextEdit("Ready to measure...\n", self)
         grid_log.addWidget(self.log_edit, 0, 0)
         self.log_group_box.setLayout(grid_log)
-        hbox_bottom.addWidget(self.log_group_box)
-        vbox_total.addLayout(hbox_bottom, 1)
+        hbox_bottom.addWidget(self.log_group_box, 3)
+        vbox_total.addLayout(hbox_bottom, 2)
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
@@ -474,9 +479,11 @@ class Experiment(QtWidgets.QWidget):
 
     def start(self):
         if not self.start_button.isChecked():
-            self.logger('<span style=\" color:#ff0000;\" >Experiment running. Stop current experiment first.</span>')
-            self.start_button.setChecked(True)
+            self.stop()
             return
+            # self.logger('<span style=\" color:#ff0000;\" >Experiment running. Stop current experiment first.</span>')
+            # self.start_button.setChecked(True)
+            # return
         if self.check_iv_parameters() is False:
             return
         if self.iv_mes:
