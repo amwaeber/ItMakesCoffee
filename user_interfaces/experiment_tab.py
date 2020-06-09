@@ -43,7 +43,7 @@ class Experiment(QtWidgets.QWidget):
         hbox_top.addWidget(self.iv_group_box, 5)
 
         vbox_sensor_col = QtWidgets.QVBoxLayout()
-        self.sensors_group_box = QtWidgets.QGroupBox('Sensors')
+        self.sensors_group_box = QtWidgets.QGroupBox('Sensor Readout')
         vbox_sensors = QtWidgets.QVBoxLayout()
         grid_sensors = QtWidgets.QGridLayout()
         self.temperature_label = QtWidgets.QLabel("Temperature (C)", self)
@@ -77,32 +77,36 @@ class Experiment(QtWidgets.QWidget):
         self.diode4_edit.setDisabled(True)
         grid_sensors.addWidget(self.diode4_edit, 2, 3)
         vbox_sensors.addLayout(grid_sensors)
-        vbox_sensors.addStretch(-1)
-
-        hbox_sens_plot = QtWidgets.QHBoxLayout()
-        self.temp_graph = pg.PlotWidget()
-        self.temp_graph.setTitle('Temperature (C)', size='14')
-        self.temp_data_line = self.temp_graph.plot(pen=self.blue_pen)
-        hbox_sens_plot.addWidget(self.temp_graph)
-        self.power_graph = pg.PlotWidget()
-        self.power_graph.setTitle('Irradiance (W/m2)', size='14')
-        self.power_data_line1 = self.power_graph.plot(pen=self.blue_pen)
-        self.power_data_line2 = self.power_graph.plot(pen=self.red_pen)
-        self.power_data_line3 = self.power_graph.plot(pen=self.green_pen)
-        self.power_data_line4 = self.power_graph.plot(pen=self.orange_pen)
-        hbox_sens_plot.addWidget(self.power_graph)
-        vbox_sensors.addLayout(hbox_sens_plot)
         self.sensors_group_box.setLayout(vbox_sensors)
         vbox_sensor_col.addWidget(self.sensors_group_box)
 
+        hbox_sens_plot_setup = QtWidgets.QHBoxLayout()
+        self.sens_plot_group_box = QtWidgets.QGroupBox('Sensor Plots')
+        hbox_sens_plot = QtWidgets.QHBoxLayout()
+        self.sensor_graph = pg.PlotWidget()
+        self.sensor_graph.plotItem.getAxis('left').setPen(self.black_pen)
+        self.sensor_graph.plotItem.getAxis('bottom').setPen(self.black_pen)
+        self.sensor_graph.setTitle('Sensor Readout')
+        self.sensor_graph.setLabel('left', '')
+        self.sensor_graph.setLabel('bottom', 'Time (s)')
+        self.temp_data_line = self.sensor_graph.plot(pen=self.blue_pen)
+        self.power_data_line1 = self.sensor_graph.plot(pen=self.blue_pen)
+        self.power_data_line2 = self.sensor_graph.plot(pen=self.red_pen)
+        self.power_data_line3 = self.sensor_graph.plot(pen=self.green_pen)
+        self.power_data_line4 = self.sensor_graph.plot(pen=self.orange_pen)
+        hbox_sens_plot.addWidget(self.sensor_graph)
+        self.sens_plot_group_box.setLayout(hbox_sens_plot)
+        hbox_sens_plot_setup.addWidget(self.sens_plot_group_box)
+
+        vbox_sensor_meas = QtWidgets.QVBoxLayout()
         self.sensor_meas_group_box = QtWidgets.QGroupBox('Sensor Measure')
         grid_sensor_meas = QtWidgets.QGridLayout()
         self.sensor_plot_label = QtWidgets.QLabel("Plot", self)
         grid_sensor_meas.addWidget(self.sensor_plot_label, 0, 0)
         self.sensor_plot_cb = QtWidgets.QComboBox()
         self.sensor_plot_cb.setFixedWidth(120)
-        self.sensor_plot_cb.addItem('Temperature')
-        self.sensor_plot_cb.addItem('Irradiance')
+        self.sensor_plot_cb.addItem('Continuous')
+        self.sensor_plot_cb.addItem('Fixed')
         grid_sensor_meas.addWidget(self.sensor_plot_cb, 0, 1)
         self.sensor_time_label = QtWidgets.QLabel("Time (s)", self)
         grid_sensor_meas.addWidget(self.sensor_time_label, 1, 0)
@@ -110,12 +114,47 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_time_edit.setFixedWidth(80)
         grid_sensor_meas.addWidget(self.sensor_time_edit, 1, 1)
         self.sensor_avg_label = QtWidgets.QLabel("# Averages", self)
-        grid_sensor_meas.addWidget(self.sensor_avg_label, 1, 2)
+        grid_sensor_meas.addWidget(self.sensor_avg_label, 2, 0)
         self.sensor_avg_edit = QtWidgets.QLineEdit('1', self)
         self.sensor_avg_edit.setFixedWidth(80)
-        grid_sensor_meas.addWidget(self.sensor_avg_edit, 1, 3)
-        self.sensor_meas_group_box.setLayout(grid_sensor_meas)
-        vbox_sensor_col.addWidget(self.sensor_meas_group_box)
+        grid_sensor_meas.addWidget(self.sensor_avg_edit, 2, 1)
+        vbox_sensor_meas.addLayout(grid_sensor_meas)
+        vbox_sensor_meas.addStretch(-1)
+
+        hbox_sens_ctrl = QtWidgets.QHBoxLayout()
+        temp_icon = QtGui.QIcon()
+        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_off.png')),
+                            QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_on.png')),
+                            QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.temp_button = QtWidgets.QPushButton(QtGui.QIcon(temp_icon), '')
+        self.temp_button.setIconSize(QtCore.QSize(40, 40))
+        self.temp_button.setCheckable(True)
+        self.temp_button.clicked.connect(self.plot_temp)
+        self.temp_button.setToolTip('Plot temperature')
+        hbox_sens_ctrl.addWidget(self.temp_button)
+        power_icon = QtGui.QIcon()
+        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_off.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_on.png')),
+                             QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.power_button = QtWidgets.QPushButton(QtGui.QIcon(power_icon), '')
+        self.power_button.setIconSize(QtCore.QSize(40, 40))
+        self.power_button.setCheckable(True)
+        self.power_button.clicked.connect(self.plot_pow)
+        self.power_button.setToolTip('Plot power')
+        hbox_sens_ctrl.addWidget(self.power_button)
+        hbox_sens_ctrl.addStretch(-1)
+        self.sensor_clipboard_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
+        self.sensor_clipboard_button.setIconSize(QtCore.QSize(40, 40))
+        self.sensor_clipboard_button.clicked.connect(lambda: self.clipboard('sensor'))
+        self.sensor_clipboard_button.setToolTip('Save plot to clipboard')
+        hbox_sens_ctrl.addWidget(self.sensor_clipboard_button)
+        vbox_sensor_meas.addLayout(hbox_sens_ctrl)
+        self.sensor_meas_group_box.setLayout(vbox_sensor_meas)
+        hbox_sens_plot_setup.addWidget(self.sensor_meas_group_box)
+        vbox_sensor_col.addLayout(hbox_sens_plot_setup)
 
         self.arduino_group_box = QtWidgets.QGroupBox('Sensor Parameters')
         grid_arduino = QtWidgets.QGridLayout()
@@ -283,7 +322,7 @@ class Experiment(QtWidgets.QWidget):
         hbox_folder.addWidget(self.folder_edit)
         self.clipboard_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
-        self.clipboard_button.clicked.connect(self.clipboard)
+        self.clipboard_button.clicked.connect(lambda: self.clipboard('iv'))
         self.clipboard_button.setToolTip('Save plot to clipboard')
         hbox_folder.addWidget(self.clipboard_button)
         vbox_measure.addLayout(hbox_folder)
@@ -312,28 +351,6 @@ class Experiment(QtWidgets.QWidget):
         self.stop_button.setToolTip('Stop Measurement')
         vbox_controls.addWidget(self.stop_button)
         vbox_controls.addStretch(-1)
-        temp_icon = QtGui.QIcon()
-        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_off.png')),
-                            QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        temp_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'temp_on.png')),
-                            QtGui.QIcon.Normal, QtGui.QIcon.On)
-        self.temp_button = QtWidgets.QPushButton(QtGui.QIcon(temp_icon), '')
-        self.temp_button.setIconSize(QtCore.QSize(40, 40))
-        self.temp_button.setCheckable(True)
-        self.temp_button.clicked.connect(self.plot_temp)
-        self.temp_button.setToolTip('Plot temperature')
-        vbox_controls.addWidget(self.temp_button)
-        power_icon = QtGui.QIcon()
-        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_off.png')),
-                             QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        power_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'power_on.png')),
-                             QtGui.QIcon.Normal, QtGui.QIcon.On)
-        self.power_button = QtWidgets.QPushButton(QtGui.QIcon(power_icon), '')
-        self.power_button.setIconSize(QtCore.QSize(40, 40))
-        self.power_button.setCheckable(True)
-        self.power_button.clicked.connect(self.plot_pow)
-        self.power_button.setToolTip('Plot power')
-        vbox_controls.addWidget(self.power_button)
         self.controls_group_box.setLayout(vbox_controls)
         hbox_bottom.addWidget(self.controls_group_box)
 
@@ -414,25 +431,36 @@ class Experiment(QtWidgets.QWidget):
         self.start_sensor()
 
     def plot_temp(self):
-        if not self.plot_temperature:
-            self.plot_temperature = True
-            self.temp_button.setChecked(True)
-        else:
-            self.plot_temperature = False
-            self.temp_button.setChecked(False)
-            self.temp_data_line.setData([], [])
-
-    def plot_pow(self):
-        if not self.plot_power:
-            self.plot_power = True
-            self.power_button.setChecked(True)
-        else:
+        if self.plot_power:
             self.plot_power = False
             self.power_button.setChecked(False)
             self.power_data_line1.setData([], [])
             self.power_data_line2.setData([], [])
             self.power_data_line3.setData([], [])
             self.power_data_line4.setData([], [])
+        if not self.plot_temperature:
+            self.plot_temperature = True
+            self.sensor_graph.setLabel('left', 'Temperature (C)')
+        else:
+            self.plot_temperature = False
+            self.temp_data_line.setData([], [])
+            self.sensor_graph.setLabel('left', '')
+
+    def plot_pow(self):
+        if self.plot_temperature:
+            self.plot_temperature = False
+            self.temp_button.setChecked(False)
+            self.temp_data_line.setData([], [])
+        if not self.plot_power:
+            self.plot_power = True
+            self.sensor_graph.setLabel('left', 'Irradiation (W/m2)')
+        else:
+            self.plot_power = False
+            self.power_data_line1.setData([], [])
+            self.power_data_line2.setData([], [])
+            self.power_data_line3.setData([], [])
+            self.power_data_line4.setData([], [])
+            self.sensor_graph.setLabel('left', '')
 
     def folder_dialog(self):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
@@ -483,8 +511,13 @@ class Experiment(QtWidgets.QWidget):
             self.iv_mes.close()
         self.start_button.setChecked(False)
 
-    def clipboard(self):
-        pixmap = QtWidgets.QWidget.grab(self.iv_graph)
+    def clipboard(self, plot):
+        if plot == 'iv':
+            pixmap = QtWidgets.QWidget.grab(self.iv_graph)
+        elif plot == 'sensor':
+            pixmap = QtWidgets.QWidget.grab(self.sensor_graph)
+        else:
+            return
         QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
     @QtCore.pyqtSlot(int)
