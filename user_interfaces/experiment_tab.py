@@ -9,6 +9,10 @@ from utility import ports
 from utility.config import paths
 
 
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
+
+
 class Experiment(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
@@ -17,17 +21,19 @@ class Experiment(QtWidgets.QWidget):
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
         self.block_sensor = False
-        self.red_pen = pg.mkPen(color=(255, 0, 0))
-        self.orange_pen = pg.mkPen(color=(255, 140, 0))
-        self.green_pen = pg.mkPen(color=(50, 205, 50))
-        self.blue_pen = pg.mkPen(color=(30, 144, 255))
+        self.red_pen = pg.mkPen(color=(255, 0, 0), width=2)
+        self.orange_pen = pg.mkPen(color=(255, 140, 0), width=2)
+        self.green_pen = pg.mkPen(color=(50, 205, 50), width=2)
+        self.blue_pen = pg.mkPen(color=(30, 144, 255), width=2)
+        self.black_pen = pg.mkPen(color=(0, 0, 0), width=2)
 
         vbox_total = QtWidgets.QVBoxLayout()
         hbox_top = QtWidgets.QHBoxLayout()
         self.iv_group_box = QtWidgets.QGroupBox('I-V Curve')
         vbox_iv = QtWidgets.QVBoxLayout()
         self.iv_graph = pg.PlotWidget()
-        self.iv_graph.setBackground('w')
+        self.iv_graph.plotItem.getAxis('left').setPen(self.black_pen)
+        self.iv_graph.plotItem.getAxis('bottom').setPen(self.black_pen)
         self.iv_graph.setTitle('I-V Curve')
         self.iv_graph.setLabel('left', 'Current (A)')
         self.iv_graph.setLabel('bottom', 'Voltage (V)')
@@ -75,11 +81,11 @@ class Experiment(QtWidgets.QWidget):
 
         hbox_sens_plot = QtWidgets.QHBoxLayout()
         self.temp_graph = pg.PlotWidget()
-        self.temp_graph.setBackground('w')
+        self.temp_graph.setTitle('Temperature (C)', size='14')
         self.temp_data_line = self.temp_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
         hbox_sens_plot.addWidget(self.temp_graph)
         self.power_graph = pg.PlotWidget()
-        self.power_graph.setBackground('w')
+        self.power_graph.setTitle('Irradiance (W/m2)', size='14')
         self.power_data_line1 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
         self.power_data_line2 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.red_pen)
         self.power_data_line3 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.green_pen)
@@ -485,7 +491,6 @@ class Experiment(QtWidgets.QWidget):
             self.read_volt_edit.setText("%0.1f" % (1e3*self.iv_mes.voltages_set[datapoint]))
             self.read_curr_edit.setText("%0.2f" % (1e3*self.iv_mes.currents[datapoint]))
         self.iv_mes.line_plot(self.iv_data_line)
-        self.update_plt.emit()
 
     def stop(self):  # TODO: implement iv scan pause
         if self.iv_mes:
