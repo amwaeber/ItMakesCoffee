@@ -147,7 +147,6 @@ class Experiment(QtWidgets.QWidget):
         hbox_sens_ctrl.addStretch(-1)
         self.sensor_clipboard_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'clipboard.png')), '')
-        # self.sensor_clipboard_button.setIconSize(QtCore.QSize(40, 40))
         self.sensor_clipboard_button.clicked.connect(lambda: self.clipboard('sensor'))
         self.sensor_clipboard_button.setToolTip('Save plot to clipboard')
         hbox_sens_ctrl.addWidget(self.sensor_clipboard_button)
@@ -301,7 +300,6 @@ class Experiment(QtWidgets.QWidget):
         hbox_ports.addStretch(-1)
         self.refresh_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
-        # self.refresh_button.setIconSize(QtCore.QSize(20, 20))
         self.refresh_button.clicked.connect(self.update_ports)
         self.refresh_button.setToolTip('Update Ports')
         hbox_ports.addWidget(self.refresh_button)
