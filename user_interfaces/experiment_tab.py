@@ -1,5 +1,3 @@
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -12,8 +10,6 @@ from utility.config import paths
 
 
 class Experiment(QtWidgets.QWidget):
-    update_plt = QtCore.pyqtSignal()  # iv figure signal lane
-    update_sensor_plt = QtCore.pyqtSignal()  # sensor calibration plot signal lane
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
@@ -30,10 +26,13 @@ class Experiment(QtWidgets.QWidget):
         hbox_top = QtWidgets.QHBoxLayout()
         self.iv_group_box = QtWidgets.QGroupBox('I-V Curve')
         vbox_iv = QtWidgets.QVBoxLayout()
-        self.iv_canvas = FigureCanvas(Figure(figsize=(5, 3)))
-        self.iv_canvas.figure.tight_layout(pad=0.3)
-        self.update_plt.connect(self.iv_canvas.figure.canvas.draw)
-        vbox_iv.addWidget(self.iv_canvas)
+        self.iv_graph = pg.PlotWidget()
+        self.iv_graph.setBackground('w')
+        self.iv_graph.setTitle('I-V Curve')
+        self.iv_graph.setLabel('left', 'Current (A)')
+        self.iv_graph.setLabel('bottom', 'Voltage (V)')
+        self.iv_data_line = self.iv_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
+        vbox_iv.addWidget(self.iv_graph)
         self.iv_group_box.setLayout(vbox_iv)
         hbox_top.addWidget(self.iv_group_box, 5)
 
@@ -86,14 +85,6 @@ class Experiment(QtWidgets.QWidget):
         self.power_data_line3 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.green_pen)
         self.power_data_line4 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.orange_pen)
         hbox_sens_plot.addWidget(self.power_graph)
-        # self.temp_canvas = FigureCanvas(Figure(figsize=(2, 2)))
-        # self.temp_canvas.figure.tight_layout(pad=0.3)
-        # self.update_sensor_plt.connect(self.temp_canvas.figure.canvas.draw)
-        # hbox_sens_plot.addWidget(self.temp_canvas)
-        # self.power_canvas = FigureCanvas(Figure(figsize=(2, 2)))
-        # self.power_canvas.figure.tight_layout(pad=0.3)
-        # self.update_sensor_plt.connect(self.power_canvas.figure.canvas.draw)
-        # hbox_sens_plot.addWidget(self.power_canvas)
         vbox_sensors.addLayout(hbox_sens_plot)
         self.sensors_group_box.setLayout(vbox_sensors)
         vbox_sensor_col.addWidget(self.sensors_group_box)
@@ -366,9 +357,6 @@ class Experiment(QtWidgets.QWidget):
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.plot_temperature = False
         self.plot_power = False
-        # self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
-        # self.dummy_plot(self.power_canvas.figure, chs=['power'])
-        # self.update_sensor_plt.emit()
 
         self.sensor_mes = None
         self.start_sensor()
@@ -395,15 +383,11 @@ class Experiment(QtWidgets.QWidget):
         # Could enable plotting permanently as long as port is not dummy
         if self.plot_temperature and not self.sensor_mes.port == 'dummy':
             self.sensor_mes.line_plot(self.temp_data_line, channel='temp')
-            # self.sensor_mes.plot(self.temp_canvas.figure, chs=['temp'])
-            # self.update_sensor_plt.emit()
         if self.plot_power and not self.sensor_mes.port == 'dummy':
             self.sensor_mes.line_plot(self.power_data_line1, channel='power1')
             self.sensor_mes.line_plot(self.power_data_line2, channel='power2')
             self.sensor_mes.line_plot(self.power_data_line3, channel='power3')
             self.sensor_mes.line_plot(self.power_data_line4, channel='power4')
-            # self.sensor_mes.plot(self.power_canvas.figure, chs=['power'])
-            # self.update_sensor_plt.emit()
 
     def start_sensor(self):
         if self.sensor_mes:
@@ -445,8 +429,6 @@ class Experiment(QtWidgets.QWidget):
             self.plot_temperature = False
             self.temp_button.setChecked(False)
             self.temp_data_line.setData(list(range(100)), [0] * 100)
-            # self.dummy_plot(self.temp_canvas.figure, chs=['temp'])
-            # self.update_sensor_plt.emit()
 
     def plot_pow(self):
         if not self.plot_power:
@@ -459,28 +441,6 @@ class Experiment(QtWidgets.QWidget):
             self.power_data_line2.setData(list(range(100)), [0] * 100)
             self.power_data_line3.setData(list(range(100)), [0] * 100)
             self.power_data_line4.setData(list(range(100)), [0] * 100)
-            # self.dummy_plot(self.power_canvas.figure, chs=['power'])
-            # self.update_sensor_plt.emit()
-
-    @staticmethod
-    def dummy_plot(target_fig=None, chs=None):
-        if chs is None:
-            chs = []
-        if target_fig is None:
-            fig = Figure()
-        else:
-            fig = target_fig
-        fig.clear()
-        axis = fig.add_subplot(111)
-        if 'temp' in chs:
-            axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Temperature (C)")
-        if 'power' in chs:
-            axis.set_xlabel("Time (s)")
-            axis.set_ylabel("Illumination (W/m2)")
-        xval, yval = range(100), [0] * 100
-        axis.plot(xval, yval, lw=1.3)
-        return fig
 
     def folder_dialog(self):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
@@ -524,7 +484,7 @@ class Experiment(QtWidgets.QWidget):
                 self.data_sensor[ai, datapoint] = val
             self.read_volt_edit.setText("%0.1f" % (1e3*self.iv_mes.voltages_set[datapoint]))
             self.read_curr_edit.setText("%0.2f" % (1e3*self.iv_mes.currents[datapoint]))
-        self.iv_mes.plot(self.iv_canvas.figure)
+        self.iv_mes.line_plot(self.iv_data_line)
         self.update_plt.emit()
 
     def stop(self):  # TODO: implement iv scan pause
@@ -533,7 +493,7 @@ class Experiment(QtWidgets.QWidget):
         self.power_button.setChecked(False)
 
     def clipboard(self):
-        pixmap = QtWidgets.QWidget.grab(self.iv_canvas)
+        pixmap = QtWidgets.QWidget.grab(self.iv_graph)
         QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
     @QtCore.pyqtSlot(int)

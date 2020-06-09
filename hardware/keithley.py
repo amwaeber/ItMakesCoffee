@@ -1,7 +1,6 @@
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pyqtgraph as pg
 from pymeasure.instruments.keithley import Keithley2400
 from PyQt5 import QtCore
 import pyvisa
@@ -118,27 +117,12 @@ class Keithley(QtCore.QObject):
             self.sourcemeter.shutdown()
             self.to_log.emit('<span style=\" color:#000000;\" >Disconnected Keithley...</span>')
 
-    def plot(self, target_fig=None, fname=None):
-        if target_fig is None:
-            fig = Figure()
-        else:
-            fig = target_fig
-        fig.clear()
-        axis = fig.add_subplot(111)
-        axis.set_xlabel("Voltage (V)")
-        axis.set_ylabel("Current (A)")
+    def line_plot(self, target_line=None):
+        if target_line is None:
+            graph = pg.PlotWidget()
+            target_line = graph.plot()
         if self.gpib_port == 'dummy':
-            xval = self.voltages_set
-            yval = [0] * self.n_data_points
+            xval, yval = self.voltages_set, [0] * self.n_data_points
         else:
-            xval = self.voltages_set
-            yval = self.currents
-        axis.plot(xval, yval, lw=1.3)
-        if target_fig is None:
-            if fname is not None:
-                fig.tight_layout()
-                fig.savefig(fname)
-                plt.close(fig)
-            else:
-                fig.show()
-        return fig
+            xval, yval = self.voltages_set, self.currents
+        target_line.setData(xval, yval)
