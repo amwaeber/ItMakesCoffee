@@ -87,6 +87,9 @@ class Keithley(QtCore.QObject):
                     self.is_receiving = True
                 else:
                     for dp in range(self.n_data_points):
+                        if not self.is_run:
+                            self.to_log.emit('<span style=\" color:#ff0000;\" >Scan aborted.</span>')
+                            return
                         self.sourcemeter.adapter.write(":TRAC:FEED:CONT NEXT;")
                         self.sourcemeter.source_voltage = self.voltages_set[dp]
                         time.sleep(self.delay)
