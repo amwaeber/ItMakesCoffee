@@ -125,7 +125,7 @@ class Keithley(QtCore.QObject):
             graph = pg.PlotWidget()
             target_line = graph.plot()
         if self.gpib_port == 'dummy':
-            xval, yval = self.voltages_set, [0] * self.n_data_points
+            xval, yval = [], []
         else:
             xval, yval = self.voltages_set, self.currents
         target_line.setData(xval, yval)

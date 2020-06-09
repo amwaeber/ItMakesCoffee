@@ -64,7 +64,7 @@ class ArduinoSensor(QtCore.QObject):
             graph = pg.PlotWidget()
             target_line = graph.plot()
         if self.ser is None:
-            xval, yval = list(range(self.n_data_points)), [0] * self.n_data_points
+            xval, yval = [], []
         elif channel == 'temp':
             xval, yval, _ = self.ser.get_serial_data(0)
             yval = yval * 100
@@ -77,7 +77,7 @@ class ArduinoSensor(QtCore.QObject):
         elif channel == 'power4':
             xval, yval, _ = self.ser.get_serial_data(4)
         else:
-            xval, yval = list(range(self.n_data_points)), [0] * self.n_data_points
+            xval, yval = [], []
         target_line.setData(xval, yval)
 
     def get_sensor_latest(self):

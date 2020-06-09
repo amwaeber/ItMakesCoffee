@@ -37,7 +37,7 @@ class Experiment(QtWidgets.QWidget):
         self.iv_graph.setTitle('I-V Curve')
         self.iv_graph.setLabel('left', 'Current (A)')
         self.iv_graph.setLabel('bottom', 'Voltage (V)')
-        self.iv_data_line = self.iv_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
+        self.iv_data_line = self.iv_graph.plot(pen=self.blue_pen)
         vbox_iv.addWidget(self.iv_graph)
         self.iv_group_box.setLayout(vbox_iv)
         hbox_top.addWidget(self.iv_group_box, 5)
@@ -82,14 +82,14 @@ class Experiment(QtWidgets.QWidget):
         hbox_sens_plot = QtWidgets.QHBoxLayout()
         self.temp_graph = pg.PlotWidget()
         self.temp_graph.setTitle('Temperature (C)', size='14')
-        self.temp_data_line = self.temp_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
+        self.temp_data_line = self.temp_graph.plot(pen=self.blue_pen)
         hbox_sens_plot.addWidget(self.temp_graph)
         self.power_graph = pg.PlotWidget()
         self.power_graph.setTitle('Irradiance (W/m2)', size='14')
-        self.power_data_line1 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.blue_pen)
-        self.power_data_line2 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.red_pen)
-        self.power_data_line3 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.green_pen)
-        self.power_data_line4 = self.power_graph.plot(list(range(100)), [0] * 100, pen=self.orange_pen)
+        self.power_data_line1 = self.power_graph.plot(pen=self.blue_pen)
+        self.power_data_line2 = self.power_graph.plot(pen=self.red_pen)
+        self.power_data_line3 = self.power_graph.plot(pen=self.green_pen)
+        self.power_data_line4 = self.power_graph.plot(pen=self.orange_pen)
         hbox_sens_plot.addWidget(self.power_graph)
         vbox_sensors.addLayout(hbox_sens_plot)
         self.sensors_group_box.setLayout(vbox_sensors)
@@ -104,20 +104,6 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_plot_cb.addItem('Temperature')
         self.sensor_plot_cb.addItem('Irradiance')
         grid_sensor_meas.addWidget(self.sensor_plot_cb, 0, 1)
-        # hbox_sensor_active = QtWidgets.QHBoxLayout()
-        # hbox_sensor_active.addStretch(-1)
-        # sensor_active_icon = QtGui.QIcon()
-        # sensor_active_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'inactive.png')),
-        #                              QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        # sensor_active_icon.addPixmap(QtGui.QPixmap(os.path.join(paths['icons'], 'active.png')),
-        #                              QtGui.QIcon.Normal, QtGui.QIcon.On)
-        # self.sensor_active_button = QtWidgets.QPushButton(QtGui.QIcon(sensor_active_icon), '')
-        # self.sensor_active_button.setCheckable(True)
-        # self.sensor_active_button.clicked.connect(self.toggle_measurement)
-        # self.sensor_active_button.setToolTip('Toggle Measurement')
-        # hbox_sensor_active.addWidget(self.sensor_active_button)
-        # grid_sensor_meas.addLayout(hbox_sensor_active, 0, 3)
-        # grid_sensor_meas.addWidget(self.sensor_active_button, 0, 3)
         self.sensor_time_label = QtWidgets.QLabel("Time (s)", self)
         grid_sensor_meas.addWidget(self.sensor_time_label, 1, 0)
         self.sensor_time_edit = QtWidgets.QLineEdit('60', self)
@@ -172,7 +158,7 @@ class Experiment(QtWidgets.QWidget):
         self.arduino_group_box.setLayout(grid_arduino)
         vbox_sensor_col.addWidget(self.arduino_group_box)
         vbox_sensor_col.addStretch(-1)
-        hbox_top.addLayout(vbox_sensor_col, 2)
+        hbox_top.addLayout(vbox_sensor_col, 3)
         vbox_total.addLayout(hbox_top, 4)
 
         hbox_bottom = QtWidgets.QHBoxLayout()
@@ -434,7 +420,7 @@ class Experiment(QtWidgets.QWidget):
         else:
             self.plot_temperature = False
             self.temp_button.setChecked(False)
-            self.temp_data_line.setData(list(range(100)), [0] * 100)
+            self.temp_data_line.setData([], [])
 
     def plot_pow(self):
         if not self.plot_power:
@@ -443,10 +429,10 @@ class Experiment(QtWidgets.QWidget):
         else:
             self.plot_power = False
             self.power_button.setChecked(False)
-            self.power_data_line1.setData(list(range(100)), [0] * 100)
-            self.power_data_line2.setData(list(range(100)), [0] * 100)
-            self.power_data_line3.setData(list(range(100)), [0] * 100)
-            self.power_data_line4.setData(list(range(100)), [0] * 100)
+            self.power_data_line1.setData([], [])
+            self.power_data_line2.setData([], [])
+            self.power_data_line3.setData([], [])
+            self.power_data_line4.setData([], [])
 
     def folder_dialog(self):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
@@ -457,9 +443,6 @@ class Experiment(QtWidgets.QWidget):
         self.iv_mes.update.connect(self.update_iv)
         self.iv_mes.save.connect(self.save)
         self.iv_mes.to_log.connect(self.logger)
-
-    # def toggle_measurement(self):
-    #     pass
 
     def start(self):
         if not self.start_button.isChecked():
