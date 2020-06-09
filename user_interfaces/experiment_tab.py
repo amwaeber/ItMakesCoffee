@@ -271,13 +271,13 @@ class Experiment(QtWidgets.QWidget):
         self.read_volt_label = QtWidgets.QLabel("Voltage (mV)", self)
         hbox_readout.addWidget(self.read_volt_label)
         self.read_volt_edit = QtWidgets.QLineEdit('-1', self)
-        self.read_volt_edit.setFixedWidth(60)
+        self.read_volt_edit.setFixedWidth(80)
         self.read_volt_edit.setDisabled(True)
         hbox_readout.addWidget(self.read_volt_edit)
         self.read_curr_label = QtWidgets.QLabel("Current (mA)", self)
         hbox_readout.addWidget(self.read_curr_label)
         self.read_curr_edit = QtWidgets.QLineEdit('-1', self)
-        self.read_curr_edit.setFixedWidth(60)
+        self.read_curr_edit.setFixedWidth(80)
         self.read_curr_edit.setDisabled(True)
         hbox_readout.addWidget(self.read_curr_edit)
         hbox_readout.addStretch(-1)
@@ -522,8 +522,8 @@ class Experiment(QtWidgets.QWidget):
             sensor_latest = self.sensor_mes.get_sensor_latest()
             for ai, val in enumerate(sensor_latest):
                 self.data_sensor[ai, datapoint] = val
-            self.read_volt_edit.setText("%02f" % (1e3*self.iv_mes.voltages_set[datapoint]))
-            self.read_curr_edit.setText("%02f" % (1e3*self.iv_mes.currents[datapoint]))
+            self.read_volt_edit.setText("%0.1f" % (1e3*self.iv_mes.voltages_set[datapoint]))
+            self.read_curr_edit.setText("%0.2f" % (1e3*self.iv_mes.currents[datapoint]))
         self.iv_mes.plot(self.iv_canvas.figure)
         self.update_plt.emit()
 
