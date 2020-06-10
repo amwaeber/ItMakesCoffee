@@ -106,7 +106,8 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_plot_cb = QtWidgets.QComboBox()
         self.sensor_plot_cb.setFixedWidth(120)
         self.sensor_plot_cb.addItem('Continuous')
-        self.sensor_plot_cb.addItem('Fixed')
+        self.sensor_plot_cb.addItem('Fixed Time')
+        self.sensor_plot_cb.currentTextChanged.connect(self.sensor_mode_changed)
         grid_sensor_meas.addWidget(self.sensor_plot_cb, 0, 1)
         self.sensor_time_label = QtWidgets.QLabel("Time (s)", self)
         grid_sensor_meas.addWidget(self.sensor_time_label, 1, 0)
@@ -433,7 +434,16 @@ class Experiment(QtWidgets.QWidget):
         self.block_sensor = False
         self.start_sensor()
 
+    def sensor_mode_changed(self):
+        pass
+
     def plot_temp(self):
+        # Do not start fixed time measurement if iv-scan is running
+        if str(self.sensor_plot_cb.currentText()) == 'Fixed Time' and self.start_button.isChecked():
+            self.logger('<span style=\" color:#ff0000;\" >I-V scan is running. '
+                        'Stop current experiment before starting fixed time temperature scan.</span>')
+            self.temp_button.setChecked(False)
+            return
         if self.plot_power:
             self.plot_power = False
             self.power_button.setChecked(False)
@@ -450,6 +460,12 @@ class Experiment(QtWidgets.QWidget):
             self.sensor_graph.setLabel('left', '')
 
     def plot_pow(self):
+        # Do not start fixed time measurement if iv-scan is running
+        if str(self.sensor_plot_cb.currentText()) == 'Fixed Time' and self.start_button.isChecked():
+            self.logger('<span style=\" color:#ff0000;\" >I-V scan is running. '
+                        'Stop current experiment before starting fixed time irradiation scan.</span>')
+            self.power_button.setChecked(False)
+            return
         if self.plot_temperature:
             self.plot_temperature = False
             self.temp_button.setChecked(False)
@@ -476,13 +492,19 @@ class Experiment(QtWidgets.QWidget):
         self.iv_mes.to_log.connect(self.logger)
 
     def start(self):
+        # Stop measurement if measurement is running
         if not self.start_button.isChecked():
             self.stop()
             return
-            # self.logger('<span style=\" color:#ff0000;\" >Experiment running. Stop current experiment first.</span>')
-            # self.start_button.setChecked(True)
-            # return
-        if self.check_iv_parameters() is False:
+        # Do not start measurement if sensor plot with fixed time is active
+        elif (self.plot_temperature or self.plot_power) and str(self.sensor_plot_cb.currentText()) == 'Fixed Time':
+            self.logger('<span style=\" color:#ff0000;\" >Fixed time sensor scan is running. '
+                        'Stop current sensor experiment first.</span>')
+            self.start_button.setChecked(False)
+            return
+        # Do not start measurement if faulty parameters are set
+        elif self.check_iv_parameters() is False:
+            self.start_button.setChecked(False)
             return
         if self.iv_mes:
             self.iv_mes.close()
@@ -561,7 +583,8 @@ class Experiment(QtWidgets.QWidget):
             float(self.end_edit.text())
             float(self.ilimit_edit.text())
         except (ZeroDivisionError, ValueError):
-            self.warning('Some parameters are not in the right format. Please check before starting measurement.')
+            self.logger('<span style=\" color:#ff0000;\" >Some parameters are not in the right format. '
+                        'Please check before starting measurement.</span>')
             return False
         if any([float(self.end_edit.text()) > 0.75,
                 float(self.start_edit.text()) < -0.15,
@@ -573,10 +596,7 @@ class Experiment(QtWidgets.QWidget):
                 int(self.naverage_edit.text()) < 1,
                 int(self.reps_edit.text()) < 1
                 ]):
-            self.warning('Parameters are out of bounds. Please check before starting the measurement. Keep positive '
-                         'though, at least you didn\'t barbeque the sample :)')
+            self.logger('<span style=\" color:#ff0000;\" >Some parameters are out of bounds. '
+                        'Please check before starting measurement.</span>')
             return False
         return True
-
-    def warning(self, string):
-        QtWidgets.QMessageBox.warning(self, 'Warning', string, QtWidgets.QMessageBox.Ok)
