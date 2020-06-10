@@ -370,6 +370,8 @@ class Experiment(QtWidgets.QWidget):
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.sensor_time_data = None
         self.sensor_time_data_averaged = None
+        self.sensor_time_max = None
+        self.sensor_avg = None
 
         self.sensor_mes = None
         self.start_sensor()
@@ -407,7 +409,13 @@ class Experiment(QtWidgets.QWidget):
             if self.sensor_time_data is None:
                 self.sensor_time_data = [[time_val], [tval], [d1val], [d2val], [d3val], [d4val]]
                 self.sensor_time_data_averaged = [[], [], [], [], [], []]
-            elif (time_val - self.sensor_time_data[0][0]) > float(self.sensor_time_edit.text()):
+                if self.check_sensor_parameters() is False:
+                    self.temp_button.setChecked(False)
+                    self.power_button.setChecked(False)
+                    return
+                self.sensor_time_max = float(self.sensor_time_edit.text())
+                self.sensor_avg = int(self.sensor_avg_edit.text())
+            elif (time_val - self.sensor_time_data[0][0]) > self.sensor_time_max:
                 self.temp_button.setChecked(False)
                 self.power_button.setChecked(False)
                 return
@@ -415,11 +423,11 @@ class Experiment(QtWidgets.QWidget):
                 latest_data = [time_val, tval, d1val, d2val, d3val, d4val]
                 for i, _ in enumerate(self.sensor_time_data):
                     self.sensor_time_data[i].append(latest_data[i])
-                if len(self.sensor_time_data[0]) % int(self.sensor_avg_edit.text()) == 0:
+                if len(self.sensor_time_data[0]) % self.sensor_avg == 0:
                     for i, _ in enumerate(self.sensor_time_data):
                         self.sensor_time_data_averaged[i] = \
-                            [sum(values, 0.0) / int(self.sensor_avg_edit.text())
-                             for values in zip(*[iter(self.sensor_time_data[i])] * int(self.sensor_avg_edit.text()))]
+                            [sum(values, 0.0) / self.sensor_avg
+                             for values in zip(*[iter(self.sensor_time_data[i])] * self.sensor_avg)]
                     self.sensor_time_data_averaged[0] = [i - self.sensor_time_data_averaged[0][0]
                                                          for i in self.sensor_time_data_averaged[0]]
             if self.temp_button.isChecked():
@@ -618,6 +626,22 @@ class Experiment(QtWidgets.QWidget):
                 float(self.ilimit_edit.text()) <= 0.,
                 int(self.naverage_edit.text()) < 1,
                 int(self.reps_edit.text()) < 1
+                ]):
+            self.logger('<span style=\" color:#ff0000;\" >Some parameters are out of bounds. '
+                        'Please check before starting measurement.</span>')
+            return False
+        return True
+
+    def check_sensor_parameters(self):
+        try:
+            float(self.sensor_time_edit.text())
+            int(self.sensor_avg_edit.text())
+        except (ZeroDivisionError, ValueError):
+            self.logger('<span style=\" color:#ff0000;\" >Some parameters are not in the right format. '
+                        'Please check before starting measurement.</span>')
+            return False
+        if any([float(self.sensor_time_edit.text()) < 1.0,
+                int(self.sensor_avg_edit.text()) < 1
                 ]):
             self.logger('<span style=\" color:#ff0000;\" >Some parameters are out of bounds. '
                         'Please check before starting measurement.</span>')
