@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import os
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -551,6 +552,7 @@ class Experiment(QtWidgets.QWidget):
         self.iv_register(self.iv_mes)
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.iv_mes.read_keithley_start()
+        self.save_configuration()
 
     @QtCore.pyqtSlot(int)
     def update_iv(self, datapoint):
@@ -589,6 +591,32 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)
+
+    def save_configuration(self):
+        now = datetime.datetime.now()
+        save_file = open(os.path.join(self.directory, 'Settings.txt'), 'w')
+        save_file.write(now.strftime("%Y-%m-%d %H:%M:%S"))
+        save_file.write("\n\nIV Parameters\n")
+        save_file.write("Port: %s\n" % str(self.source_cb.currentText()))
+        save_file.write("Start Voltage (V): %s\n" % str(self.start_edit.text()))
+        save_file.write("End Voltage (V): %s\n" % str(self.end_edit.text()))
+        save_file.write("Voltage Step (V): %s\n" % str(self.step_edit.text()))
+        save_file.write("Number of Voltage Steps: %s\n" % str(self.nstep_edit.text()))
+        save_file.write("Current Limit (A): %s\n" % str(self.ilimit_edit.text()))
+        save_file.write("Averages per Datapoint: %s\n" % str(self.naverage_edit.text()))
+        save_file.write("Delay between Datapoints: %s\n" % str(self.delay_edit.text()))
+        save_file.write("Dataset Repetitions: %s\n" % str(self.reps_edit.text()))
+        save_file.write("Delay between Datasets: %s\n" % str(self.rep_delay_edit.text()))
+        save_file.write("\n")
+        save_file.write("Sensor Parameters\n")
+        save_file.write("Port: %s\n" % str(self.sensor_cb.currentText()))
+        save_file.write("Baud Rate: %s\n" % str(self.baud_edit.text()))
+        save_file.write("Bytes per Datapoint: %s\n" % str(self.databytes_edit.text()))
+        save_file.write("Datapoints: %s\n" % str(self.datapoints_edit.text()))
+        save_file.write("Analogue Inputs: %s\n" % str(self.ais_edit.text()))
+        save_file.write("Query Period (s): %s\n" % str(self.query_edit.text()))
+        save_file.write("Timeout (s): %s\n" % str(self.timeout_edit.text()))
+        save_file.close()
 
     @QtCore.pyqtSlot(str)
     def logger(self, string):
