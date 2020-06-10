@@ -408,6 +408,8 @@ class Experiment(QtWidgets.QWidget):
                 self.sensor_time_data = [[time_val], [tval], [d1val], [d2val], [d3val], [d4val]]
                 self.sensor_time_data_averaged = [[], [], [], [], [], []]
             elif (time_val - self.sensor_time_data[0][0]) > float(self.sensor_time_edit.text()):
+                self.temp_button.setChecked(False)
+                self.power_button.setChecked(False)
                 return
             else:
                 latest_data = [time_val, tval, d1val, d2val, d3val, d4val]
@@ -469,6 +471,9 @@ class Experiment(QtWidgets.QWidget):
         self.start_sensor()
 
     def plot_sensor(self, origin=None):
+        # reset stored sensor data
+        self.sensor_time_data = None
+        self.sensor_time_data_averaged = None
         # Do not start fixed time measurement if iv-scan is running
         if str(self.sensor_plot_cb.currentText()) == 'Fixed Time' and self.start_button.isChecked():
             self.logger('<span style=\" color:#ff0000;\" >I-V scan is running. '
