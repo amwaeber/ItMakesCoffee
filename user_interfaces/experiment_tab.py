@@ -131,7 +131,7 @@ class Experiment(QtWidgets.QWidget):
         self.temp_button = QtWidgets.QPushButton(QtGui.QIcon(temp_icon), '')
         self.temp_button.setIconSize(QtCore.QSize(40, 40))
         self.temp_button.setCheckable(True)
-        self.temp_button.clicked.connect(self.plot_temp)
+        self.temp_button.clicked.connect(lambda: self.plot_sensor('temperature'))
         self.temp_button.setToolTip('Plot temperature')
         hbox_sens_ctrl.addWidget(self.temp_button)
         power_icon = QtGui.QIcon()
@@ -142,7 +142,7 @@ class Experiment(QtWidgets.QWidget):
         self.power_button = QtWidgets.QPushButton(QtGui.QIcon(power_icon), '')
         self.power_button.setIconSize(QtCore.QSize(40, 40))
         self.power_button.setCheckable(True)
-        self.power_button.clicked.connect(self.plot_pow)
+        self.power_button.clicked.connect(lambda: self.plot_sensor('power'))
         self.power_button.setToolTip('Plot power')
         hbox_sens_ctrl.addWidget(self.power_button)
         hbox_sens_ctrl.addStretch(-1)
@@ -368,8 +368,6 @@ class Experiment(QtWidgets.QWidget):
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
-        self.plot_temperature = False
-        self.plot_power = False
 
         self.sensor_mes = None
         self.start_sensor()
@@ -394,9 +392,9 @@ class Experiment(QtWidgets.QWidget):
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
         # Could enable plotting permanently as long as port is not dummy
-        if self.plot_temperature and not self.sensor_mes.port == 'dummy':
+        if self.temp_button.isChecked() and not self.sensor_mes.port == 'dummy':
             self.sensor_mes.line_plot(self.temp_data_line, channel='temp')
-        if self.plot_power and not self.sensor_mes.port == 'dummy':
+        if self.power_button.isChecked() and not self.sensor_mes.port == 'dummy':
             self.sensor_mes.line_plot(self.power_data_line1, channel='power1')
             self.sensor_mes.line_plot(self.power_data_line2, channel='power2')
             self.sensor_mes.line_plot(self.power_data_line3, channel='power3')
@@ -416,12 +414,16 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_mes.start()
 
     def stop_sensor(self):
+        self.temp_button.setChecked(False)
+        self.power_button.setChecked(False)
+        self.plot_sensor()
         if self.sensor_mes:
             self.sensor_mes.stop()
             self.sensor_mes = None
 
     def sensor_port_changed(self):
         if self.block_sensor is False:  # if combobox update is in progress, sensor_port_changed is not triggered
+            self.stop_sensor()
             self.start_sensor()
 
     def update_ports(self):
@@ -435,51 +437,39 @@ class Experiment(QtWidgets.QWidget):
         self.start_sensor()
 
     def sensor_mode_changed(self):
-        pass
+        self.temp_button.setChecked(False)
+        self.power_button.setChecked(False)
+        self.plot_sensor()
 
-    def plot_temp(self):
+    def plot_sensor(self, origin=None):
         # Do not start fixed time measurement if iv-scan is running
         if str(self.sensor_plot_cb.currentText()) == 'Fixed Time' and self.start_button.isChecked():
             self.logger('<span style=\" color:#ff0000;\" >I-V scan is running. '
-                        'Stop current experiment before starting fixed time temperature scan.</span>')
+                        'Stop current experiment before starting fixed time sensor scan.</span>')
             self.temp_button.setChecked(False)
-            return
-        if self.plot_power:
-            self.plot_power = False
             self.power_button.setChecked(False)
-            self.power_data_line1.setData([], [])
-            self.power_data_line2.setData([], [])
-            self.power_data_line3.setData([], [])
-            self.power_data_line4.setData([], [])
-        if not self.plot_temperature:
-            self.plot_temperature = True
+            return
+        # Toggle plot settings between temperature and irradiation
+        if origin == 'temperature' and self.power_button.isChecked():
+            self.power_button.setChecked(False)
+        elif origin == 'power' and self.temp_button.isChecked():
+            self.temp_button.setChecked(False)
+        if self.temp_button.isChecked():
             self.sensor_graph.setLabel('left', 'Temperature (C)')
-        else:
-            self.plot_temperature = False
-            self.temp_data_line.setData([], [])
-            self.sensor_graph.setLabel('left', '')
-
-    def plot_pow(self):
-        # Do not start fixed time measurement if iv-scan is running
-        if str(self.sensor_plot_cb.currentText()) == 'Fixed Time' and self.start_button.isChecked():
-            self.logger('<span style=\" color:#ff0000;\" >I-V scan is running. '
-                        'Stop current experiment before starting fixed time irradiation scan.</span>')
-            self.power_button.setChecked(False)
-            return
-        if self.plot_temperature:
-            self.plot_temperature = False
-            self.temp_button.setChecked(False)
-            self.temp_data_line.setData([], [])
-        if not self.plot_power:
-            self.plot_power = True
-            self.sensor_graph.setLabel('left', 'Irradiation (W/m2)')
-        else:
-            self.plot_power = False
             self.power_data_line1.setData([], [])
             self.power_data_line2.setData([], [])
             self.power_data_line3.setData([], [])
             self.power_data_line4.setData([], [])
+        elif self.power_button.isChecked():
+            self.sensor_graph.setLabel('left', 'Irradiation (W/m2)')
+            self.temp_data_line.setData([], [])
+        else:
             self.sensor_graph.setLabel('left', '')
+            self.temp_data_line.setData([], [])
+            self.power_data_line1.setData([], [])
+            self.power_data_line2.setData([], [])
+            self.power_data_line3.setData([], [])
+            self.power_data_line4.setData([], [])
 
     def folder_dialog(self):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
@@ -497,7 +487,8 @@ class Experiment(QtWidgets.QWidget):
             self.stop()
             return
         # Do not start measurement if sensor plot with fixed time is active
-        elif (self.plot_temperature or self.plot_power) and str(self.sensor_plot_cb.currentText()) == 'Fixed Time':
+        elif (self.temp_button.isChecked() or self.power_button.isChecked()) \
+                and str(self.sensor_plot_cb.currentText()) == 'Fixed Time':
             self.logger('<span style=\" color:#ff0000;\" >Fixed time sensor scan is running. '
                         'Stop current sensor experiment first.</span>')
             self.start_button.setChecked(False)
