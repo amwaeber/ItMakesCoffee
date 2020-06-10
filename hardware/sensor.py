@@ -82,7 +82,9 @@ class ArduinoSensor(QtCore.QObject):
 
     def get_sensor_latest(self):
         if not self.port == 'dummy':
+            sensor_time = self.ser.get_serial_data(0)[0][-1]
             sensor_readout = [self.ser.get_serial_data(i)[2] for i in range(self.n_ai)]
         else:
+            sensor_time = 0.
             sensor_readout = [-1.0 for _ in range(self.n_ai)]
-        return sensor_readout
+        return sensor_time, sensor_readout

@@ -368,6 +368,8 @@ class Experiment(QtWidgets.QWidget):
         self.setLayout(vbox_total)
 
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
+        self.sensor_time_data = None
+        self.sensor_time_data_averaged = None
 
         self.sensor_mes = None
         self.start_sensor()
@@ -385,20 +387,46 @@ class Experiment(QtWidgets.QWidget):
     def update_sensor(self):
         if not self.sensor_mes:
             return
-        tval, d1val, d2val, d3val, d4val = self.sensor_mes.get_sensor_latest()
+        time_val, [tval, d1val, d2val, d3val, d4val] = self.sensor_mes.get_sensor_latest()
         self.temperature_edit.setText("%.2f" % tval)
         self.diode1_edit.setText("%02d" % d1val)
         self.diode2_edit.setText("%02d" % d2val)
         self.diode3_edit.setText("%02d" % d3val)
         self.diode4_edit.setText("%02d" % d4val)
-        # Could enable plotting permanently as long as port is not dummy
-        if self.temp_button.isChecked() and not self.sensor_mes.port == 'dummy':
-            self.sensor_mes.line_plot(self.temp_data_line, channel='temp')
-        if self.power_button.isChecked() and not self.sensor_mes.port == 'dummy':
-            self.sensor_mes.line_plot(self.power_data_line1, channel='power1')
-            self.sensor_mes.line_plot(self.power_data_line2, channel='power2')
-            self.sensor_mes.line_plot(self.power_data_line3, channel='power3')
-            self.sensor_mes.line_plot(self.power_data_line4, channel='power4')
+        if str(self.sensor_plot_cb.currentText()) == 'Continuous' and not self.sensor_mes.port == 'dummy':
+            if self.temp_button.isChecked():
+                self.sensor_mes.line_plot(self.temp_data_line, channel='temp')
+            if self.power_button.isChecked():
+                self.sensor_mes.line_plot(self.power_data_line1, channel='power1')
+                self.sensor_mes.line_plot(self.power_data_line2, channel='power2')
+                self.sensor_mes.line_plot(self.power_data_line3, channel='power3')
+                self.sensor_mes.line_plot(self.power_data_line4, channel='power4')
+        elif all([str(self.sensor_plot_cb.currentText()) == 'Fixed Time',
+                  (self.temp_button.isChecked() or self.power_button.isChecked()),
+                  not self.sensor_mes.port == 'dummy']):
+            if self.sensor_time_data is None:
+                self.sensor_time_data = [[time_val], [tval], [d1val], [d2val], [d3val], [d4val]]
+                self.sensor_time_data_averaged = [[], [], [], [], [], []]
+            elif (time_val - self.sensor_time_data[0][0]) > float(self.sensor_time_edit.text()):
+                return
+            else:
+                latest_data = [time_val, tval, d1val, d2val, d3val, d4val]
+                for i, _ in enumerate(self.sensor_time_data):
+                    self.sensor_time_data[i].append(latest_data[i])
+                if len(self.sensor_time_data[0]) % int(self.sensor_avg_edit.text()) == 0:
+                    for i, _ in enumerate(self.sensor_time_data):
+                        self.sensor_time_data_averaged[i] = \
+                            [sum(values, 0.0) / int(self.sensor_avg_edit.text())
+                             for values in zip(*[iter(self.sensor_time_data[i])] * int(self.sensor_avg_edit.text()))]
+                    self.sensor_time_data_averaged[0] = [i - self.sensor_time_data_averaged[0][0]
+                                                         for i in self.sensor_time_data_averaged[0]]
+            if self.temp_button.isChecked():
+                self.temp_data_line.setData(self.sensor_time_data_averaged[0], self.sensor_time_data_averaged[1])
+            if self.power_button.isChecked():
+                self.power_data_line1.setData(self.sensor_time_data_averaged[0], self.sensor_time_data_averaged[2])
+                self.power_data_line2.setData(self.sensor_time_data_averaged[0], self.sensor_time_data_averaged[3])
+                self.power_data_line3.setData(self.sensor_time_data_averaged[0], self.sensor_time_data_averaged[4])
+                self.power_data_line4.setData(self.sensor_time_data_averaged[0], self.sensor_time_data_averaged[5])
 
     def start_sensor(self):
         if self.sensor_mes:
@@ -437,9 +465,8 @@ class Experiment(QtWidgets.QWidget):
         self.start_sensor()
 
     def sensor_mode_changed(self):
-        self.temp_button.setChecked(False)
-        self.power_button.setChecked(False)
-        self.plot_sensor()
+        self.stop_sensor()
+        self.start_sensor()
 
     def plot_sensor(self, origin=None):
         # Do not start fixed time measurement if iv-scan is running
@@ -517,7 +544,7 @@ class Experiment(QtWidgets.QWidget):
         if not self.iv_mes:
             return
         if datapoint != -1:
-            sensor_latest = self.sensor_mes.get_sensor_latest()
+            _, sensor_latest = self.sensor_mes.get_sensor_latest()
             for ai, val in enumerate(sensor_latest):
                 self.data_sensor[ai, datapoint] = val
             self.read_volt_edit.setText("%0.1f" % (1e3*self.iv_mes.voltages_set[datapoint]))
