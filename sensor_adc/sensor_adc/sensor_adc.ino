@@ -1,32 +1,34 @@
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
 
-Adafruit_ADS1115 ads(0x48);
-const float multiplier = 0.1875F;
+Adafruit_ADS1115 ads_pow(0x48);
+Adafruit_ADS1115 ads_temp(0x49);
 unsigned long timer = 0;
 long loopTime = 5000;   // microseconds
  
 void setup() {
   Serial.begin(38400);
   
-  // ads.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
+  ads_pow.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
+  ads_temp.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
   // ads.setGain(GAIN_ONE);        +/- 4.096V  1 bit = 0.125mV
   // ads.setGain(GAIN_TWO);        +/- 2.048V  1 bit = 0.0625mV
-  ads.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
+  // ads.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
   // ads.setGain(GAIN_EIGHT);      +/- 0.512V  1 bit = 0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    +/- 0.256V  1 bit = 0.0078125mV
-  ads.begin();
+  ads_pow.begin();
+  ads_temp.begin();
     
   timer = micros();
 }
 
 void loop() {
   timeSync(loopTime);
-  int val0 = analogRead(0); // - 512;
-  int16_t val1 = ads.readADC_SingleEnded(0);
-  int16_t val2 = ads.readADC_SingleEnded(1);
-  int16_t val3 = ads.readADC_SingleEnded(2);
-  int16_t val4 = ads.readADC_SingleEnded(3);
+  int16_t val0 = ads_temp.readADC_SingleEnded(0);
+  int16_t val1 = ads_pow.readADC_SingleEnded(0);
+  int16_t val2 = ads_pow.readADC_SingleEnded(1);
+  int16_t val3 = ads_pow.readADC_SingleEnded(2);
+  int16_t val4 = ads_pow.readADC_SingleEnded(3);
 //  double val0 = (analogRead(0) - 512) / 512.0;
 //  double val1 = (analogRead(1) - 512) / 512.0;
 //  double val2 = (analogRead(2) - 512) / 512.0;
@@ -55,7 +57,7 @@ void timeSync(unsigned long deltaT)
   timer = currTime + timeToDelay;
 }
  
-void sendToPC(int* data0, int16_t* data1, int16_t* data2, int16_t* data3, int16_t* data4)
+void sendToPC(int16_t* data0, int16_t* data1, int16_t* data2, int16_t* data3, int16_t* data4)
 {
   byte* byteData0 = (byte*)(data0);
   byte* byteData1 = (byte*)(data1);
