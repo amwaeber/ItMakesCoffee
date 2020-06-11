@@ -392,10 +392,10 @@ class Experiment(QtWidgets.QWidget):
             return
         time_val, [tval, d1val, d2val, d3val, d4val] = self.sensor_mes.get_sensor_latest()
         self.temperature_edit.setText("%.2f" % tval)
-        self.diode1_edit.setText("%02d" % d1val)
-        self.diode2_edit.setText("%02d" % d2val)
-        self.diode3_edit.setText("%02d" % d3val)
-        self.diode4_edit.setText("%02d" % d4val)
+        self.diode1_edit.setText("%.1f" % d1val)
+        self.diode2_edit.setText("%.1f" % d2val)
+        self.diode3_edit.setText("%.1f" % d3val)
+        self.diode4_edit.setText("%.1f" % d4val)
         if str(self.sensor_plot_cb.currentText()) == 'Continuous' and not self.sensor_mes.port == 'dummy':
             if self.temp_button.isChecked():
                 self.sensor_mes.line_plot(self.temp_data_line, channel='temp')

@@ -1,8 +1,8 @@
 import numpy as np
 
 
-def digital_to_voltage(value=0, bits=10, voltage_range=5):
-    return value / (2**bits-1) * voltage_range
+def digital_to_voltage(value=0, bits=10, voltage_range=5.0):
+    return (value / 2**bits) * voltage_range
 
 
 def voltage_to_temperature_thermocouple(voltage=0):
@@ -26,4 +26,7 @@ def voltage_to_temperature(voltage=0, voltage_range=5):  # with 100kOhm thermist
 def voltage_to_power(voltage=0):
     coefficient = 1 / 0.35
     exponent = 1 / 0.09
-    return (coefficient*voltage)**exponent
+    if voltage >= 0:
+        return (coefficient*voltage)**exponent
+    else:
+        return -1
