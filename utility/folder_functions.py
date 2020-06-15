@@ -6,10 +6,8 @@ def get_list_of_csv(path):
     # names in the given directory
     all_files = list()
     if os.path.isdir(path):
-        # all_files.append(path)  # directory name as first entry
-        list_of_files = os.listdir(path)
         # Iterate over all the entries
-        for entry in list_of_files:
+        for entry in os.listdir(path):
             full_path = os.path.join(path, entry)
             if full_path.endswith('.csv'):
                 all_files.append(os.path.normpath(full_path))
@@ -17,5 +15,15 @@ def get_list_of_csv(path):
             all_files = list()
     elif path.endswith('.csv'):
         all_files.append(os.path.normpath(path))
-
     return all_files
+
+def get_number_of_csv(path):
+    # returns number of csv files in the directory
+    n_csv = 0
+    if os.path.isdir(path):
+        for entry in os.scandir(path):
+            if entry.path.endswith(".csv"):
+                n_csv += 1
+        return n_csv
+    else:
+        return -1

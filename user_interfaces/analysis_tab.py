@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from helper_classes.csv_import import CsvFile
 from helper_classes import data_analysis
 from utility.config import paths
+from utility.folder_functions import get_list_of_csv, get_number_of_csv
 
 
 class Analysis(QtWidgets.QWidget):
@@ -18,6 +19,7 @@ class Analysis(QtWidgets.QWidget):
 
         self.plot_directory = paths['last_save']
         self.stats_directory = paths['last_save']
+        self.reference_directory = None
 
         self.reference_files = list()
         self.reference_data = list()
@@ -170,7 +172,9 @@ class Analysis(QtWidgets.QWidget):
         hbox_reference.addStretch(-1)
         vbox_reference.addLayout(hbox_reference)
         self.reference_tree = QtWidgets.QTreeWidget()
-        self.reference_tree.header().hide()
+        self.reference_tree.setRootIsDecorated(False)
+        self.reference_tree.setHeaderLabels(["Experiment", "CSV Files"])
+        self.reference_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_reference.addWidget(self.reference_tree)
         self.reference_group_box.setLayout(vbox_reference)
         vbox_right.addWidget(self.reference_group_box)
@@ -191,7 +195,9 @@ class Analysis(QtWidgets.QWidget):
         hbox_analysis.addStretch(-1)
         vbox_analysis.addLayout(hbox_analysis)
         self.analysis_tree = QtWidgets.QTreeWidget()
-        self.analysis_tree.header().hide()
+        self.analysis_tree.setRootIsDecorated(False)
+        self.analysis_tree.setHeaderLabels(["Experiment", "CSV Files"])
+        self.analysis_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_analysis.addWidget(self.analysis_tree)
         self.analysis_group_box.setLayout(vbox_analysis)
         vbox_right.addWidget(self.analysis_group_box)
@@ -210,13 +216,21 @@ class Analysis(QtWidgets.QWidget):
                                                                                   paths['last_save']))
             self.stats_save_folder_edit.setText(self.stats_directory)
         elif origin == 'reference':
-            pass  # TODO: Handling of reference folder as in folder tab
+            self.reference_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
+                                                                                      paths['last_data']))
+            self.update_reference()
 
     def add_analysis_folders(self):
         pass
 
     def remove_analysis_folders(self):
         pass
+
+    def update_reference(self):
+        if self.reference_directory:
+            self.reference_tree.clear()
+            basename = os.path.basename(self.reference_directory)
+            QtWidgets.QTreeWidgetItem(self.reference_tree, [basename, str(get_number_of_csv(self.reference_directory))])
 
     def load_selection(self):
         # Load file data for selection from folder tab
