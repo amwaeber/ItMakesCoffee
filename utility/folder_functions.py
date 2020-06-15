@@ -1,3 +1,4 @@
+import datetime
 import os
 
 
@@ -17,6 +18,7 @@ def get_list_of_csv(path):
         all_files.append(os.path.normpath(path))
     return all_files
 
+
 def get_number_of_csv(path):
     # returns number of csv files in the directory
     n_csv = 0
@@ -27,3 +29,8 @@ def get_number_of_csv(path):
         return n_csv
     else:
         return -1
+
+
+def get_datetime(path):
+    d = datetime.datetime.fromtimestamp(os.path.getctime(path))
+    return d.replace(microsecond=0)

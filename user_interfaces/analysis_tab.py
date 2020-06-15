@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from helper_classes.csv_import import CsvFile
 from helper_classes import data_analysis
 from utility.config import paths
-from utility.folder_functions import get_list_of_csv, get_number_of_csv
+import utility.folder_functions as folder_functions
 
 
 class Analysis(QtWidgets.QWidget):
@@ -173,7 +173,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_reference.addLayout(hbox_reference)
         self.reference_tree = QtWidgets.QTreeWidget()
         self.reference_tree.setRootIsDecorated(False)
-        self.reference_tree.setHeaderLabels(["Experiment", "CSV Files"])
+        self.reference_tree.setHeaderLabels(["Experiment", "CSV Files", "Created"])
         self.reference_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_reference.addWidget(self.reference_tree)
         self.reference_group_box.setLayout(vbox_reference)
@@ -196,7 +196,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_analysis.addLayout(hbox_analysis)
         self.analysis_tree = QtWidgets.QTreeWidget()
         self.analysis_tree.setRootIsDecorated(False)
-        self.analysis_tree.setHeaderLabels(["Experiment", "CSV Files"])
+        self.analysis_tree.setHeaderLabels(["Experiment", "CSV Files", "Created"])
         self.analysis_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_analysis.addWidget(self.analysis_tree)
         self.analysis_group_box.setLayout(vbox_analysis)
@@ -230,7 +230,10 @@ class Analysis(QtWidgets.QWidget):
         if self.reference_directory:
             self.reference_tree.clear()
             basename = os.path.basename(self.reference_directory)
-            QtWidgets.QTreeWidgetItem(self.reference_tree, [basename, str(get_number_of_csv(self.reference_directory))])
+            QtWidgets.QTreeWidgetItem(self.reference_tree,
+                                      [basename,
+                                       str(folder_functions.get_number_of_csv(self.reference_directory)),
+                                       str(folder_functions.get_datetime(self.reference_directory))])
 
     def load_selection(self):
         # Load file data for selection from folder tab
