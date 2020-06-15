@@ -3,9 +3,11 @@ from matplotlib.figure import Figure
 import os
 import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.Qt import Qt
 
 from helper_classes.csv_import import CsvFile
 from helper_classes import data_analysis
+from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 import utility.folder_functions as folder_functions
 
@@ -20,6 +22,7 @@ class Analysis(QtWidgets.QWidget):
         self.plot_directory = paths['last_save']
         self.stats_directory = paths['last_save']
         self.reference_directory = None
+        self.analysis_directories = []
 
         self.reference_files = list()
         self.reference_data = list()
@@ -218,22 +221,40 @@ class Analysis(QtWidgets.QWidget):
         elif origin == 'reference':
             self.reference_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
                                                                                       paths['last_data']))
-            self.update_reference()
+            self.update_reference_tree()
 
-    def add_analysis_folders(self):
-        pass
-
-    def remove_analysis_folders(self):
-        pass
-
-    def update_reference(self):
+    def update_reference_tree(self):
         if self.reference_directory:
             self.reference_tree.clear()
-            basename = os.path.basename(self.reference_directory)
             QtWidgets.QTreeWidgetItem(self.reference_tree,
-                                      [basename,
+                                      [os.path.basename(self.reference_directory),
                                        str(folder_functions.get_number_of_csv(self.reference_directory)),
                                        str(folder_functions.get_datetime(self.reference_directory))])
+
+    def add_analysis_folders(self):
+        multi_dir_dialog = MultiDirDialog()
+        multi_dir_dialog.setDirectory(paths['last_data'])
+        multi_dir_dialog.show()
+        multi_dir_dialog.exec_()
+        self.analysis_directories.extend(multi_dir_dialog.selectedFiles())
+        self.analysis_directories = list(set(self.analysis_directories))
+        self.update_analysis_tree()
+
+    def remove_analysis_folders(self):
+        for item in self.analysis_tree.findItems("", Qt.MatchContains):
+            if item.checkState(0) == Qt.Checked:
+                self.analysis_directories = [entry for entry in self.analysis_directories
+                                             if not (item.text(0) in entry)]
+        self.update_analysis_tree()
+
+    def update_analysis_tree(self):
+        self.analysis_tree.clear()
+        for directory in self.analysis_directories:
+            tree_item = QtWidgets.QTreeWidgetItem(self.analysis_tree,
+                                                  [os.path.basename(directory),
+                                                   str(folder_functions.get_number_of_csv(directory)),
+                                                   str(folder_functions.get_datetime(directory))])
+            tree_item.setCheckState(0, Qt.Unchecked)
 
     def load_selection(self):
         # Load file data for selection from folder tab
