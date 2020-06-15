@@ -13,8 +13,7 @@ import utility.folder_functions as folder_functions
 
 
 class Analysis(QtWidgets.QWidget):
-    update_plt = QtCore.pyqtSignal()  # iv figure signal lane
-    get_file_paths = QtCore.pyqtSignal()
+    update_plt = QtCore.pyqtSignal()  # figure signal lane
 
     def __init__(self, parent=None):
         super(Analysis, self).__init__(parent)
@@ -22,13 +21,13 @@ class Analysis(QtWidgets.QWidget):
         self.plot_directory = paths['last_save']
         self.stats_directory = paths['last_save']
         self.reference_directory = None
-        self.analysis_directories = []
+        self.analysis_directories = list()
 
         self.reference_files = list()
-        self.reference_data = list()
+        self.reference_dataset = list()
         self.reference_averaged = pd.DataFrame()
         self.selection_files = list()
-        self.selection_data = list()
+        self.selection_dataset = list()
         self.selection_averaged = pd.DataFrame()
         self.selection_efficiency = pd.DataFrame()
         self.table_select = 'default'
@@ -50,7 +49,7 @@ class Analysis(QtWidgets.QWidget):
         self.statistics_table.setRowCount(4)
         self.statistics_table.setColumnCount(14)
         col_headers = ['Experiment', 'Time', 'Max. Power', r'$\sigma$', 'V_oc', r'$\sigma$', 'I_sc', r'$\sigma$',
-                       'Fill Factor', r'$\sigma$', 'Temperature', r'$\sigma$', 'Illumination', r'$\sigma$']
+                       'Fill Factor', r'$\sigma$', 'Temperature', r'$\sigma$', 'Irradiance', r'$\sigma$']
         self.statistics_table.setHorizontalHeaderLabels(col_headers)
         self.update_stats()
         vbox_table.addWidget(self.statistics_table)
@@ -73,7 +72,7 @@ class Analysis(QtWidgets.QWidget):
         self.xaxis_cb.addItem('Power')
         self.xaxis_cb.addItem('Fill Factor')
         self.xaxis_cb.addItem('Temperature')
-        self.xaxis_cb.addItem('Illumination')
+        self.xaxis_cb.addItem('Irradiance')
         hbox_plot_set1.addWidget(self.xaxis_cb)
         self.yaxis_label = QtWidgets.QLabel('Y-Axis', self)
         hbox_plot_set1.addWidget(self.yaxis_label)
@@ -85,7 +84,7 @@ class Analysis(QtWidgets.QWidget):
         self.yaxis_cb.addItem('Power')
         self.yaxis_cb.addItem('Fill Factor')
         self.yaxis_cb.addItem('Temperature')
-        self.yaxis_cb.addItem('Illumination')
+        self.yaxis_cb.addItem('Irradiance')
         hbox_plot_set1.addWidget(self.yaxis_cb)
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
         hbox_plot_set1.addWidget(self.plot_mode_label)
@@ -139,7 +138,7 @@ class Analysis(QtWidgets.QWidget):
         hbox_stats_set1.addWidget(self.stats_mode_cb)
         self.stats_update_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
-        self.stats_update_button.clicked.connect(self.load_selection)
+        self.stats_update_button.clicked.connect(self.load_selected_data)
         self.stats_update_button.setToolTip('Update statistics')
         hbox_stats_set1.addWidget(self.stats_update_button)
         hbox_stats_set1.addStretch(-1)
@@ -256,19 +255,22 @@ class Analysis(QtWidgets.QWidget):
                                                    str(folder_functions.get_datetime(directory))])
             tree_item.setCheckState(0, Qt.Unchecked)
 
-    def load_selection(self):
-        # Load file data for selection from folder tab
-        self.get_file_paths.emit()
-        for file in self.reference_files:
+    def load_selected_data(self):
+        self.reference_dataset = list()
+        for file in folder_functions.get_list_of_csv(self.reference_directory):
             csv = CsvFile()
             csv.load_file(file)
-            self.reference_data.append(csv)
-        for file in self.selection_files:
-            csv = CsvFile()
-            csv.load_file(file)
-            self.selection_data.append(csv)
+            self.reference_dataset.append(csv)
+        # for directory in self.analysis_directories:
+        for item in self.analysis_tree.findItems("", Qt.MatchContains):
+            if item.checkState(0) == Qt.Checked:
+                directory = [entry for entry in self.analysis_directories if item.text(0) in entry]
+                for file in folder_functions.get_list_of_csv(directory[0]):
+                    csv = CsvFile()
+                    csv.load_file(file)
+                    self.selection_dataset.append(csv)
         self.update_data()
-        self.table_select = 'averaged'
+        self.stats_mode_cb.setCurrentIndex(self.stats_mode_cb.findText('Average', QtCore.Qt.MatchFixedString))
         self.update_stats()
 
     def save_stats(self):
@@ -283,17 +285,12 @@ class Analysis(QtWidgets.QWidget):
         pixmap = QtWidgets.QWidget.grab(self.plot_canvas)
         QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
-    @QtCore.pyqtSlot(list, list)
-    def set_paths(self, reference_path, selection_path):
-        self.reference_files = reference_path
-        self.selection_files = selection_path
-
     def stats_mode_changed(self):
         self.update_stats()
 
     def update_data(self):
-        self.reference_averaged = data_analysis.average_results(self.reference_data)
-        self.selection_averaged = data_analysis.average_results(self.selection_data)
+        self.reference_averaged = data_analysis.average_results(self.reference_dataset)
+        self.selection_averaged = data_analysis.average_results(self.selection_dataset)
         self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
 
     def update_plot(self):
@@ -306,21 +303,22 @@ class Analysis(QtWidgets.QWidget):
         self.update_plt.emit()
 
     def update_stats(self):
-        if self.table_select == 'default':  # TODO: sort table settings
-            for n in range(self.statistics_table.columnCount()):
-                for m in range(4):  # add a fix to catch reset to default
-                    entry = QtWidgets.QTableWidgetItem('-')
-                    self.statistics_table.setItem(m, n, entry)
-        elif self.stats_mode_cb.currentText() == 'Average':
-            df = pd.concat([self.reference_averaged, self.selection_averaged])
-            for m in range(len(df.index)):  # capture shorter subsequent datasets
-                if m >= self.statistics_table.rowCount():
-                    self.statistics_table.insertRow(m)
-                for n in range(len(df.columns)):
-                    entry = QtWidgets.QTableWidgetItem('123')
-                    self.statistics_table.setItem(m, n, entry)
-        elif self.stats_mode_cb.currentText() == 'Efficiency':
-            df = self.selection_efficiency
-            pass
-        self.statistics_table.resizeColumnsToContents()
-        self.statistics_table.resizeRowsToContents()
+        print("got here!")
+        # if self.table_select == 'default':  # TODO: sort table settings
+        #     for n in range(self.statistics_table.columnCount()):
+        #         for m in range(4):  # add a fix to catch reset to default
+        #             entry = QtWidgets.QTableWidgetItem('-')
+        #             self.statistics_table.setItem(m, n, entry)
+        # elif self.stats_mode_cb.currentText() == 'Average':
+        #     df = pd.concat([self.reference_averaged, self.selection_averaged])
+        #     for m in range(len(df.index)):  # capture shorter subsequent datasets
+        #         if m >= self.statistics_table.rowCount():
+        #             self.statistics_table.insertRow(m)
+        #         for n in range(len(df.columns)):
+        #             entry = QtWidgets.QTableWidgetItem('123')
+        #             self.statistics_table.setItem(m, n, entry)
+        # elif self.stats_mode_cb.currentText() == 'Efficiency':
+        #     df = self.selection_efficiency
+        #     pass
+        # self.statistics_table.resizeColumnsToContents()
+        # self.statistics_table.resizeRowsToContents()

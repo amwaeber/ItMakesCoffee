@@ -490,7 +490,7 @@ class Experiment(QtWidgets.QWidget):
             self.temp_button.setChecked(False)
             self.power_button.setChecked(False)
             return
-        # Toggle plot settings between temperature and irradiation
+        # Toggle plot settings between temperature and irradiance
         if origin == 'temperature' and self.power_button.isChecked():
             self.power_button.setChecked(False)
         elif origin == 'power' and self.temp_button.isChecked():
@@ -502,7 +502,7 @@ class Experiment(QtWidgets.QWidget):
             self.power_data_line3.setData([], [])
             self.power_data_line4.setData([], [])
         elif self.power_button.isChecked():
-            self.sensor_graph.setLabel('left', 'Irradiation (W/m2)')
+            self.sensor_graph.setLabel('left', 'Irradiance (W/m2)')
             self.temp_data_line.setData([], [])
         else:
             self.sensor_graph.setLabel('left', '')
@@ -584,10 +584,10 @@ class Experiment(QtWidgets.QWidget):
     def save(self, repetition):
         self.data_iv = self.iv_mes.get_keithley_data()
         self.data_iv['Temperature (C)'] = self.data_sensor[0]
-        self.data_iv['Power 1 (W/m2)'] = self.data_sensor[1]
-        self.data_iv['Power 2 (W/m2)'] = self.data_sensor[2]
-        self.data_iv['Power 3 (W/m2)'] = self.data_sensor[3]
-        self.data_iv['Power 4 (W/m2)'] = self.data_sensor[4]
+        self.data_iv['Irradiance 1 (W/m2)'] = self.data_sensor[1]
+        self.data_iv['Irradiance 2 (W/m2)'] = self.data_sensor[2]
+        self.data_iv['Irradiance 3 (W/m2)'] = self.data_sensor[3]
+        self.data_iv['Irradiance 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)

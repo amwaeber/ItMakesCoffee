@@ -6,7 +6,9 @@ def get_list_of_csv(path):
     # create a list of file and sub directories
     # names in the given directory
     all_files = list()
-    if os.path.isdir(path):
+    if not path:  # no path set - return empty list
+        pass
+    elif os.path.isdir(path):
         # Iterate over all the entries
         for entry in os.listdir(path):
             full_path = os.path.join(path, entry)
