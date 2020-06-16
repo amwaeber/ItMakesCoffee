@@ -90,6 +90,7 @@ class Analysis(QtWidgets.QWidget):
         hbox_plot_set1.addWidget(self.plot_mode_label)
         self.plot_mode_cb = QtWidgets.QComboBox()
         self.plot_mode_cb.setFixedWidth(120)
+        self.plot_mode_cb.addItem('Single')
         self.plot_mode_cb.addItem('Average')
         self.plot_mode_cb.addItem('Efficiency')
         hbox_plot_set1.addWidget(self.plot_mode_cb)
