@@ -26,7 +26,7 @@ def get_number_of_csv(path):
     n_csv = 0
     if os.path.isdir(path):
         for entry in os.scandir(path):
-            if entry.path.endswith(".csv"):
+            if os.path.basename(entry).startswith('IV_Curve_') and entry.path.endswith(".csv"):
                 n_csv += 1
         return n_csv
     else:

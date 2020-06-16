@@ -8,10 +8,13 @@ from utility import folder_functions
 
 class Experiment:
     def __init__(self, folder_path='.'):
-        self.folder_path = folder_path
+        self.folder_path = os.path.normpath(folder_path)
         self.name = os.path.basename(folder_path)
-        with open(os.path.join(folder_path, 'Settings.txt')) as f:
-            self.time = f.readline().strip('\n')
+        try:
+            with open(os.path.join(folder_path, 'Settings.txt')) as f:
+                self.time = f.readline().strip('\n')
+        except FileNotFoundError:
+            self.time = folder_functions.get_datetime(folder_path)
         self.n_traces = folder_functions.get_number_of_csv(folder_path)
         self.traces = {}
         for trace in range(self.n_traces):
@@ -42,7 +45,7 @@ class Experiment:
 
 class Trace:
     def __init__(self, data_path='.', experiment=None):
-        self.data_path = data_path
+        self.data_path = os.path.normpath(data_path)
         self.experiment = experiment
         self.data = pd.read_csv(self.data_path, index_col=0)
         self.time = self.data['Time (s)'].min()

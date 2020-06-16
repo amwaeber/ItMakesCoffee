@@ -5,7 +5,7 @@ import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
-from helper_classes.csv_import import CsvFile
+from helper_classes.data_import import CsvFile, Experiment
 from helper_classes import data_analysis
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
@@ -20,8 +20,9 @@ class Analysis(QtWidgets.QWidget):
 
         self.plot_directory = paths['last_save']
         self.stats_directory = paths['last_save']
-        self.reference_directory = None
+        self.reference_directory = list()
         self.analysis_directories = list()
+        self.experiments = {}
 
         self.reference_files = list()
         self.reference_dataset = list()
@@ -176,7 +177,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_reference.addLayout(hbox_reference)
         self.reference_tree = QtWidgets.QTreeWidget()
         self.reference_tree.setRootIsDecorated(False)
-        self.reference_tree.setHeaderLabels(["Experiment", "CSV Files", "Created"])
+        self.reference_tree.setHeaderLabels(["Experiment", "Traces", "Created"])
         self.reference_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_reference.addWidget(self.reference_tree)
         self.reference_group_box.setLayout(vbox_reference)
@@ -199,7 +200,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_analysis.addLayout(hbox_analysis)
         self.analysis_tree = QtWidgets.QTreeWidget()
         self.analysis_tree.setRootIsDecorated(False)
-        self.analysis_tree.setHeaderLabels(["Experiment", "CSV Files", "Created"])
+        self.analysis_tree.setHeaderLabels(["Experiment", "Traces", "Created"])
         self.analysis_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vbox_analysis.addWidget(self.analysis_tree)
         self.analysis_group_box.setLayout(vbox_analysis)
@@ -219,17 +220,18 @@ class Analysis(QtWidgets.QWidget):
                                                                                   paths['last_save']))
             self.stats_save_folder_edit.setText(self.stats_directory)
         elif origin == 'reference':
-            self.reference_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                      paths['last_data']))
+            self.reference_directory = [str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
+                                                                                       paths['last_data']))]
+            self.update_data()
             self.update_reference_tree()
 
     def update_reference_tree(self):
         if self.reference_directory:
             self.reference_tree.clear()
             QtWidgets.QTreeWidgetItem(self.reference_tree,
-                                      [os.path.basename(self.reference_directory),
-                                       str(folder_functions.get_number_of_csv(self.reference_directory)),
-                                       str(folder_functions.get_datetime(self.reference_directory))])
+                                      [self.experiments[self.reference_directory[0]].name,
+                                       str(self.experiments[self.reference_directory[0]].n_traces),
+                                       str(self.experiments[self.reference_directory[0]].time)])
 
     def add_analysis_folders(self):
         multi_dir_dialog = MultiDirDialog()
@@ -238,6 +240,7 @@ class Analysis(QtWidgets.QWidget):
         multi_dir_dialog.exec_()
         self.analysis_directories.extend(multi_dir_dialog.selectedFiles())
         self.analysis_directories = list(set(self.analysis_directories))
+        self.update_data()
         self.update_analysis_tree()
 
     def remove_analysis_folders(self):
@@ -245,18 +248,20 @@ class Analysis(QtWidgets.QWidget):
             if item.checkState(0) == Qt.Checked:
                 self.analysis_directories = [entry for entry in self.analysis_directories
                                              if not (item.text(0) in entry)]
+        self.update_data()
         self.update_analysis_tree()
 
     def update_analysis_tree(self):
         self.analysis_tree.clear()
         for directory in self.analysis_directories:
             tree_item = QtWidgets.QTreeWidgetItem(self.analysis_tree,
-                                                  [os.path.basename(directory),
-                                                   str(folder_functions.get_number_of_csv(directory)),
-                                                   str(folder_functions.get_datetime(directory))])
+                                                  [self.experiments[directory].name,
+                                                   str(self.experiments[directory].n_traces),
+                                                   str(self.experiments[directory].time)])
             tree_item.setCheckState(0, Qt.Unchecked)
 
     def load_selected_data(self):
+        return
         self.reference_dataset = list()
         for file in folder_functions.get_list_of_csv(self.reference_directory):
             csv = CsvFile()
@@ -290,9 +295,13 @@ class Analysis(QtWidgets.QWidget):
         self.update_stats()
 
     def update_data(self):
-        self.reference_averaged = data_analysis.average_results(self.reference_dataset)
-        self.selection_averaged = data_analysis.average_results(self.selection_dataset)
-        self.selection_efficiency = data_analysis.efficiency_results(self.selection_averaged, self.reference_averaged)
+        directories = self.analysis_directories + self.reference_directory
+        for directory in directories:
+            if directory not in self.experiments.keys():
+                self.experiments[directory] = Experiment(directory)
+        for directory in list(self.experiments.keys()):
+            if directory not in directories:
+                self.experiments.pop(directory, None)
 
     def update_plot(self):
         self.plot_canvas.figure.clear()
