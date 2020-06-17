@@ -8,6 +8,11 @@ from utility import folder_functions
 
 class Experiment:
     def __init__(self, folder_path='.'):
+        self.reference = False
+        self.plot = False
+        self.stats = False
+        self.select = False
+
         self.folder_path = os.path.normpath(folder_path)
         self.name = os.path.basename(folder_path)
         try:

@@ -5,11 +5,10 @@ import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
-from helper_classes.data_import import CsvFile, Experiment
+from helper_classes.data_import import Experiment
 from helper_classes import data_analysis
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
-import utility.folder_functions as folder_functions
 
 
 class Analysis(QtWidgets.QWidget):
@@ -20,17 +19,9 @@ class Analysis(QtWidgets.QWidget):
 
         self.plot_directory = paths['last_save']
         self.stats_directory = paths['last_save']
-        self.reference_directory = list()
-        self.analysis_directories = list()
+        self.experiment_directories = list()
         self.experiments = {}
 
-        self.reference_files = list()
-        self.reference_dataset = list()
-        self.reference_averaged = pd.DataFrame()
-        self.selection_files = list()
-        self.selection_dataset = list()
-        self.selection_averaged = pd.DataFrame()
-        self.selection_efficiency = pd.DataFrame()
         self.table_select = 'default'
 
         hbox_total = QtWidgets.QHBoxLayout()
@@ -165,44 +156,27 @@ class Analysis(QtWidgets.QWidget):
         self.stats_settings_group_box.setLayout(vbox_stats_set)
         vbox_right.addWidget(self.stats_settings_group_box)
 
-        self.reference_group_box = QtWidgets.QGroupBox('Reference data')
-        vbox_reference = QtWidgets.QVBoxLayout()
-        hbox_reference = QtWidgets.QHBoxLayout()
-        self.reference_folder_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
-        self.reference_folder_button.clicked.connect(lambda: self.folder_dialog('reference'))
-        self.reference_folder_button.setToolTip('Choose reference folder')
-        hbox_reference.addWidget(self.reference_folder_button)
-        hbox_reference.addStretch(-1)
-        vbox_reference.addLayout(hbox_reference)
-        self.reference_tree = QtWidgets.QTreeWidget()
-        self.reference_tree.setRootIsDecorated(False)
-        self.reference_tree.setHeaderLabels(["Experiment", "Traces", "Created"])
-        self.reference_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        vbox_reference.addWidget(self.reference_tree)
-        self.reference_group_box.setLayout(vbox_reference)
-        vbox_right.addWidget(self.reference_group_box)
-
-        self.analysis_group_box = QtWidgets.QGroupBox('Analysis data')
+        self.analysis_group_box = QtWidgets.QGroupBox('Experiment data')
         vbox_analysis = QtWidgets.QVBoxLayout()
         hbox_analysis = QtWidgets.QHBoxLayout()
         self.analysis_add_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'plus.png')), '')
-        self.analysis_add_button.clicked.connect(self.add_analysis_folders)
-        self.analysis_add_button.setToolTip('Add analysis folder')
+        self.analysis_add_button.clicked.connect(self.add_experiments)
+        self.analysis_add_button.setToolTip('Add experiment folders')
         hbox_analysis.addWidget(self.analysis_add_button)
         self.analysis_remove_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'minus.png')), '')
-        self.analysis_remove_button.clicked.connect(self.remove_analysis_folders)
-        self.analysis_remove_button.setToolTip('Remove analysis folder')
+        self.analysis_remove_button.clicked.connect(self.remove_experiments)
+        self.analysis_remove_button.setToolTip('Remove experiment folders')
         hbox_analysis.addWidget(self.analysis_remove_button)
         hbox_analysis.addStretch(-1)
         vbox_analysis.addLayout(hbox_analysis)
-        self.analysis_tree = QtWidgets.QTreeWidget()
-        self.analysis_tree.setRootIsDecorated(False)
-        self.analysis_tree.setHeaderLabels(["Experiment", "Traces", "Created"])
-        self.analysis_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        vbox_analysis.addWidget(self.analysis_tree)
+        self.experiment_tree = QtWidgets.QTreeWidget()
+        self.experiment_tree.setRootIsDecorated(False)
+        self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Created"])
+        self.experiment_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        vbox_analysis.addWidget(self.experiment_tree)
         self.analysis_group_box.setLayout(vbox_analysis)
         vbox_right.addWidget(self.analysis_group_box)
         hbox_total.addLayout(vbox_right, 3)
@@ -219,63 +193,50 @@ class Analysis(QtWidgets.QWidget):
             self.stats_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
                                                                                   paths['last_save']))
             self.stats_save_folder_edit.setText(self.stats_directory)
-        elif origin == 'reference':
-            self.reference_directory = [str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                       paths['last_data']))]
-            self.update_data()
-            self.update_reference_tree()
 
-    def update_reference_tree(self):
-        if self.reference_directory:
-            self.reference_tree.clear()
-            QtWidgets.QTreeWidgetItem(self.reference_tree,
-                                      [self.experiments[self.reference_directory[0]].name,
-                                       str(self.experiments[self.reference_directory[0]].n_traces),
-                                       str(self.experiments[self.reference_directory[0]].time)])
-
-    def add_analysis_folders(self):
+    def add_experiments(self):
         multi_dir_dialog = MultiDirDialog()
         multi_dir_dialog.setDirectory(paths['last_data'])
         multi_dir_dialog.show()
         multi_dir_dialog.exec_()
-        self.analysis_directories.extend(multi_dir_dialog.selectedFiles())
-        self.analysis_directories = list(set(self.analysis_directories))
-        self.update_data()
-        self.update_analysis_tree()
+        self.experiment_directories.extend(multi_dir_dialog.selectedFiles())
+        self.experiment_directories = list(set(self.experiment_directories))
+        self.update_experiment_data()
+        self.update_experiment_tree()
 
-    def remove_analysis_folders(self):
-        for item in self.analysis_tree.findItems("", Qt.MatchContains):
-            if item.checkState(0) == Qt.Checked:
-                self.analysis_directories = [entry for entry in self.analysis_directories
-                                             if not (item.text(0) in entry)]
-        self.update_data()
-        self.update_analysis_tree()
+    def remove_experiments(self):
+        for item in self.experiment_tree.selectedItems():
+            self.experiment_directories = [entry for entry in self.experiment_directories
+                                           if not (item.text(3) in entry)]
+        # for item in self.experiment_tree.findItems("", Qt.MatchContains):
+        #     if item.checkState(2) == Qt.Checked:
+        #         self.experiment_directories = [entry for entry in self.experiment_directories
+        #                                        if not (item.text(3) in entry)]
+        self.update_experiment_data()
+        self.update_experiment_tree()
 
-    def update_analysis_tree(self):
-        self.analysis_tree.clear()
-        for directory in self.analysis_directories:
-            tree_item = QtWidgets.QTreeWidgetItem(self.analysis_tree,
-                                                  [self.experiments[directory].name,
+    def update_experiment_tree(self):
+        self.experiment_tree.clear()
+        for directory in self.experiment_directories:
+            tree_item = QtWidgets.QTreeWidgetItem(self.experiment_tree,
+                                                  [None, None, None, self.experiments[directory].name,
                                                    str(self.experiments[directory].n_traces),
                                                    str(self.experiments[directory].time)])
             tree_item.setCheckState(0, Qt.Unchecked)
+            tree_item.setCheckState(1, Qt.Unchecked)
+            tree_item.setCheckState(2, Qt.Unchecked)
+        self.experiment_tree.sortByColumn(3, Qt.AscendingOrder)
+
+    def update_experiment_data(self):
+        directories = self.experiment_directories
+        for directory in directories:
+            if directory not in self.experiments.keys():
+                self.experiments[directory] = Experiment(directory)
+        for directory in list(self.experiments.keys()):
+            if directory not in directories:
+                self.experiments.pop(directory, None)
 
     def load_selected_data(self):
-        return
-        self.reference_dataset = list()
-        for file in folder_functions.get_list_of_csv(self.reference_directory):
-            csv = CsvFile()
-            csv.load_file(file)
-            self.reference_dataset.append(csv)
-        # for directory in self.analysis_directories:
-        for item in self.analysis_tree.findItems("", Qt.MatchContains):
-            if item.checkState(0) == Qt.Checked:
-                directory = [entry for entry in self.analysis_directories if item.text(0) in entry]
-                for file in folder_functions.get_list_of_csv(directory[0]):
-                    csv = CsvFile()
-                    csv.load_file(file)
-                    self.selection_dataset.append(csv)
-        self.update_data()
         self.stats_mode_cb.setCurrentIndex(self.stats_mode_cb.findText('Average', QtCore.Qt.MatchFixedString))
         self.update_stats()
 
@@ -293,15 +254,6 @@ class Analysis(QtWidgets.QWidget):
 
     def stats_mode_changed(self):
         self.update_stats()
-
-    def update_data(self):
-        directories = self.analysis_directories + self.reference_directory
-        for directory in directories:
-            if directory not in self.experiments.keys():
-                self.experiments[directory] = Experiment(directory)
-        for directory in list(self.experiments.keys()):
-            if directory not in directories:
-                self.experiments.pop(directory, None)
 
     def update_plot(self):
         self.plot_canvas.figure.clear()
