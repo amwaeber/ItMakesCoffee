@@ -7,6 +7,7 @@ from PyQt5.Qt import Qt
 
 from helper_classes.data_import import Experiment
 from helper_classes import data_analysis
+from helper_classes.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 
@@ -208,23 +209,20 @@ class Analysis(QtWidgets.QWidget):
         for item in self.experiment_tree.selectedItems():
             self.experiment_directories = [entry for entry in self.experiment_directories
                                            if not (item.text(3) in entry)]
-        # for item in self.experiment_tree.findItems("", Qt.MatchContains):
-        #     if item.checkState(2) == Qt.Checked:
-        #         self.experiment_directories = [entry for entry in self.experiment_directories
-        #                                        if not (item.text(3) in entry)]
         self.update_experiment_data()
         self.update_experiment_tree()
 
     def update_experiment_tree(self):
         self.experiment_tree.clear()
         for directory in self.experiment_directories:
-            tree_item = QtWidgets.QTreeWidgetItem(self.experiment_tree,
-                                                  [None, None, None, self.experiments[directory].name,
-                                                   str(self.experiments[directory].n_traces),
-                                                   str(self.experiments[directory].time)])
+            tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
+                                       [None, None, None, self.experiments[directory].name,
+                                        str(self.experiments[directory].n_traces),
+                                        str(self.experiments[directory].time)])
             tree_item.setCheckState(0, Qt.Unchecked)
             tree_item.setCheckState(1, Qt.Unchecked)
             tree_item.setCheckState(2, Qt.Unchecked)
+            tree_item.signal.itemChecked.connect(self.checkbox_changed)
         self.experiment_tree.sortByColumn(3, Qt.AscendingOrder)
 
     def update_experiment_data(self):
@@ -235,6 +233,15 @@ class Analysis(QtWidgets.QWidget):
         for directory in list(self.experiments.keys()):
             if directory not in directories:
                 self.experiments.pop(directory, None)
+
+    @QtCore.pyqtSlot(object, int)
+    def checkbox_changed(self, item, column):
+        if column == 0:  # Reference
+
+        elif column == 1:  # Plot
+
+        elif column == 2:  # Statistics
+        print('ItemChecked', item.text(3), column, int(item.checkState(column)))
 
     def load_selected_data(self):
         self.stats_mode_cb.setCurrentIndex(self.stats_mode_cb.findText('Average', QtCore.Qt.MatchFixedString))
