@@ -44,7 +44,6 @@ class Analysis(QtWidgets.QWidget):
         col_headers = ['Experiment', 'Time', 'Max. Power', r'$\sigma$', 'V_oc', r'$\sigma$', 'I_sc', r'$\sigma$',
                        'Fill Factor', r'$\sigma$', 'Temperature', r'$\sigma$', 'Irradiance', r'$\sigma$']
         self.statistics_table.setHorizontalHeaderLabels(col_headers)
-        self.update_stats()
         vbox_table.addWidget(self.statistics_table)
         self.statistics_group_box.setLayout(vbox_table)
         vbox_left.addWidget(self.statistics_group_box, 2)
@@ -66,6 +65,7 @@ class Analysis(QtWidgets.QWidget):
         self.xaxis_cb.addItem('Fill Factor')
         self.xaxis_cb.addItem('Temperature')
         self.xaxis_cb.addItem('Irradiance')
+        self.xaxis_cb.currentTextChanged.connect(self.update_plot)
         hbox_plot_set1.addWidget(self.xaxis_cb)
         self.yaxis_label = QtWidgets.QLabel('Y-Axis', self)
         hbox_plot_set1.addWidget(self.yaxis_label)
@@ -78,6 +78,7 @@ class Analysis(QtWidgets.QWidget):
         self.yaxis_cb.addItem('Fill Factor')
         self.yaxis_cb.addItem('Temperature')
         self.yaxis_cb.addItem('Irradiance')
+        self.yaxis_cb.currentTextChanged.connect(self.update_plot)
         hbox_plot_set1.addWidget(self.yaxis_cb)
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
         hbox_plot_set1.addWidget(self.plot_mode_label)
@@ -86,12 +87,8 @@ class Analysis(QtWidgets.QWidget):
         self.plot_mode_cb.addItem('Single')
         self.plot_mode_cb.addItem('Average')
         self.plot_mode_cb.addItem('Efficiency')
+        self.plot_mode_cb.currentTextChanged.connect(self.update_plot)
         hbox_plot_set1.addWidget(self.plot_mode_cb)
-        self.plot_update_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
-        self.plot_update_button.clicked.connect(self.update_plot)
-        self.plot_update_button.setToolTip('Update plot')
-        hbox_plot_set1.addWidget(self.plot_update_button)
         hbox_plot_set1.addStretch(-1)
         vbox_plot_set.addLayout(hbox_plot_set1)
 
@@ -128,13 +125,8 @@ class Analysis(QtWidgets.QWidget):
         self.stats_mode_cb.setFixedWidth(120)
         self.stats_mode_cb.addItem('Average')
         self.stats_mode_cb.addItem('Efficiency')
-        self.stats_mode_cb.currentTextChanged.connect(self.stats_mode_changed)
+        self.stats_mode_cb.currentTextChanged.connect(self.update_stats)
         hbox_stats_set1.addWidget(self.stats_mode_cb)
-        self.stats_update_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'refresh.png')), '')
-        self.stats_update_button.clicked.connect(self.load_selected_data)
-        self.stats_update_button.setToolTip('Update statistics')
-        hbox_stats_set1.addWidget(self.stats_update_button)
         hbox_stats_set1.addStretch(-1)
         vbox_stats_set.addLayout(hbox_stats_set1)
 
@@ -170,6 +162,16 @@ class Analysis(QtWidgets.QWidget):
         self.analysis_remove_button.clicked.connect(self.remove_experiments)
         self.analysis_remove_button.setToolTip('Remove experiment folders')
         hbox_analysis.addWidget(self.analysis_remove_button)
+        self.analysis_select_all_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'select_all.png')), '')
+        self.analysis_select_all_button.clicked.connect(lambda: self.change_selection('all'))
+        self.analysis_select_all_button.setToolTip('Select all experiments')
+        hbox_analysis.addWidget(self.analysis_select_all_button)
+        self.analysis_select_none_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'select_none.png')), '')
+        self.analysis_select_none_button.clicked.connect(lambda: self.change_selection('none'))
+        self.analysis_select_none_button.setToolTip('Unselect all experiments')
+        hbox_analysis.addWidget(self.analysis_select_none_button)
         hbox_analysis.addStretch(-1)
         vbox_analysis.addLayout(hbox_analysis)
         self.experiment_tree = QtWidgets.QTreeWidget()
@@ -184,6 +186,7 @@ class Analysis(QtWidgets.QWidget):
         self.setLayout(hbox_total)
 
         self.update_plot()
+        self.update_stats()
 
     def folder_dialog(self, origin):
         if origin == 'plot':
@@ -208,9 +211,35 @@ class Analysis(QtWidgets.QWidget):
     def remove_experiments(self):
         for item in self.experiment_tree.selectedItems():
             self.experiment_directories = [entry for entry in self.experiment_directories
-                                           if not (item.text(3) in entry)]
+                                           if not (item.toolTip(3) == entry)]
         self.update_experiment_data()
         self.update_experiment_tree()
+
+    def change_selection(self, select):
+        iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        while iterator.value():
+            tree_item = iterator.value()
+            if modifiers == QtCore.Qt.ControlModifier:  # Affecting plots
+                if select == 'all':
+                    tree_item.setCheckState(1, Qt.Checked)
+                    self.experiments[str(tree_item.toolTip(3))].plot = True
+                elif select == 'none':
+                    tree_item.setCheckState(1, Qt.Unchecked)
+                    self.experiments[str(tree_item.toolTip(3))].plot = False
+            elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):  # affecting statistics
+                if select == 'all':
+                    tree_item.setCheckState(2, Qt.Checked)
+                    self.experiments[str(tree_item.toolTip(3))].stats = True
+                elif select == 'none':
+                    tree_item.setCheckState(2, Qt.Unchecked)
+                    self.experiments[str(tree_item.toolTip(3))].stats = False
+            else:
+                if select == 'all':
+                    tree_item.setSelected(True)
+                elif select == 'none':
+                    tree_item.setSelected(False)
+            iterator += 1
 
     def update_experiment_tree(self):
         self.experiment_tree.clear()
@@ -219,9 +248,10 @@ class Analysis(QtWidgets.QWidget):
                                        [None, None, None, self.experiments[directory].name,
                                         str(self.experiments[directory].n_traces),
                                         str(self.experiments[directory].time)])
-            tree_item.setCheckState(0, Qt.Unchecked)
-            tree_item.setCheckState(1, Qt.Unchecked)
-            tree_item.setCheckState(2, Qt.Unchecked)
+            tree_item.setToolTip(3, directory)
+            tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiments[directory].reference))
+            tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiments[directory].plot))
+            tree_item.setCheckState(2, self.bool_to_qtchecked(self.experiments[directory].stats))
             tree_item.signal.itemChecked.connect(self.checkbox_changed)
         self.experiment_tree.sortByColumn(3, Qt.AscendingOrder)
 
@@ -236,31 +266,37 @@ class Analysis(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object, int)
     def checkbox_changed(self, item, column):
+        experiment = str(item.toolTip(3))
         if column == 0:  # Reference
+            if int(item.checkState(column)) == 0:
+                self.experiments[experiment].reference = False
+            else:
+                self.experiments[experiment].reference = True
+                iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)  # set other reference cbs to False
+                while iterator.value():
+                    tree_item = iterator.value()
+                    if tree_item != item and int(tree_item.checkState(column)) != 0:
+                        tree_item.setCheckState(0, Qt.Unchecked)
+                        self.experiments[str(tree_item.toolTip(3))].reference = False
+                    iterator += 1
+            self.update_reference()
 
         elif column == 1:  # Plot
+            if int(item.checkState(column)) == 0:
+                self.experiments[experiment].plot = False
+            else:
+                self.experiments[experiment].plot = True
+            self.update_plot()
 
         elif column == 2:  # Statistics
-        print('ItemChecked', item.text(3), column, int(item.checkState(column)))
+            if int(item.checkState(column)) == 0:
+                self.experiments[experiment].stats = False
+            else:
+                self.experiments[experiment].stats = True
+            self.update_stats()
 
-    def load_selected_data(self):
-        self.stats_mode_cb.setCurrentIndex(self.stats_mode_cb.findText('Average', QtCore.Qt.MatchFixedString))
-        self.update_stats()
-
-    def save_stats(self):
-        # save both average and relative tables
+    def update_reference(self):
         pass
-
-    def save_plot(self):
-        # save current plot
-        pass
-
-    def clipboard(self):
-        pixmap = QtWidgets.QWidget.grab(self.plot_canvas)
-        QtWidgets.QApplication.clipboard().setPixmap(pixmap)
-
-    def stats_mode_changed(self):
-        self.update_stats()
 
     def update_plot(self):
         self.plot_canvas.figure.clear()
@@ -271,8 +307,16 @@ class Analysis(QtWidgets.QWidget):
         axis.plot(xval, yval, lw=1.3)
         self.update_plt.emit()
 
+    def clipboard(self):
+        pixmap = QtWidgets.QWidget.grab(self.plot_canvas)
+        QtWidgets.QApplication.clipboard().setPixmap(pixmap)
+
+    def save_plot(self):
+        # save current plot
+        pass
+
     def update_stats(self):
-        print("got here!")
+        pass
         # if self.table_select == 'default':  # TODO: sort table settings
         #     for n in range(self.statistics_table.columnCount()):
         #         for m in range(4):  # add a fix to catch reset to default
@@ -291,3 +335,14 @@ class Analysis(QtWidgets.QWidget):
         #     pass
         # self.statistics_table.resizeColumnsToContents()
         # self.statistics_table.resizeRowsToContents()
+
+    def save_stats(self):
+        # save both average and relative tables
+        pass
+
+    @staticmethod
+    def bool_to_qtchecked(boolean):
+        if boolean:
+            return Qt.Checked
+        else:
+            return Qt.Unchecked
