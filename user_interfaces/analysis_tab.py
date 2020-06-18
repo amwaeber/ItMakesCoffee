@@ -76,7 +76,6 @@ class Analysis(QtWidgets.QWidget):
         self.xaxis_cb.addItem('Current')
         self.xaxis_cb.addItem('Voltage')
         self.xaxis_cb.addItem('Power')
-        self.xaxis_cb.addItem('Fill Factor')
         self.xaxis_cb.addItem('Temperature')
         self.xaxis_cb.addItem('Irradiance')
         self.xaxis_cb.currentTextChanged.connect(self.update_plot)
@@ -295,6 +294,7 @@ class Analysis(QtWidgets.QWidget):
                         self.experiments[str(tree_item.toolTip(3))].reference = False
                     iterator += 1
             self.update_reference()
+            self.update_plot()  # to update effects reference switch has on plot
 
         elif column == 1:  # Plot
             if int(item.checkState(column)) == 0:
@@ -372,15 +372,23 @@ class Analysis(QtWidgets.QWidget):
                     return
                 categories, values, errors, bar_color = list(), list(), list(), list()
                 for i, experiment in enumerate(plot_list):
-                    categories.append(self.experiments[experiment].name)
-                    values.append(self.experiments[experiment].values[y_data][0])
-                    errors.append(self.experiments[experiment].values[y_data][1])
-                    bar_color.append(colors[0])
-                if len(''.join(categories)) // max([1, len(categories)]) > 25:
-                    for k, cat in enumerate(categories):
-                        categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
-                                                 for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
-                low, high = min(values), max(values)
+                    if self.experiments[experiment].reference:
+                        categories.insert(0, self.experiments[experiment].name)
+                        values.insert(0, self.experiments[experiment].values[y_data][0])
+                        errors.insert(0, self.experiments[experiment].values[y_data][1])
+                        bar_color.insert(0, colors[1])
+                    else:
+                        categories.append(self.experiments[experiment].name)
+                        values.append(self.experiments[experiment].values[y_data][0])
+                        errors.append(self.experiments[experiment].values[y_data][1])
+                        bar_color.append(colors[0])
+                for k, cat in enumerate(categories):  # add line breaks in experiment labels
+                    categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
+                                             for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
+                try:
+                    low, high = min(values), max(values)
+                except ValueError:  # if no experiment selected
+                    low, high = 0, 0.0005
                 axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
                 axis.bar(categories, values, yerr=errors, color=bar_color,
                          error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
