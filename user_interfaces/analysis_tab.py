@@ -18,12 +18,12 @@ line_plot_dict = {'Time': 'Time (s)',
                   'Power': 'Power (W)',
                   'Temperature': 'Temperature (C)',
                   'Irradiance': 'Irradiance 1 (W/m2)'}
-bar_plot_dict = {'Current': 'I_sc (A)',
-                 'Voltage': 'V_oc (V)',
-                 'Power': 'P_max (W)',
-                 'Fill Factor': 'FF',
-                 'Temperature': 'T_avg (C)',
-                 'Irradiance': 'I_1_avg (W/m2)'}
+bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
+                 'Voltage': 'Open Circuit Voltage V_oc (V)',
+                 'Power': 'Maximum Power P_max (W)',
+                 'Fill Factor': 'Fill Factor',
+                 'Temperature': 'Average Temperature T_avg (C)',
+                 'Irradiance': 'Average Irradiance I_1_avg (W/m2)'}
 
 
 class Analysis(QtWidgets.QWidget):
@@ -324,11 +324,47 @@ class Analysis(QtWidgets.QWidget):
 
     def update_plot(self):
         plot_list = [key for key, experiment in self.experiments.items() if experiment.plot is True]
+        self.plot_canvas.figure.clear()
+        axis = self.plot_canvas.figure.add_subplot(111)
         if self.plot_mode_cb.currentText() == 'Single' and len(plot_list) == 1:
             experiment = self.experiments[plot_list[0]]
-            self.plot_canvas.figure.clear()
-            axis = self.plot_canvas.figure.add_subplot(111)
             axis.set_title(experiment.name)
+            if self.xaxis_cb.currentText() == 'Categorical':
+                try:
+                    y_data = bar_plot_dict[self.yaxis_cb.currentText()]
+                except KeyError:
+                    return
+                categories, values, errors, bar_color = list(), list(), list(), list()
+                for i, trace in enumerate(experiment.traces.values()):
+                    categories.append('Trace %d' % i)
+                    values.append(trace.values[y_data][0])
+                    errors.append(trace.values[y_data][1])
+                    bar_color.append(colors[0])
+                categories.append('Average')
+                values.append(experiment.values[y_data][0])
+                errors.append(experiment.values[y_data][1])
+                bar_color.append(colors[1])
+                low, high = min(values), max(values)
+                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
+                axis.bar(categories, values, yerr=errors, color=bar_color,
+                         error_kw=dict(ecolor='black', elinewidth=0.5, capsize=2))
+                axis.set_xlabel("")
+                axis.set_ylabel(y_data)
+            else:
+                try:
+                    x_data = line_plot_dict[self.xaxis_cb.currentText()]
+                    y_data = line_plot_dict[self.yaxis_cb.currentText()]
+                except KeyError:
+                    return
+                for i, trace in enumerate(experiment.traces.values()):
+                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors[i % len(colors)], lw=1, ax=axis,
+                                    label='Trace %d' % i)
+                experiment.average_data.plot(kind='line', x=x_data, y=y_data, color='#000000', lw=2, ax=axis,
+                                             label='Average')
+                axis.set_xlabel(x_data)
+                axis.set_ylabel(y_data)
+        elif self.plot_mode_cb.currentText() == 'Average':
+            axis.set_title('Averages')
             if self.xaxis_cb.currentText() == 'Categorical':
                 print('plot bar chart')
                 pass
@@ -338,14 +374,12 @@ class Analysis(QtWidgets.QWidget):
                     y_data = line_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
                     return
-                experiment.average_data.plot(kind='line', x=x_data, y=y_data, color='k', lw=2, ax=axis)
-                for i, trace in enumerate(experiment.traces.values()):
-                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors[i % len(colors)], lw=1, ax=axis)
+                for i, experiment in enumerate(plot_list):
+                    self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=y_data,
+                                                                   color=colors[i % len(colors)], lw=1, ax=axis,
+                                                                   label=self.experiments[experiment].name)
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
-        elif self.plot_mode_cb.currentText() == 'Average':
-            print('plot average')
-            pass
         elif self.plot_mode_cb.currentText() == 'Efficiency':
             print('plot efficiency')
             pass

@@ -24,27 +24,28 @@ class Experiment:
         for trace in range(self.n_traces):
             key = 'IV_Curve_%s' % str(trace)
             self.traces[key] = Trace(os.path.join(folder_path, key + '.csv'), self.name)
+        self.values = {}
         if self.n_traces > 0:
             combined_data = pd.concat((trace.data for trace in self.traces.values()))
             self.average_data = combined_data.groupby(combined_data.index).mean()
-            v_oc = [trace.v_oc for trace in self.traces.values()]
-            self.v_oc = [np.mean(v_oc), np.std(v_oc)]
-            i_sc = [trace.i_sc for trace in self.traces.values()]
-            self.i_sc = [np.mean(i_sc), np.std(i_sc)]
-            power_max = [trace.power_max for trace in self.traces.values()]
-            self.power_max = [np.mean(power_max), np.std(power_max)]
-            fill_factor = [trace.fill_factor for trace in self.traces.values()]
-            self.fill_factor = [np.mean(fill_factor), np.std(fill_factor)]
-            temperature = [trace.temperature[0] for trace in self.traces.values()]
-            self.temperature = [np.mean(temperature), np.std(temperature)]
-            irradiance_1 = [trace.irradiance_1[0] for trace in self.traces.values()]
-            self.irradiance_1 = [np.mean(irradiance_1), np.std(irradiance_1)]
-            irradiance_2 = [trace.irradiance_2[0] for trace in self.traces.values()]
-            self.irradiance_2 = [np.mean(irradiance_2), np.std(irradiance_2)]
-            irradiance_3 = [trace.irradiance_3[0] for trace in self.traces.values()]
-            self.irradiance_3 = [np.mean(irradiance_3), np.std(irradiance_3)]
-            irradiance_4 = [trace.irradiance_4[0] for trace in self.traces.values()]
-            self.irradiance_4 = [np.mean(irradiance_4), np.std(irradiance_4)]
+            v_oc = [trace.values['Open Circuit Voltage V_oc (V)'][0] for trace in self.traces.values()]
+            self.values['Open Circuit Voltage V_oc (V)'] = [np.mean(v_oc), np.std(v_oc)]
+            i_sc = [trace.values['Short Circuit Current I_sc (A)'][0] for trace in self.traces.values()]
+            self.values['Short Circuit Current I_sc (A)'] = [np.mean(i_sc), np.std(i_sc)]
+            power_max = [trace.values['Maximum Power P_max (W)'][0] for trace in self.traces.values()]
+            self.values['Maximum Power P_max (W)'] = [np.mean(power_max), np.std(power_max)]
+            fill_factor = [trace.values['Fill Factor'][0] for trace in self.traces.values()]
+            self.values['Fill Factor'] = [np.mean(fill_factor), np.std(fill_factor)]
+            temperature = [trace.values['Average Temperature T_avg (C)'][0] for trace in self.traces.values()]
+            self.values['Average Temperature T_avg (C)'] = [np.mean(temperature), np.std(temperature)]
+            irradiance_1 = [trace.values['Average Irradiance I_1_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_1_avg (W/m2)'] = [np.mean(irradiance_1), np.std(irradiance_1)]
+            irradiance_2 = [trace.values['Average Irradiance I_2_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_2_avg (W/m2)'] = [np.mean(irradiance_2), np.std(irradiance_2)]
+            irradiance_3 = [trace.values['Average Irradiance I_3_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_3_avg (W/m2)'] = [np.mean(irradiance_3), np.std(irradiance_3)]
+            irradiance_4 = [trace.values['Average Irradiance I_4_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_4_avg (W/m2)'] = [np.mean(irradiance_4), np.std(irradiance_4)]
 
 
 class Trace:
@@ -57,17 +58,27 @@ class Trace:
                                        "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"],
                                 usecols=[0, 1, 2, 3, 6, 7, 8, 9, 10, 11])
         self.time = self.data['Time (s)'].min()
-        self.v_oc = self.data.loc[self.data['Current (A)'].abs() == self.data['Current (A)'].abs().min(),
-                                  ['Voltage (V)']].values[0, 0]  # V
-        self.i_sc = self.data.loc[self.data['Voltage (V)'].abs() == self.data['Voltage (V)'].abs().min(),
-                                  ['Current (A)']].values[0, 0]  # A
-        self.power_max = self.data['Power (W)'].max()  # W
-        self.fill_factor = abs(self.power_max / (self.v_oc * self.i_sc))
-        self.temperature = [self.data['Temperature (C)'].mean(), self.data['Temperature (C)'].std()]  # C
-        self.irradiance_1 = [self.data['Irradiance 1 (W/m2)'].mean(), self.data['Irradiance 1 (W/m2)'].std()]  # W/m2
-        self.irradiance_2 = [self.data['Irradiance 2 (W/m2)'].mean(), self.data['Irradiance 2 (W/m2)'].std()]  # W/m2
-        self.irradiance_3 = [self.data['Irradiance 3 (W/m2)'].mean(), self.data['Irradiance 3 (W/m2)'].std()]  # W/m2
-        self.irradiance_4 = [self.data['Irradiance 4 (W/m2)'].mean(), self.data['Irradiance 4 (W/m2)'].std()]  # W/m2
+        self.values = {}
+        self.values['Open Circuit Voltage V_oc (V)'] = [self.data.loc[self.data['Current (A)'].abs() ==
+                                                                    self.data['Current (A)'].abs().min(),
+                                                                      ['Voltage (V)']].values[0, 0], 0]  # V
+        self.values['Short Circuit Current I_sc (A)'] = [self.data.loc[self.data['Voltage (V)'].abs() ==
+                                                                       self.data['Voltage (V)'].abs().min(),
+                                                                       ['Current (A)']].values[0, 0], 0]  # A
+        self.values['Maximum Power P_max (W)'] = [self.data['Power (W)'].max(), 0]  # W
+        self.values['Fill Factor'] = [abs(self.values['Maximum Power P_max (W)'][0] /
+                                          (self.values['Open Circuit Voltage V_oc (V)'][0] *
+                                           self.values['Short Circuit Current I_sc (A)'][0])), 0]
+        self.values['Average Temperature T_avg (C)'] = [self.data['Temperature (C)'].mean(),
+                                                        self.data['Temperature (C)'].std()]  # C
+        self.values['Average Irradiance I_1_avg (W/m2)'] = [self.data['Irradiance 1 (W/m2)'].mean(),
+                                                            self.data['Irradiance 1 (W/m2)'].std()]  # W/m2
+        self.values['Average Irradiance I_2_avg (W/m2)'] = [self.data['Irradiance 2 (W/m2)'].mean(),
+                                                            self.data['Irradiance 2 (W/m2)'].std()]  # W/m2
+        self.values['Average Irradiance I_3_avg (W/m2)'] = [self.data['Irradiance 3 (W/m2)'].mean(),
+                                                            self.data['Irradiance 3 (W/m2)'].std()]  # W/m2
+        self.values['Average Irradiance I_4_avg (W/m2)'] = [self.data['Irradiance 4 (W/m2)'].mean(),
+                                                            self.data['Irradiance 4 (W/m2)'].std()]  # W/m2
 
 
 class CsvFile:
