@@ -12,6 +12,18 @@ from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 
 colors = ['#1e90ff', '#ff0000', '#32cd32', '#ff8c00', '#8a2be2']
+line_plot_dict = {'Time': 'Time (s)',
+                  'Current': 'Current (A)',
+                  'Voltage': 'Voltage (V)',
+                  'Power': 'Power (W)',
+                  'Temperature': 'Temperature (C)',
+                  'Irradiance': 'Irradiance 1 (W/m2)'}
+bar_plot_dict = {'Current': 'I_sc (A)',
+                 'Voltage': 'V_oc (V)',
+                 'Power': 'P_max (W)',
+                 'Fill Factor': 'FF',
+                 'Temperature': 'T_avg (C)',
+                 'Irradiance': 'I_1_avg (W/m2)'}
 
 
 class Analysis(QtWidgets.QWidget):
@@ -274,7 +286,8 @@ class Analysis(QtWidgets.QWidget):
                 self.experiments[experiment].reference = False
             else:
                 self.experiments[experiment].reference = True
-                iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)  # set other reference cbs to False
+                # set other reference cbs to False so only one reference at any time
+                iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
                 while iterator.value():
                     tree_item = iterator.value()
                     if tree_item != item and int(tree_item.checkState(column)) != 0:
@@ -288,6 +301,15 @@ class Analysis(QtWidgets.QWidget):
                 self.experiments[experiment].plot = False
             else:
                 self.experiments[experiment].plot = True
+                # set other plot cbs to False if in single-plot mode
+                if self.plot_mode_cb.currentText() == 'Single':
+                    iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
+                    while iterator.value():
+                        tree_item = iterator.value()
+                        if tree_item != item and int(tree_item.checkState(column)) != 0:
+                            tree_item.setCheckState(1, Qt.Unchecked)
+                            self.experiments[str(tree_item.toolTip(3))].reference = False
+                        iterator += 1
             self.update_plot()
 
         elif column == 2:  # Statistics
@@ -304,16 +326,23 @@ class Analysis(QtWidgets.QWidget):
         plot_list = [key for key, experiment in self.experiments.items() if experiment.plot is True]
         if self.plot_mode_cb.currentText() == 'Single' and len(plot_list) == 1:
             experiment = self.experiments[plot_list[0]]
+            self.plot_canvas.figure.clear()
+            axis = self.plot_canvas.figure.add_subplot(111)
+            axis.set_title(experiment.name)
             if self.xaxis_cb.currentText() == 'Categorical':
                 print('plot bar chart')
                 pass
             else:
-                self.plot_canvas.figure.clear()
-                axis = self.plot_canvas.figure.add_subplot(111)
-                experiment.average_data.plot(kind='line', x='Voltage (V)', y='Current (A)', color='k', lw=2, ax=axis)
+                try:
+                    x_data = line_plot_dict[self.xaxis_cb.currentText()]
+                    y_data = line_plot_dict[self.yaxis_cb.currentText()]
+                except KeyError:
+                    return
+                experiment.average_data.plot(kind='line', x=x_data, y=y_data, color='k', lw=2, ax=axis)
                 for i, trace in enumerate(experiment.traces.values()):
-                    trace.data.plot(kind='line', x='Voltage (V)', y='Current (A)', color=colors[i % len(colors)],
-                                    lw=1, ax=axis)
+                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors[i % len(colors)], lw=1, ax=axis)
+                axis.set_xlabel(x_data)
+                axis.set_ylabel(y_data)
         elif self.plot_mode_cb.currentText() == 'Average':
             print('plot average')
             pass
@@ -326,7 +355,7 @@ class Analysis(QtWidgets.QWidget):
             axis.set_xlabel(self.xaxis_cb.currentText())
             axis.set_ylabel(self.yaxis_cb.currentText())
             xval, yval = range(100), [0] * 100
-            axis.plot(xval, yval, lw=1.3)
+            axis.plot(xval, yval, color=colors[0], lw=1)
         self.update_plt.emit()
 
     def clipboard(self):
