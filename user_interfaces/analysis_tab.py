@@ -11,6 +11,8 @@ from helper_classes.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 
+colors = ['#1e90ff', '#ff0000', '#32cd32', '#ff8c00', '#8a2be2']
+
 
 class Analysis(QtWidgets.QWidget):
     update_plt = QtCore.pyqtSignal()  # figure signal lane
@@ -299,12 +301,32 @@ class Analysis(QtWidgets.QWidget):
         pass
 
     def update_plot(self):
-        self.plot_canvas.figure.clear()
-        axis = self.plot_canvas.figure.add_subplot(111)
-        axis.set_xlabel(self.xaxis_cb.currentText())
-        axis.set_ylabel(self.yaxis_cb.currentText())
-        xval, yval = range(100), [0] * 100
-        axis.plot(xval, yval, lw=1.3)
+        plot_list = [key for key, experiment in self.experiments.items() if experiment.plot is True]
+        if self.plot_mode_cb.currentText() == 'Single' and len(plot_list) == 1:
+            experiment = self.experiments[plot_list[0]]
+            if self.xaxis_cb.currentText() == 'Categorical':
+                print('plot bar chart')
+                pass
+            else:
+                self.plot_canvas.figure.clear()
+                axis = self.plot_canvas.figure.add_subplot(111)
+                experiment.average_data.plot(kind='line', x='Voltage (V)', y='Current (A)', color='k', lw=2, ax=axis)
+                for i, trace in enumerate(experiment.traces.values()):
+                    trace.data.plot(kind='line', x='Voltage (V)', y='Current (A)', color=colors[i % len(colors)],
+                                    lw=1, ax=axis)
+        elif self.plot_mode_cb.currentText() == 'Average':
+            print('plot average')
+            pass
+        elif self.plot_mode_cb.currentText() == 'Efficiency':
+            print('plot efficiency')
+            pass
+        else:
+            self.plot_canvas.figure.clear()
+            axis = self.plot_canvas.figure.add_subplot(111)
+            axis.set_xlabel(self.xaxis_cb.currentText())
+            axis.set_ylabel(self.yaxis_cb.currentText())
+            xval, yval = range(100), [0] * 100
+            axis.plot(xval, yval, lw=1.3)
         self.update_plt.emit()
 
     def clipboard(self):

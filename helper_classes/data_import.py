@@ -51,7 +51,11 @@ class Trace:
     def __init__(self, data_path='.', experiment=None):
         self.data_path = os.path.normpath(data_path)
         self.experiment = experiment
-        self.data = pd.read_csv(self.data_path, index_col=0)
+        self.data = pd.read_csv(self.data_path,  header=None, index_col=0, skiprows=1,
+                                names=["Index", "Time (s)", "Voltage (V)", "Current (A)", "Current Std (A)",
+                                       "Resistance (Ohm)", "Power (W)", "Temperature (C)", "Irradiance 1 (W/m2)",
+                                       "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"],
+                                usecols=[0, 1, 2, 3, 6, 7, 8, 9, 10, 11])
         self.time = self.data['Time (s)'].min()
         self.v_oc = self.data.loc[self.data['Current (A)'].abs() == self.data['Current (A)'].abs().min(),
                                   ['Voltage (V)']].values[0, 0]  # V
@@ -82,10 +86,11 @@ class CsvFile:
     def load_file(self, fname):
         self.file_name = fname
         self.experiment = os.path.split(os.path.dirname(self.file_name))[-1]
-        self.data = pd.read_csv(self.file_name, sep=',', header=0, index_col=0, skiprows=1,
-                                names=["Time (s)", "Voltage (V)", "Current (A)", "Current Std (A)" ,
-                                       "Resistance (Ohm)", "Power (W)", "Temperature (C)", "Irradiance 1 (W/m2)",
-                                       "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"])
+        self.data = pd.read_csv(self.file_name, sep=',', header=None, index_col=0, skiprows=1,
+                                names=["Time (s)", "Voltage (V)", "Current (A)", "Power (W)", "Temperature (C)",
+                                       "Irradiance 1 (W/m2)",
+                                       "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"],
+                                usecols=[1, 2, 3, 6, 7, 8, 9, 10, 11])
         self.time = self.data['Time (s)'].min()  # s
         self.v_oc = self.data.loc[self.data['Current (A)'].abs() == self.data['Current (A)'].abs().min(),
                                   ['Voltage (V)']].values[0, 0]  # V
