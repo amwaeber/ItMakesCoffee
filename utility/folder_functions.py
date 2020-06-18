@@ -2,6 +2,27 @@ import datetime
 import os
 
 
+def get_experiment_folders(list_of_paths):
+    all_paths = list()
+    for path in list_of_paths:
+        all_paths.extend(get_csv_folders(path))
+    return all_paths
+
+
+def get_csv_folders(path):
+    path_list = []
+    if os.path.isfile(path):
+        return []
+    # add dir to pathlist if it contains .txt files
+    if len([f for f in os.listdir(path) if f.endswith('.csv') and os.path.basename(f).startswith('IV_Curve_')]) > 0:
+        path_list.append(path)
+    for d in os.listdir(path):
+        new_path = os.path.join(path, d)
+        if os.path.isdir(new_path):
+            path_list += get_csv_folders(new_path)
+    return path_list
+
+
 def get_list_of_csv(path):
     # create a list of file and sub directories
     # names in the given directory

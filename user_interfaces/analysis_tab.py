@@ -10,6 +10,7 @@ from helper_classes import data_analysis
 from helper_classes.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
+from utility.folder_functions import get_experiment_folders
 
 colors = ['#1e90ff', '#ff0000', '#32cd32', '#ff8c00', '#8a2be2']
 line_plot_dict = {'Time': 'Time (s)',
@@ -216,7 +217,7 @@ class Analysis(QtWidgets.QWidget):
         multi_dir_dialog.setDirectory(paths['last_data'])
         multi_dir_dialog.show()
         multi_dir_dialog.exec_()
-        self.experiment_directories.extend(multi_dir_dialog.selectedFiles())
+        self.experiment_directories.extend(get_experiment_folders(multi_dir_dialog.selectedFiles()))
         self.experiment_directories = list(set(self.experiment_directories))
         self.update_experiment_data()
         self.update_experiment_tree()
@@ -227,6 +228,9 @@ class Analysis(QtWidgets.QWidget):
                                            if not (item.toolTip(3) == entry)]
         self.update_experiment_data()
         self.update_experiment_tree()
+        self.update_reference()
+        self.update_plot()
+        self.update_stats()
 
     def change_selection(self, select):
         iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
