@@ -347,7 +347,7 @@ class Analysis(QtWidgets.QWidget):
                 low, high = min(values), max(values)
                 axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
                 axis.bar(categories, values, yerr=errors, color=bar_color,
-                         error_kw=dict(ecolor='black', elinewidth=0.5, capsize=2))
+                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
                 axis.set_xlabel("")
                 axis.set_ylabel(y_data)
             else:
@@ -366,8 +366,26 @@ class Analysis(QtWidgets.QWidget):
         elif self.plot_mode_cb.currentText() == 'Average':
             axis.set_title('Averages')
             if self.xaxis_cb.currentText() == 'Categorical':
-                print('plot bar chart')
-                pass
+                try:
+                    y_data = bar_plot_dict[self.yaxis_cb.currentText()]
+                except KeyError:
+                    return
+                categories, values, errors, bar_color = list(), list(), list(), list()
+                for i, experiment in enumerate(plot_list):
+                    categories.append(self.experiments[experiment].name)
+                    values.append(self.experiments[experiment].values[y_data][0])
+                    errors.append(self.experiments[experiment].values[y_data][1])
+                    bar_color.append(colors[0])
+                if len(''.join(categories)) // max([1, len(categories)]) > 25:
+                    for k, cat in enumerate(categories):
+                        categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
+                                                 for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
+                low, high = min(values), max(values)
+                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
+                axis.bar(categories, values, yerr=errors, color=bar_color,
+                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
+                axis.set_xlabel("")
+                axis.set_ylabel(y_data)
             else:
                 try:
                     x_data = line_plot_dict[self.xaxis_cb.currentText()]
