@@ -23,25 +23,6 @@ def get_csv_folders(path):
     return path_list
 
 
-def get_list_of_csv(path):
-    # create a list of file and sub directories
-    # names in the given directory
-    all_files = list()
-    if not path:  # no path set - return empty list
-        pass
-    elif os.path.isdir(path):
-        # Iterate over all the entries
-        for entry in os.listdir(path):
-            full_path = os.path.join(path, entry)
-            if full_path.endswith('.csv'):
-                all_files.append(os.path.normpath(full_path))
-        if len(all_files) == 1:  # if there were no csv files in the folder, return empty instead
-            all_files = list()
-    elif path.endswith('.csv'):
-        all_files.append(os.path.normpath(path))
-    return all_files
-
-
 def get_number_of_csv(path):
     # returns number of csv files in the directory
     n_csv = 0

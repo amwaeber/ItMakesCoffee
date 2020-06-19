@@ -25,6 +25,11 @@ bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
                  'Fill Factor': 'Fill Factor',
                  'Temperature': 'Average Temperature T_avg (C)',
                  'Irradiance': 'Average Irradiance I_1_avg (W/m2)'}
+efficiency_plot_dict = {'Current': ['Delta I_sc', r'$\Delta I_{sc}/PV (\%)$'],
+                        'Voltage': ['Delta V_oc', r'$\Delta V_{oc}/PV (\%)$'],
+                        'Power': ['Delta P_max', r'$\Delta P_{max}/PV (\%)$'],
+                        'Fill Factor': ['Delta Fill Factor', r'$\Delta FF/PV (\%)$'],
+                        'Temperature': ['Delta T_avg', r'$\Delta T_{avg}/PV (\%)$']}
 
 
 class Analysis(QtWidgets.QWidget):
@@ -37,6 +42,7 @@ class Analysis(QtWidgets.QWidget):
         self.stats_directory = paths['last_save']
         self.experiment_directories = list()
         self.experiments = {}
+        self.reference = ''
 
         self.table_select = 'default'
 
@@ -287,8 +293,11 @@ class Analysis(QtWidgets.QWidget):
         if column == 0:  # Reference
             if int(item.checkState(column)) == 0:
                 self.experiments[experiment].reference = False
+                if self.reference == experiment:
+                    self.reference = ''
             else:
                 self.experiments[experiment].reference = True
+                self.reference = experiment
                 # set other reference cbs to False so only one reference at any time
                 iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
                 while iterator.value():
@@ -324,7 +333,8 @@ class Analysis(QtWidgets.QWidget):
             self.update_stats()
 
     def update_reference(self):
-        pass
+        for experiment in self.experiments.values():
+            experiment.update_efficiencies(self.experiments.get(self.reference, None))
 
     def update_plot(self):
         plot_list = [key for key, experiment in self.experiments.items() if experiment.plot is True]
@@ -411,15 +421,39 @@ class Analysis(QtWidgets.QWidget):
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
         elif self.plot_mode_cb.currentText() == 'Efficiency':
-            print('plot efficiency')
-            pass
+            axis.set_title('Relative efficiency vs reference')
+            if self.xaxis_cb.currentText() == 'Categorical' and self.reference != '' and len(plot_list) >= 2:
+                try:
+                    y_data = efficiency_plot_dict[self.yaxis_cb.currentText()]
+                except KeyError:
+                    return
+                categories, values, errors, bar_color = list(), list(), list(), list()
+                for i, experiment in enumerate(plot_list):
+                    if self.experiments[experiment].reference is False:
+                        categories.append(self.experiments[experiment].name)
+                        values.append(self.experiments[experiment].efficiencies[y_data[0]][0])
+                        errors.append(self.experiments[experiment].efficiencies[y_data[0]][1])
+                        bar_color.append(colors[0])
+                for k, cat in enumerate(categories):  # add line breaks in experiment labels
+                    categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
+                                             for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
+                try:
+                    low, high = min(values), max(values)
+                except ValueError:  # if no experiment selected
+                    low, high = 0, 0.0005
+                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
+                axis.bar(categories, values, yerr=errors, color=bar_color,
+                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
+                axis.set_xlabel("")
+                axis.set_ylabel(y_data[1])
+            else:
+                pass
         else:
             self.plot_canvas.figure.clear()
             axis = self.plot_canvas.figure.add_subplot(111)
             axis.set_xlabel(self.xaxis_cb.currentText())
             axis.set_ylabel(self.yaxis_cb.currentText())
-            xval, yval = range(100), [0] * 100
-            axis.plot(xval, yval, color=colors[0], lw=1)
+            axis.plot([], [], color=colors[0], lw=1)
         self.update_plt.emit()
 
     def clipboard(self):
