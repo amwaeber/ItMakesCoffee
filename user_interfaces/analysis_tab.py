@@ -1,12 +1,10 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import os
-import pandas as pd
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
 from helper_classes.data_import import Experiment
-from helper_classes import data_analysis
 from helper_classes.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
@@ -38,13 +36,15 @@ class Analysis(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Analysis, self).__init__(parent)
 
-        self.plot_directory = paths['last_save']
-        self.stats_directory = paths['last_save']
         self.experiment_directories = list()
         self.experiments = {}
         self.reference = ''
 
+        self.plot_mode = 'Single'
+        self.plot_directory = paths['last_save']
+
         self.table_select = 'default'
+        self.stats_directory = paths['last_save']
 
         hbox_total = QtWidgets.QHBoxLayout()
         vbox_left = QtWidgets.QVBoxLayout()
@@ -100,15 +100,24 @@ class Analysis(QtWidgets.QWidget):
         self.yaxis_cb.addItem('Irradiance')
         self.yaxis_cb.currentTextChanged.connect(self.update_plot)
         hbox_plot_set1.addWidget(self.yaxis_cb)
+        vbox_plot_mode = QtWidgets.QVBoxLayout()
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
-        hbox_plot_set1.addWidget(self.plot_mode_label)
-        self.plot_mode_cb = QtWidgets.QComboBox()
-        self.plot_mode_cb.setFixedWidth(120)
-        self.plot_mode_cb.addItem('Single')
-        self.plot_mode_cb.addItem('Average')
-        self.plot_mode_cb.addItem('Efficiency')
-        self.plot_mode_cb.currentTextChanged.connect(self.update_plot)
-        hbox_plot_set1.addWidget(self.plot_mode_cb)
+        vbox_plot_mode.addWidget(self.plot_mode_label)
+        self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
+        self.plot_mode_rbtn1 = QtWidgets.QRadioButton('Single')
+        self.plot_mode_rbtn1.setChecked(True)
+        self.plot_mode_rbtn1.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn1)
+        vbox_plot_mode.addWidget(self.plot_mode_rbtn1)
+        self.plot_mode_rbtn2 = QtWidgets.QRadioButton('Average')
+        self.plot_mode_rbtn2.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn2)
+        vbox_plot_mode.addWidget(self.plot_mode_rbtn2)
+        self.plot_mode_rbtn3 = QtWidgets.QRadioButton('Efficiency')
+        self.plot_mode_rbtn3.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn3)
+        vbox_plot_mode.addWidget(self.plot_mode_rbtn3)
+        hbox_plot_set1.addLayout(vbox_plot_mode)
         hbox_plot_set1.addStretch(-1)
         vbox_plot_set.addLayout(hbox_plot_set1)
 
@@ -351,7 +360,7 @@ class Analysis(QtWidgets.QWidget):
             else:
                 self.experiments[experiment].plot = True
                 # set other plot cbs to False if in single-plot mode
-                if self.plot_mode_cb.currentText() == 'Single':
+                if self.plot_mode == 'Single':
                     iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
                     while iterator.value():
                         tree_item = iterator.value()
@@ -372,11 +381,17 @@ class Analysis(QtWidgets.QWidget):
         for experiment in self.experiments.values():
             experiment.update_efficiencies(self.experiments.get(self.reference, None))
 
+    def change_plot_mode(self):
+        radio_btn = self.sender()
+        self.plot_mode = radio_btn.text()
+        self.update_plot()
+
     def update_plot(self):
-        plot_list = [key for key, experiment in self.experiments.items() if experiment.plot is True]
+        plot_list = [experiment for experiment in self.experiment_directories
+                     if self.experiments[experiment].plot is True]
         self.plot_canvas.figure.clear()
         axis = self.plot_canvas.figure.add_subplot(111)
-        if self.plot_mode_cb.currentText() == 'Single' and len(plot_list) == 1:
+        if self.plot_mode == 'Single' and len(plot_list) == 1:
             experiment = self.experiments[plot_list[0]]
             axis.set_title(experiment.name)
             if self.xaxis_cb.currentText() == 'Categorical':
@@ -413,7 +428,7 @@ class Analysis(QtWidgets.QWidget):
                                              label='Average')
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
-        elif self.plot_mode_cb.currentText() == 'Average':
+        elif self.plot_mode == 'Average':
             axis.set_title('Averages')
             if self.xaxis_cb.currentText() == 'Categorical':
                 try:
@@ -456,7 +471,7 @@ class Analysis(QtWidgets.QWidget):
                                                                    label=self.experiments[experiment].name)
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
-        elif self.plot_mode_cb.currentText() == 'Efficiency':
+        elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
             if self.xaxis_cb.currentText() == 'Categorical' and self.reference != '' and len(plot_list) >= 2:
                 try:
@@ -497,8 +512,16 @@ class Analysis(QtWidgets.QWidget):
         QtWidgets.QApplication.clipboard().setPixmap(pixmap)
 
     def save_plot(self):
-        # save current plot
-        pass
+        i = 0
+        path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.xaxis_cb.currentText(),
+                                                                      self.yaxis_cb.currentText(),
+                                                                      self.plot_mode, i))
+        while os.path.isfile(path):
+            i += 1
+            path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.xaxis_cb.currentText(),
+                                                                          self.yaxis_cb.currentText(),
+                                                                          self.plot_mode, i))
+        self.plot_canvas.figure.savefig(path)
 
     def update_stats(self):
         pass

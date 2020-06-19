@@ -9,7 +9,7 @@ def write_config():
     config = ConfigParser()
 
     config['globals'] = {'progname': 'ItMakesCoffee',
-                         'progversion': '2020.06.10.01'
+                         'progversion': '2020.06.19.01'
                          }
 
     config['paths'] = {'icons': os.path.join(project_path, 'icons'),
