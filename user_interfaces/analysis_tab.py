@@ -182,6 +182,16 @@ class Analysis(QtWidgets.QWidget):
         self.analysis_remove_button.clicked.connect(self.remove_experiments)
         self.analysis_remove_button.setToolTip('Remove experiment folders')
         hbox_analysis.addWidget(self.analysis_remove_button)
+        self.analysis_move_up_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'move_up.png')), '')
+        self.analysis_move_up_button.clicked.connect(lambda: self.change_order('up'))
+        self.analysis_move_up_button.setToolTip('Move selected up')
+        hbox_analysis.addWidget(self.analysis_move_up_button)
+        self.analysis_move_down_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'move_down.png')), '')
+        self.analysis_move_down_button.clicked.connect(lambda: self.change_order('down'))
+        self.analysis_move_down_button.setToolTip('Move selected down')
+        hbox_analysis.addWidget(self.analysis_move_down_button)
         self.analysis_select_all_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'select_all.png')), '')
         self.analysis_select_all_button.clicked.connect(lambda: self.change_selection('all'))
@@ -198,7 +208,9 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_tree.setRootIsDecorated(False)
         self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Created"])
+        self.experiment_tree.setSortingEnabled(True)
         self.experiment_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.experiment_tree.header().sectionClicked.connect(lambda: self.change_order('header'))
         vbox_analysis.addWidget(self.experiment_tree)
         self.analysis_group_box.setLayout(vbox_analysis)
         vbox_right.addWidget(self.analysis_group_box)
@@ -264,6 +276,31 @@ class Analysis(QtWidgets.QWidget):
                     tree_item.setSelected(False)
             iterator += 1
 
+    def change_order(self, origin=None):
+        if origin == 'header':
+            self.experiment_directories = []
+            iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
+            while iterator.value():
+                tree_item = iterator.value()
+                self.experiment_directories.append(str(tree_item.toolTip(3)))
+                iterator += 1
+        elif len(self.experiment_tree.selectedItems()) == 1:
+            self.experiment_tree.header().setSortIndicator(-1, Qt.AscendingOrder)
+            item = self.experiment_tree.selectedItems()[0]
+            row = self.experiment_tree.selectedIndexes()[0].row()
+            if origin == 'up' and row > 0:
+                self.experiment_tree.takeTopLevelItem(row)
+                self.experiment_tree.insertTopLevelItem(row - 1, item)
+                self.experiment_tree.setCurrentItem(item)
+                self.experiment_directories.insert(row - 1, self.experiment_directories.pop(row))
+            elif origin == 'down' and row < len(self.experiment_directories) - 1:
+                self.experiment_tree.takeTopLevelItem(row)
+                self.experiment_tree.insertTopLevelItem(row + 1, item)
+                self.experiment_tree.setCurrentItem(item)
+                self.experiment_directories.insert(row + 1, self.experiment_directories.pop(row))
+        self.update_plot()
+        self.update_stats()
+
     def update_experiment_tree(self):
         self.experiment_tree.clear()
         for directory in self.experiment_directories:
@@ -276,7 +313,6 @@ class Analysis(QtWidgets.QWidget):
             tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiments[directory].plot))
             tree_item.setCheckState(2, self.bool_to_qtchecked(self.experiments[directory].stats))
             tree_item.signal.itemChecked.connect(self.checkbox_changed)
-        self.experiment_tree.sortByColumn(3, Qt.AscendingOrder)
 
     def update_experiment_data(self):
         directories = self.experiment_directories

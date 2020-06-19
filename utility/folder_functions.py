@@ -15,7 +15,7 @@ def get_csv_folders(path):
         return []
     # add dir to pathlist if it contains .txt files
     if len([f for f in os.listdir(path) if f.endswith('.csv') and os.path.basename(f).startswith('IV_Curve_')]) > 0:
-        path_list.append(path)
+        path_list.append(os.path.normpath(path))
     for d in os.listdir(path):
         new_path = os.path.join(path, d)
         if os.path.isdir(new_path):
