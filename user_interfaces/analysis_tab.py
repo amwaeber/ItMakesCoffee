@@ -4,13 +4,14 @@ import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
+import helper_classes.colors as colors
 from helper_classes.data_import import Experiment
 from helper_classes.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 from utility.folder_functions import get_experiment_folders
 
-colors = ['#1e90ff', '#ff0000', '#32cd32', '#ff8c00', '#8a2be2']
+
 line_plot_dict = {'Time': 'Time (s)',
                   'Current': 'Current (A)',
                   'Voltage': 'Voltage (V)',
@@ -41,6 +42,9 @@ class Analysis(QtWidgets.QWidget):
         self.reference = ''
 
         self.plot_mode = 'Single'
+        self.plot_x = 'Experiment'
+        self.plot_y1 = ['Power']
+        self.plot_y2 = list()
         self.plot_directory = paths['last_save']
 
         self.table_select = 'default'
@@ -74,19 +78,174 @@ class Analysis(QtWidgets.QWidget):
         self.plot_settings_group_box = QtWidgets.QGroupBox('Plot Settings')
         vbox_plot_set = QtWidgets.QVBoxLayout()
         hbox_plot_set1 = QtWidgets.QHBoxLayout()
-        self.xaxis_label = QtWidgets.QLabel('X-Axis', self)
-        hbox_plot_set1.addWidget(self.xaxis_label)
-        self.xaxis_cb = QtWidgets.QComboBox()
-        self.xaxis_cb.setFixedWidth(120)
-        self.xaxis_cb.addItem('Categorical')
-        self.xaxis_cb.addItem('Time')
-        self.xaxis_cb.addItem('Current')
-        self.xaxis_cb.addItem('Voltage')
-        self.xaxis_cb.addItem('Power')
-        self.xaxis_cb.addItem('Temperature')
-        self.xaxis_cb.addItem('Irradiance')
-        self.xaxis_cb.currentTextChanged.connect(self.update_plot)
-        hbox_plot_set1.addWidget(self.xaxis_cb)
+        grid_plot_items = QtWidgets.QGridLayout()
+        grid_plot_items.setHorizontalSpacing(3)
+        self.plot_mode_xaxis_group = QtWidgets.QButtonGroup()
+        self.plot_mode_yaxis1_group = QtWidgets.QButtonGroup()
+        self.plot_mode_yaxis1_group.setExclusive(False)
+        self.plot_mode_yaxis2_group = QtWidgets.QButtonGroup()
+        self.plot_mode_yaxis2_group.setExclusive(False)
+        self.xaxis_label = QtWidgets.QLabel("X", self)
+        grid_plot_items.addWidget(self.xaxis_label, 0, 1)
+        self.yaxis1_label = QtWidgets.QLabel("Y1", self)
+        grid_plot_items.addWidget(self.yaxis1_label, 0, 2)
+        self.yaxis2_label = QtWidgets.QLabel("Y2", self)
+        grid_plot_items.addWidget(self.yaxis2_label, 0, 3)
+        self.item_experiment_label = QtWidgets.QLabel("Experiment", self)
+        grid_plot_items.addWidget(self.item_experiment_label, 1, 0)
+        self.item_experiment_x = QtWidgets.QCheckBox('',)
+        self.item_experiment_x.setChecked(True)
+        self.item_experiment_x.toggled.connect(lambda: self.change_plot_items('x', 'Experiment',
+                                                                              self.item_experiment_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_experiment_x)
+        grid_plot_items.addWidget(self.item_experiment_x, 1, 1)
+        self.item_experiment_y1 = QtWidgets.QCheckBox('',)
+        self.item_experiment_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Experiment',
+                                                                               self.item_experiment_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_experiment_y1)
+        grid_plot_items.addWidget(self.item_experiment_y1, 1, 2)
+        self.item_experiment_y2 = QtWidgets.QCheckBox('',)
+        self.item_experiment_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Experiment',
+                                                                               self.item_experiment_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_experiment_y2)
+        grid_plot_items.addWidget(self.item_experiment_y2, 1, 3)
+        self.item_time_label = QtWidgets.QLabel("Time", self)
+        grid_plot_items.addWidget(self.item_time_label, 2, 0)
+        self.item_time_x = QtWidgets.QCheckBox('',)
+        self.item_time_x.toggled.connect(lambda: self.change_plot_items('x', 'Time', self.item_time_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_time_x)
+        grid_plot_items.addWidget(self.item_time_x, 2, 1)
+        self.item_time_y1 = QtWidgets.QCheckBox('',)
+        self.item_time_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Time', self.item_time_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_time_y1)
+        grid_plot_items.addWidget(self.item_time_y1, 2, 2)
+        self.item_time_y2 = QtWidgets.QCheckBox('',)
+        self.item_time_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Time', self.item_time_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_time_y2)
+        grid_plot_items.addWidget(self.item_time_y2, 2, 3)
+        self.item_current_label = QtWidgets.QLabel("Current/Isc", self)
+        grid_plot_items.addWidget(self.item_current_label, 3, 0)
+        self.item_current_x = QtWidgets.QCheckBox('',)
+        self.item_current_x.toggled.connect(lambda: self.change_plot_items('x', 'Current',
+                                                                           self.item_current_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_current_x)
+        grid_plot_items.addWidget(self.item_current_x, 3, 1)
+        self.item_current_y1 = QtWidgets.QCheckBox('',)
+        self.item_current_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Current',
+                                                                            self.item_current_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_current_y1)
+        grid_plot_items.addWidget(self.item_current_y1, 3, 2)
+        self.item_current_y2 = QtWidgets.QCheckBox('',)
+        self.item_current_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Current',
+                                                                            self.item_current_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_current_y2)
+        grid_plot_items.addWidget(self.item_current_y2, 3, 3)
+        self.item_voltage_label = QtWidgets.QLabel("Voltage/Voc", self)
+        grid_plot_items.addWidget(self.item_voltage_label, 4, 0)
+        self.item_voltage_x = QtWidgets.QCheckBox('',)
+        self.item_voltage_x.toggled.connect(lambda: self.change_plot_items('x', 'Voltage',
+                                                                           self.item_voltage_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_voltage_x)
+        grid_plot_items.addWidget(self.item_voltage_x, 4, 1)
+        self.item_voltage_y1 = QtWidgets.QCheckBox('',)
+        self.item_voltage_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Voltage',
+                                                                            self.item_voltage_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_voltage_y1)
+        grid_plot_items.addWidget(self.item_voltage_y1, 4, 2)
+        self.item_voltage_y2 = QtWidgets.QCheckBox('',)
+        self.item_voltage_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Voltage',
+                                                                            self.item_voltage_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_voltage_y2)
+        grid_plot_items.addWidget(self.item_voltage_y2, 4, 3)
+        self.item_power_label = QtWidgets.QLabel("Power/Pmax", self)
+        grid_plot_items.addWidget(self.item_power_label, 5, 0)
+        self.item_power_x = QtWidgets.QCheckBox('',)
+        self.item_power_x.toggled.connect(lambda: self.change_plot_items('x', 'Power',
+                                                                         self.item_power_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_power_x)
+        grid_plot_items.addWidget(self.item_power_x, 5, 1)
+        self.item_power_y1 = QtWidgets.QCheckBox('',)
+        self.item_power_y1.setChecked(True)
+        self.item_power_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Power',
+                                                                          self.item_power_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_power_y1)
+        grid_plot_items.addWidget(self.item_power_y1, 5, 2)
+        self.item_power_y2 = QtWidgets.QCheckBox('',)
+        self.item_power_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Power',
+                                                                          self.item_power_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_power_y2)
+        grid_plot_items.addWidget(self.item_power_y2, 5, 3)
+        self.item_fill_label = QtWidgets.QLabel("Fill Factor", self)
+        grid_plot_items.addWidget(self.item_fill_label, 6, 0)
+        self.item_fill_x = QtWidgets.QCheckBox('',)
+        self.item_fill_x.toggled.connect(lambda: self.change_plot_items('x', 'Fill Factor',
+                                                                        self.item_fill_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_fill_x)
+        grid_plot_items.addWidget(self.item_fill_x, 6, 1)
+        self.item_fill_y1 = QtWidgets.QCheckBox('',)
+        self.item_fill_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Fill Factor',
+                                                                         self.item_fill_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_fill_y1)
+        grid_plot_items.addWidget(self.item_fill_y1, 6, 2)
+        self.item_fill_y2 = QtWidgets.QCheckBox('',)
+        self.item_fill_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Fill Factor',
+                                                                         self.item_fill_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_fill_y2)
+        grid_plot_items.addWidget(self.item_fill_y2, 6, 3)
+        self.item_temperature_label = QtWidgets.QLabel("Temperature/Tavg", self)
+        grid_plot_items.addWidget(self.item_temperature_label, 7, 0)
+        self.item_temperature_x = QtWidgets.QCheckBox('',)
+        self.item_temperature_x.toggled.connect(lambda: self.change_plot_items('x', 'Temperature',
+                                                                               self.item_temperature_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_temperature_x)
+        grid_plot_items.addWidget(self.item_temperature_x, 7, 1)
+        self.item_temperature_y1 = QtWidgets.QCheckBox('',)
+        self.item_temperature_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Temperature',
+                                                                                self.item_temperature_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_temperature_y1)
+        grid_plot_items.addWidget(self.item_temperature_y1, 7, 2)
+        self.item_temperature_y2 = QtWidgets.QCheckBox('',)
+        self.item_temperature_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Temperature',
+                                                                                self.item_temperature_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_temperature_y2)
+        grid_plot_items.addWidget(self.item_temperature_y2, 7, 3)
+        self.item_irradiance_label = QtWidgets.QLabel("Irradiance/Iavg", self)
+        grid_plot_items.addWidget(self.item_irradiance_label, 8, 0)
+        self.item_irradiance_x = QtWidgets.QCheckBox('',)
+        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance',
+                                                                              self.item_irradiance_x.isChecked()))
+        self.plot_mode_xaxis_group.addButton(self.item_irradiance_x)
+        grid_plot_items.addWidget(self.item_irradiance_x, 8, 1)
+        self.item_irradiance_y1 = QtWidgets.QCheckBox('',)
+        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance',
+                                                                               self.item_irradiance_y1.isChecked()))
+        self.plot_mode_yaxis1_group.addButton(self.item_irradiance_y1)
+        grid_plot_items.addWidget(self.item_irradiance_y1, 8, 2)
+        self.item_irradiance_y2 = QtWidgets.QCheckBox('',)
+        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance',
+                                                                               self.item_irradiance_y2.isChecked()))
+        self.plot_mode_yaxis2_group.addButton(self.item_irradiance_y2)
+        grid_plot_items.addWidget(self.item_irradiance_y2, 8, 3)
+
+        self.plot_mode_label = QtWidgets.QLabel('Mode', self)
+        grid_plot_items.addWidget(self.plot_mode_label, 0, 4)
+        self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
+        self.plot_mode_rbtn1 = QtWidgets.QRadioButton('Single')
+        self.plot_mode_rbtn1.setChecked(True)
+        self.plot_mode_rbtn1.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn1)
+        grid_plot_items.addWidget(self.plot_mode_rbtn1, 1, 4)
+        self.plot_mode_rbtn2 = QtWidgets.QRadioButton('Average')
+        self.plot_mode_rbtn2.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn2)
+        grid_plot_items.addWidget(self.plot_mode_rbtn2, 2, 4)
+        self.plot_mode_rbtn3 = QtWidgets.QRadioButton('Efficiency')
+        self.plot_mode_rbtn3.toggled.connect(self.change_plot_mode)
+        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn3)
+        grid_plot_items.addWidget(self.plot_mode_rbtn3, 3, 4)
+
+        hbox_plot_set1.addLayout(grid_plot_items)
+
         self.yaxis_label = QtWidgets.QLabel('Y-Axis', self)
         hbox_plot_set1.addWidget(self.yaxis_label)
         self.yaxis_cb = QtWidgets.QComboBox()
@@ -100,23 +259,8 @@ class Analysis(QtWidgets.QWidget):
         self.yaxis_cb.addItem('Irradiance')
         self.yaxis_cb.currentTextChanged.connect(self.update_plot)
         hbox_plot_set1.addWidget(self.yaxis_cb)
+
         vbox_plot_mode = QtWidgets.QVBoxLayout()
-        self.plot_mode_label = QtWidgets.QLabel('Mode', self)
-        vbox_plot_mode.addWidget(self.plot_mode_label)
-        self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
-        self.plot_mode_rbtn1 = QtWidgets.QRadioButton('Single')
-        self.plot_mode_rbtn1.setChecked(True)
-        self.plot_mode_rbtn1.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn1)
-        vbox_plot_mode.addWidget(self.plot_mode_rbtn1)
-        self.plot_mode_rbtn2 = QtWidgets.QRadioButton('Average')
-        self.plot_mode_rbtn2.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn2)
-        vbox_plot_mode.addWidget(self.plot_mode_rbtn2)
-        self.plot_mode_rbtn3 = QtWidgets.QRadioButton('Efficiency')
-        self.plot_mode_rbtn3.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn3)
-        vbox_plot_mode.addWidget(self.plot_mode_rbtn3)
         hbox_plot_set1.addLayout(vbox_plot_mode)
         hbox_plot_set1.addStretch(-1)
         vbox_plot_set.addLayout(hbox_plot_set1)
@@ -323,7 +467,7 @@ class Analysis(QtWidgets.QWidget):
             tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiments[directory].reference))
             tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiments[directory].plot))
             tree_item.setCheckState(2, self.bool_to_qtchecked(self.experiments[directory].stats))
-            tree_item.signal.itemChecked.connect(self.checkbox_changed)
+            tree_item.signal.itemChecked.connect(self.tree_checkbox_changed)
 
     def update_experiment_data(self):
         directories = self.experiment_directories
@@ -335,7 +479,7 @@ class Analysis(QtWidgets.QWidget):
                 self.experiments.pop(directory, None)
 
     @QtCore.pyqtSlot(object, int)
-    def checkbox_changed(self, item, column):
+    def tree_checkbox_changed(self, item, column):
         experiment = str(item.toolTip(3))
         if column == 0:  # Reference
             if int(item.checkState(column)) == 0:
@@ -383,6 +527,21 @@ class Analysis(QtWidgets.QWidget):
         for experiment in self.experiments.values():
             experiment.update_efficiencies(self.experiments.get(self.reference, None))
 
+    def change_plot_items(self, axis, item, state):
+        if axis == 'x' and state:
+            self.plot_x = item
+        elif axis == 'y1':
+            if state:
+                self.plot_y1.append(item)
+            else:
+                self.plot_y1.remove(item)
+        elif axis == 'y2':
+            if state:
+                self.plot_y2.append(item)
+            else:
+                self.plot_y2.remove(item)
+        self.update_plot()
+
     def change_plot_mode(self):
         radio_btn = self.sender()
         self.plot_mode = radio_btn.text()
@@ -396,43 +555,54 @@ class Analysis(QtWidgets.QWidget):
         if self.plot_mode == 'Single' and len(plot_list) == 1:
             experiment = self.experiments[plot_list[0]]
             axis.set_title(experiment.name)
-            if self.xaxis_cb.currentText() == 'Categorical':
-                try:
-                    y_data = bar_plot_dict[self.yaxis_cb.currentText()]
-                except KeyError:
-                    return
-                categories, values, errors, bar_color = list(), list(), list(), list()
-                for i, trace in enumerate(experiment.traces.values()):
-                    categories.append('Trace %d' % i)
-                    values.append(trace.values[y_data][0])
-                    errors.append(trace.values[y_data][1])
-                    bar_color.append(colors[0])
-                categories.append('Average')
-                values.append(experiment.values[y_data][0])
-                errors.append(experiment.values[y_data][1])
-                bar_color.append(colors[1])
-                low, high = min(values), max(values)
+            if self.plot_x == 'Experiment':
+                y_data = list()
+                low, high = 0, 0  # empty plot
+                for item in self.plot_y1:
+                    try:
+                        y_data.append(bar_plot_dict[item])
+                    except KeyError:
+                        pass
+                ny = len(y_data)
+                for j, item in enumerate(y_data):
+                    categories, values, errors, bar_color = list(), list(), list(), list()
+                    for i, trace in enumerate(experiment.traces.values()):
+                        categories.append('Trace %d' % i)
+                        values.append(trace.values[item][0])
+                        errors.append(trace.values[item][1])
+                        bar_color.append(colors.colors[j % len(colors.colors)])
+                    categories.append('Average')
+                    values.append(experiment.values[item][0])
+                    errors.append(experiment.values[item][1])
+                    bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                    index = [k + j * 0.8 / ny for k in range(len(values))]
+                    axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
+                             error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j])
+                    if j == 0:
+                        axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
+                        axis.set_xticklabels(tuple(categories))
+                    if j != 0:
+                        values.extend([low, high])
+                    low, high = min(values), max(values)
                 axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
-                axis.bar(categories, values, yerr=errors, color=bar_color,
-                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
                 axis.set_xlabel("")
-                axis.set_ylabel(y_data)
+                axis.set_ylabel(" /\n".join(y_data))
             else:
                 try:
-                    x_data = line_plot_dict[self.xaxis_cb.currentText()]
+                    x_data = line_plot_dict[self.plot_x]
                     y_data = line_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
                     return
                 for i, trace in enumerate(experiment.traces.values()):
-                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors[i % len(colors)], lw=1, ax=axis,
-                                    label='Trace %d' % i)
+                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors.colors[i % len(colors.colors)],
+                                    lw=1, ax=axis, label='Trace %d' % i)
                 experiment.average_data.plot(kind='line', x=x_data, y=y_data, color='#000000', lw=2, ax=axis,
                                              label='Average')
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
         elif self.plot_mode == 'Average':
             axis.set_title('Averages')
-            if self.xaxis_cb.currentText() == 'Categorical':
+            if self.plot_x == 'Experiment':
                 try:
                     y_data = bar_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
@@ -443,12 +613,12 @@ class Analysis(QtWidgets.QWidget):
                         categories.insert(0, self.experiments[experiment].name)
                         values.insert(0, self.experiments[experiment].values[y_data][0])
                         errors.insert(0, self.experiments[experiment].values[y_data][1])
-                        bar_color.insert(0, colors[1])
+                        bar_color.insert(0, colors.colors[1])
                     else:
                         categories.append(self.experiments[experiment].name)
                         values.append(self.experiments[experiment].values[y_data][0])
                         errors.append(self.experiments[experiment].values[y_data][1])
-                        bar_color.append(colors[0])
+                        bar_color.append(colors.colors[0])
                 for k, cat in enumerate(categories):  # add line breaks in experiment labels
                     categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
                                              for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
@@ -463,19 +633,19 @@ class Analysis(QtWidgets.QWidget):
                 axis.set_ylabel(y_data)
             else:
                 try:
-                    x_data = line_plot_dict[self.xaxis_cb.currentText()]
+                    x_data = line_plot_dict[self.plot_x]
                     y_data = line_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
                     return
                 for i, experiment in enumerate(plot_list):
                     self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=y_data,
-                                                                   color=colors[i % len(colors)], lw=1, ax=axis,
-                                                                   label=self.experiments[experiment].name)
+                                                                   color=colors.colors[i % len(colors.colors)], lw=1,
+                                                                   ax=axis, label=self.experiments[experiment].name)
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(y_data)
         elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
-            if self.xaxis_cb.currentText() == 'Categorical' and self.reference != '' and len(plot_list) >= 2:
+            if self.plot_x == 'Experiment' and self.reference != '' and len(plot_list) >= 1:
                 try:
                     y_data = efficiency_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
@@ -486,7 +656,7 @@ class Analysis(QtWidgets.QWidget):
                         categories.append(self.experiments[experiment].name)
                         values.append(self.experiments[experiment].efficiencies[y_data[0]][0])
                         errors.append(self.experiments[experiment].efficiencies[y_data[0]][1])
-                        bar_color.append(colors[0])
+                        bar_color.append(colors.colors[0])
                 for k, cat in enumerate(categories):  # add line breaks in experiment labels
                     categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
                                              for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
@@ -504,9 +674,9 @@ class Analysis(QtWidgets.QWidget):
         else:
             self.plot_canvas.figure.clear()
             axis = self.plot_canvas.figure.add_subplot(111)
-            axis.set_xlabel(self.xaxis_cb.currentText())
+            axis.set_xlabel(self.plot_x)
             axis.set_ylabel(self.yaxis_cb.currentText())
-            axis.plot([], [], color=colors[0], lw=1)
+            axis.plot([], [], color=colors.colors[0], lw=1)
         self.update_plt.emit()
 
     def clipboard(self):
@@ -515,12 +685,12 @@ class Analysis(QtWidgets.QWidget):
 
     def save_plot(self):
         i = 0
-        path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.xaxis_cb.currentText(),
+        path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.plot_x,
                                                                       self.yaxis_cb.currentText(),
                                                                       self.plot_mode, i))
         while os.path.isfile(path):
             i += 1
-            path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.xaxis_cb.currentText(),
+            path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.plot_x,
                                                                           self.yaxis_cb.currentText(),
                                                                           self.plot_mode, i))
         self.plot_canvas.figure.savefig(path)
