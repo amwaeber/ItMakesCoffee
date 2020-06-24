@@ -43,8 +43,7 @@ class Analysis(QtWidgets.QWidget):
 
         self.plot_mode = 'Single'
         self.plot_x = 'Experiment'
-        self.plot_y1 = ['Power']
-        self.plot_y2 = list()
+        self.plot_y = [['Power', 'y1']]
         self.plot_directory = paths['last_save']
 
         self.table_select = 'default'
@@ -530,16 +529,11 @@ class Analysis(QtWidgets.QWidget):
     def change_plot_items(self, axis, item, state):
         if axis == 'x' and state:
             self.plot_x = item
-        elif axis == 'y1':
+        elif axis == 'y1' or axis == 'y2':
             if state:
-                self.plot_y1.append(item)
+                self.plot_y.append([item, axis])
             else:
-                self.plot_y1.remove(item)
-        elif axis == 'y2':
-            if state:
-                self.plot_y2.append(item)
-            else:
-                self.plot_y2.remove(item)
+                self.plot_y.remove([item, axis])
         self.update_plot()
 
     def change_plot_mode(self):
@@ -552,15 +546,19 @@ class Analysis(QtWidgets.QWidget):
                      if self.experiments[experiment].plot is True]
         self.plot_canvas.figure.clear()
         axis = self.plot_canvas.figure.add_subplot(111)
+        axis2 = axis.twinx()
+        axis2.yaxis.tick_right()
+        axis2.yaxis.set_label_position("right")
         if self.plot_mode == 'Single' and len(plot_list) == 1:
             experiment = self.experiments[plot_list[0]]
             axis.set_title(experiment.name)
             if self.plot_x == 'Experiment':
                 y_data = list()
-                low, high = 0, 0  # empty plot
-                for item in self.plot_y1:
+                low, high = None, None  # empty plot
+                low2, high2 = None, None  # empty plot
+                for item in self.plot_y:
                     try:
-                        y_data.append(bar_plot_dict[item])
+                        y_data.append([bar_plot_dict[item[0]], item[1]])
                     except KeyError:
                         pass
                 ny = len(y_data)
@@ -568,25 +566,35 @@ class Analysis(QtWidgets.QWidget):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate(experiment.traces.values()):
                         categories.append('Trace %d' % i)
-                        values.append(trace.values[item][0])
-                        errors.append(trace.values[item][1])
+                        values.append(trace.values[item[0]][0])
+                        errors.append(trace.values[item[0]][1])
                         bar_color.append(colors.colors[j % len(colors.colors)])
                     categories.append('Average')
-                    values.append(experiment.values[item][0])
-                    errors.append(experiment.values[item][1])
+                    values.append(experiment.values[item[0]][0])
+                    errors.append(experiment.values[item[0]][1])
                     bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                     index = [k + j * 0.8 / ny for k in range(len(values))]
-                    axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
-                             error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j])
                     if j == 0:
                         axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
                         axis.set_xticklabels(tuple(categories))
-                    if j != 0:
+                    if item[1] == 'y1':
+                        axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
+                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                         values.extend([low, high])
-                    low, high = min(values), max(values)
-                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
+                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                    elif item[1] == 'y2':
+                        axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
+                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                        values.extend([low2, high2])
+                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                if high:
+                    axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
+                if high2:
+                    axis2.set_ylim([min([(low2-0.5*(high2-low2)), low2-0.0005]), max([(high2+0.5*(high2-low2)),
+                                                                                      high2+0.0005])])
                 axis.set_xlabel("")
-                axis.set_ylabel(" /\n".join(y_data))
+                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
