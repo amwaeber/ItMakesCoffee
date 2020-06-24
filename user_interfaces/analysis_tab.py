@@ -248,6 +248,8 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_directories = list(set(self.experiment_directories))
         self.update_experiment_data()
         self.update_experiment_tree()
+        if self.reference:
+            self.update_reference()  # apply reference to new experiments too
 
     def remove_experiments(self):
         for item in self.experiment_tree.selectedItems():
