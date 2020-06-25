@@ -4,12 +4,12 @@ import os
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
-import helper_classes.colors as colors
-from helper_classes.data_import import Experiment
-from helper_classes.widgets import TreeWidgetItem, ItemSignal
+import utility.colors as colors
+from utility.data_import import Experiment
+from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
-from utility.folder_functions import get_experiment_folders
+from utility.folders import get_experiment_folders
 
 
 line_plot_dict = {'Time': 'Time (s)',
@@ -598,16 +598,26 @@ class Analysis(QtWidgets.QWidget):
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
-                    y_data = line_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
                     return
-                for i, trace in enumerate(experiment.traces.values()):
-                    trace.data.plot(kind='line', x=x_data, y=y_data, color=colors.colors[i % len(colors.colors)],
-                                    lw=1, ax=axis, label='Trace %d' % i)
-                experiment.average_data.plot(kind='line', x=x_data, y=y_data, color='#000000', lw=2, ax=axis,
-                                             label='Average')
+                y_data = list()
+                for item in self.plot_y:
+                    try:
+                        y_data.append([line_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                for j, item in enumerate(y_data):
+                    for i, trace in enumerate(experiment.traces.values()):
+                        trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
+                                        color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                   1 - 0.6 * i / experiment.n_traces),
+                                        ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
+                    experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
+                                                 color=colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5),
+                                                 ax=self.get_axis(axis, axis2, item[1]), label='Average')
                 axis.set_xlabel(x_data)
-                axis.set_ylabel(y_data)
+                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
         elif self.plot_mode == 'Average':
             axis.set_title('Averages')
             if self.plot_x == 'Experiment':
@@ -663,15 +673,25 @@ class Analysis(QtWidgets.QWidget):
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
-                    y_data = line_plot_dict[self.yaxis_cb.currentText()]
                 except KeyError:
                     return
-                for i, experiment in enumerate(plot_list):
-                    self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=y_data,
-                                                                   color=colors.colors[i % len(colors.colors)], lw=1,
-                                                                   ax=axis, label=self.experiments[experiment].name)
+                y_data = list()
+                for item in self.plot_y:
+                    try:
+                        y_data.append([line_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                for j, item in enumerate(y_data):
+                    for i, experiment in enumerate(plot_list):
+                        self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
+                                                                       color=colors.lighten_color(
+                                                                           colors.colors[j % len(colors.colors)],
+                                                                           2 - 1.8 * i / len(plot_list)),
+                                                                       ax=self.get_axis(axis, axis2, item[1]),
+                                                                       label=self.experiments[experiment].name)
                 axis.set_xlabel(x_data)
-                axis.set_ylabel(y_data)
+                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
         elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
             if self.plot_x == 'Experiment' and self.reference != '' and len(plot_list) >= 1:
@@ -728,6 +748,15 @@ class Analysis(QtWidgets.QWidget):
             axis.set_ylabel(self.yaxis_cb.currentText())
             axis.plot([], [], color=colors.colors[0], lw=1)
         self.update_plt.emit()
+
+    @staticmethod
+    def get_axis(ax1, ax2, string='y1'):
+        if string == 'y1':
+            return ax1
+        elif string == 'y2':
+            return ax2
+        else:
+            raise ValueError
 
     def clipboard(self):
         pixmap = QtWidgets.QWidget.grab(self.plot_canvas)

@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import time
 
-from utility import folder_functions
+from utility import folders
 
 
 class Experiment:
@@ -18,8 +18,8 @@ class Experiment:
             with open(os.path.join(folder_path, 'Settings.txt')) as f:
                 self.time = f.readline().strip('\n')
         except FileNotFoundError:
-            self.time = folder_functions.get_datetime(folder_path)
-        self.n_traces = folder_functions.get_number_of_csv(folder_path)
+            self.time = folders.get_datetime(folder_path)
+        self.n_traces = folders.get_number_of_csv(folder_path)
         self.traces = {}
         for trace in range(self.n_traces):
             key = 'IV_Curve_%s' % str(trace)
