@@ -78,7 +78,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_plot_set = QtWidgets.QVBoxLayout()
         hbox_plot_set1 = QtWidgets.QHBoxLayout()
         grid_plot_items = QtWidgets.QGridLayout()
-        grid_plot_items.setHorizontalSpacing(3)
+        grid_plot_items.setHorizontalSpacing(20)
         self.plot_mode_xaxis_group = QtWidgets.QButtonGroup()
         self.plot_mode_yaxis1_group = QtWidgets.QButtonGroup()
         self.plot_mode_yaxis1_group.setExclusive(False)
@@ -554,8 +554,8 @@ class Analysis(QtWidgets.QWidget):
             axis.set_title(experiment.name)
             if self.plot_x == 'Experiment':
                 y_data = list()
-                low, high = None, None  # empty plot
-                low2, high2 = None, None  # empty plot
+                low, high = None, None  # empty axis
+                low2, high2 = None, None  # empty axis
                 for item in self.plot_y:
                     try:
                         y_data.append([bar_plot_dict[item[0]], item[1]])
@@ -611,34 +611,55 @@ class Analysis(QtWidgets.QWidget):
         elif self.plot_mode == 'Average':
             axis.set_title('Averages')
             if self.plot_x == 'Experiment':
-                try:
-                    y_data = bar_plot_dict[self.yaxis_cb.currentText()]
-                except KeyError:
-                    return
-                categories, values, errors, bar_color = list(), list(), list(), list()
-                for i, experiment in enumerate(plot_list):
-                    if self.experiments[experiment].reference:
-                        categories.insert(0, self.experiments[experiment].name)
-                        values.insert(0, self.experiments[experiment].values[y_data][0])
-                        errors.insert(0, self.experiments[experiment].values[y_data][1])
-                        bar_color.insert(0, colors.colors[1])
-                    else:
-                        categories.append(self.experiments[experiment].name)
-                        values.append(self.experiments[experiment].values[y_data][0])
-                        errors.append(self.experiments[experiment].values[y_data][1])
-                        bar_color.append(colors.colors[0])
-                for k, cat in enumerate(categories):  # add line breaks in experiment labels
-                    categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
-                                             for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
-                try:
-                    low, high = min(values), max(values)
-                except ValueError:  # if no experiment selected
-                    low, high = 0, 0.0005
-                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
-                axis.bar(categories, values, yerr=errors, color=bar_color,
-                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
+                y_data = list()
+                low, high = None, None  # empty axis
+                low2, high2 = None, None  # empty axis
+                for item in self.plot_y:
+                    try:
+                        y_data.append([bar_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                ny = len(y_data)
+                for j, item in enumerate(y_data):
+                    categories, values, errors, bar_color = list(), list(), list(), list()
+                    for i, experiment in enumerate(plot_list):
+                        if self.experiments[experiment].reference:  # TODO: check why not updated
+                            categories.insert(0, self.experiments[experiment].name)
+                            values.insert(0, self.experiments[experiment].values[item[0]][0])
+                            errors.insert(0, self.experiments[experiment].values[item[0]][1])
+                            bar_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                        else:
+                            categories.append(self.experiments[experiment].name)
+                            values.append(self.experiments[experiment].values[item[0]][0])
+                            errors.append(self.experiments[experiment].values[item[0]][1])
+                            bar_color.append(colors.colors[j % len(colors.colors)])
+                    index = [k + j * 0.8 / ny for k in range(len(values))]
+                    if j == 0:
+                        for k, cat in enumerate(categories):  # add line breaks in experiment labels
+                            categories[k] = ''.join([elem + '\n' if i % 2 == 0 else
+                                                     elem + ' ' for i, elem in enumerate(cat.split(' '))][0:-1]) + \
+                                            cat.split(' ')[-1]
+                        axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
+                        axis.set_xticklabels(tuple(categories))
+                    if item[1] == 'y1':
+                        axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
+                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                        values.extend([low, high])
+                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                    elif item[1] == 'y2':
+                        axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
+                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                        values.extend([low2, high2])
+                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                if high:
+                    axis.set_ylim([min([(low - 0.5 * (high - low)), low - 0.0005]),
+                                   max([(high + 0.5 * (high - low)), high + 0.0005])])
+                if high2:
+                    axis2.set_ylim([min([(low2 - 0.5 * (high2 - low2)), low2 - 0.0005]),
+                                    max([(high2 + 0.5 * (high2 - low2)), high2+0.0005])])
                 axis.set_xlabel("")
-                axis.set_ylabel(y_data)
+                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
@@ -654,29 +675,50 @@ class Analysis(QtWidgets.QWidget):
         elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
             if self.plot_x == 'Experiment' and self.reference != '' and len(plot_list) >= 1:
-                try:
-                    y_data = efficiency_plot_dict[self.yaxis_cb.currentText()]
-                except KeyError:
-                    return
-                categories, values, errors, bar_color = list(), list(), list(), list()
-                for i, experiment in enumerate(plot_list):
-                    if self.experiments[experiment].reference is False:
-                        categories.append(self.experiments[experiment].name)
-                        values.append(self.experiments[experiment].efficiencies[y_data[0]][0])
-                        errors.append(self.experiments[experiment].efficiencies[y_data[0]][1])
-                        bar_color.append(colors.colors[0])
-                for k, cat in enumerate(categories):  # add line breaks in experiment labels
-                    categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
-                                             for i, elem in enumerate(cat.split(' '))][0:-1]) + cat.split(' ')[-1]
-                try:
-                    low, high = min(values), max(values)
-                except ValueError:  # if no experiment selected
-                    low, high = 0, 0.0005
-                axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
-                axis.bar(categories, values, yerr=errors, color=bar_color,
-                         error_kw=dict(ecolor='black', elinewidth=1, capsize=3))
+                y_data = list()
+                low, high = None, None  # empty axis
+                low2, high2 = None, None  # empty axis
+                for item in self.plot_y:
+                    try:
+                        y_data.append([efficiency_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                ny = len(y_data)
+                for j, item in enumerate(y_data):
+                    categories, values, errors, bar_color = list(), list(), list(), list()
+                    for i, experiment in enumerate(plot_list):
+                        if self.experiments[experiment].reference is False:
+                            categories.append(self.experiments[experiment].name)
+                            values.append(self.experiments[experiment].efficiencies[item[0][0]][0])
+                            errors.append(self.experiments[experiment].efficiencies[item[0][0]][1])
+                            bar_color.append(colors.colors[j % len(colors.colors)])
+                    index = [k + j * 0.8 / ny for k in range(len(values))]
+                    if j == 0:
+                        for k, cat in enumerate(categories):  # add line breaks in experiment labels
+                            categories[k] = ''.join([elem + '\n' if i % 2 == 0 else elem + ' '
+                                                     for i, elem in enumerate(cat.split(' '))][0:-1]) + \
+                                            cat.split(' ')[-1]
+                        axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
+                        axis.set_xticklabels(tuple(categories))
+                    if item[1] == 'y1':
+                        axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
+                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
+                        values.extend([low, high])
+                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                    elif item[1] == 'y2':
+                        axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
+                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
+                        values.extend([low2, high2])
+                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
+                if high:
+                    axis.set_ylim([min([(low - 0.5 * (high - low)), low - 0.0005]),
+                                   max([(high + 0.5 * (high - low)), high + 0.0005])])
+                if high2:
+                    axis2.set_ylim([min([(low2 - 0.5 * (high2 - low2)), low2 - 0.0005]),
+                                    max([(high2 + 0.5 * (high2 - low2)), high2+0.0005])])
                 axis.set_xlabel("")
-                axis.set_ylabel(y_data[1])
+                axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))
             else:
                 pass
         else:
