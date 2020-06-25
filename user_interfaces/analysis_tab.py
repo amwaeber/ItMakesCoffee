@@ -41,9 +41,13 @@ class Analysis(QtWidgets.QWidget):
         self.experiments = {}
         self.reference = ''
 
-        self.plot_mode = 'Single'
         self.plot_x = 'Experiment'
         self.plot_y = [['Power', 'y1']]
+        self.plot_mode = 'Single'
+        self.plot_show = {'Average': True,
+                          'Legend': True,
+                          'Rescale': True,
+                          'Scatter': False}
         self.plot_directory = paths['last_save']
 
         self.table_select = 'default'
@@ -79,6 +83,8 @@ class Analysis(QtWidgets.QWidget):
         hbox_plot_set1 = QtWidgets.QHBoxLayout()
         grid_plot_items = QtWidgets.QGridLayout()
         grid_plot_items.setHorizontalSpacing(20)
+        grid_plot_items.setColumnMinimumWidth(4, 60)
+        grid_plot_items.setColumnMinimumWidth(7, 60)
         self.plot_mode_xaxis_group = QtWidgets.QButtonGroup()
         self.plot_mode_yaxis1_group = QtWidgets.QButtonGroup()
         self.plot_mode_yaxis1_group.setExclusive(False)
@@ -226,39 +232,61 @@ class Analysis(QtWidgets.QWidget):
         self.plot_mode_yaxis2_group.addButton(self.item_irradiance_y2)
         grid_plot_items.addWidget(self.item_irradiance_y2, 8, 3)
 
+        self.plot_show_label = QtWidgets.QLabel('Show', self)
+        grid_plot_items.addWidget(self.plot_show_label, 0, 5)
+        self.show_avg_label = QtWidgets.QLabel("Average Lines", self)
+        grid_plot_items.addWidget(self.show_avg_label, 1, 5)
+        self.show_avg_cb = QtWidgets.QCheckBox('', )
+        self.show_avg_cb.setChecked(True)
+        self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_avg_cb, 1, 6)
+        self.show_legend_label = QtWidgets.QLabel("Legend", self)
+        grid_plot_items.addWidget(self.show_legend_label, 2, 5)
+        self.show_legend_cb = QtWidgets.QCheckBox('', )
+        self.show_legend_cb.setChecked(True)
+        self.show_legend_cb.toggled.connect(lambda: self.change_plot_settings('Legend',
+                                                                              self.show_legend_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_legend_cb, 2, 6)
+        self.show_rescale_label = QtWidgets.QLabel("Rescale", self)
+        grid_plot_items.addWidget(self.show_rescale_label, 3, 5)
+        self.show_rescale_cb = QtWidgets.QCheckBox('', )
+        self.show_rescale_cb.setChecked(True)
+        self.show_rescale_cb.toggled.connect(lambda: self.change_plot_settings('Rescale',
+                                                                               self.show_rescale_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_rescale_cb, 3, 6)
+        self.show_scatter_label = QtWidgets.QLabel("Scatter", self)
+        grid_plot_items.addWidget(self.show_scatter_label, 4, 5)
+        self.show_scatter_cb = QtWidgets.QCheckBox('', )
+        self.show_scatter_cb.toggled.connect(lambda: self.change_plot_settings('Scatter',
+                                                                               self.show_scatter_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_scatter_cb, 4, 6)
+
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
-        grid_plot_items.addWidget(self.plot_mode_label, 0, 4)
+        grid_plot_items.addWidget(self.plot_mode_label, 0, 8)
         self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
-        self.plot_mode_rbtn1 = QtWidgets.QRadioButton('Single')
-        self.plot_mode_rbtn1.setChecked(True)
-        self.plot_mode_rbtn1.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn1)
-        grid_plot_items.addWidget(self.plot_mode_rbtn1, 1, 4)
-        self.plot_mode_rbtn2 = QtWidgets.QRadioButton('Average')
-        self.plot_mode_rbtn2.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn2)
-        grid_plot_items.addWidget(self.plot_mode_rbtn2, 2, 4)
-        self.plot_mode_rbtn3 = QtWidgets.QRadioButton('Efficiency')
-        self.plot_mode_rbtn3.toggled.connect(self.change_plot_mode)
-        self.plot_mode_rbtn_group.addButton(self.plot_mode_rbtn3)
-        grid_plot_items.addWidget(self.plot_mode_rbtn3, 3, 4)
-
+        self.single_mode_label = QtWidgets.QLabel("Single", self)
+        grid_plot_items.addWidget(self.single_mode_label, 1, 8)
+        self.single_mode_rbtn = QtWidgets.QRadioButton('')
+        self.single_mode_rbtn.setChecked(True)
+        self.single_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Single',
+                                                                            self.single_mode_rbtn.isChecked()))
+        self.plot_mode_rbtn_group.addButton(self.single_mode_rbtn)
+        grid_plot_items.addWidget(self.single_mode_rbtn, 1, 9)
+        self.avg_mode_label = QtWidgets.QLabel("Average", self)
+        grid_plot_items.addWidget(self.avg_mode_label, 2, 8)
+        self.avg_mode_rbtn = QtWidgets.QRadioButton('')
+        self.avg_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Average',
+                                                                         self.avg_mode_rbtn.isChecked()))
+        self.plot_mode_rbtn_group.addButton(self.avg_mode_rbtn)
+        grid_plot_items.addWidget(self.avg_mode_rbtn, 2, 9)
+        self.efficiency_mode_label = QtWidgets.QLabel("Efficiency", self)
+        grid_plot_items.addWidget(self.efficiency_mode_label, 3, 8)
+        self.efficiency_mode_rbtn = QtWidgets.QRadioButton('')
+        self.efficiency_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Efficiency',
+                                                                                self.efficiency_mode_rbtn.isChecked()))
+        self.plot_mode_rbtn_group.addButton(self.efficiency_mode_rbtn)
+        grid_plot_items.addWidget(self.efficiency_mode_rbtn, 3, 9)
         hbox_plot_set1.addLayout(grid_plot_items)
-
-        self.yaxis_label = QtWidgets.QLabel('Y-Axis', self)
-        hbox_plot_set1.addWidget(self.yaxis_label)
-        self.yaxis_cb = QtWidgets.QComboBox()
-        self.yaxis_cb.setFixedWidth(120)
-        self.yaxis_cb.addItem('Time')
-        self.yaxis_cb.addItem('Current')
-        self.yaxis_cb.addItem('Voltage')
-        self.yaxis_cb.addItem('Power')
-        self.yaxis_cb.addItem('Fill Factor')
-        self.yaxis_cb.addItem('Temperature')
-        self.yaxis_cb.addItem('Irradiance')
-        self.yaxis_cb.currentTextChanged.connect(self.update_plot)
-        hbox_plot_set1.addWidget(self.yaxis_cb)
-
         vbox_plot_mode = QtWidgets.QVBoxLayout()
         hbox_plot_set1.addLayout(vbox_plot_mode)
         hbox_plot_set1.addStretch(-1)
@@ -536,9 +564,13 @@ class Analysis(QtWidgets.QWidget):
                 self.plot_y.remove([item, axis])
         self.update_plot()
 
-    def change_plot_mode(self):
-        radio_btn = self.sender()
-        self.plot_mode = radio_btn.text()
+    def change_plot_settings(self, setting, state):
+        self.plot_show[setting] = state
+        self.update_plot()
+
+    def change_plot_mode(self, mode, state):
+        if state:
+            self.plot_mode = mode
         self.update_plot()
 
     def update_plot(self):
@@ -569,10 +601,11 @@ class Analysis(QtWidgets.QWidget):
                         values.append(trace.values[item[0]][0])
                         errors.append(trace.values[item[0]][1])
                         bar_color.append(colors.colors[j % len(colors.colors)])
-                    categories.append('Average')
-                    values.append(experiment.values[item[0]][0])
-                    errors.append(experiment.values[item[0]][1])
-                    bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                    if self.plot_show['Average']:
+                        categories.append('Average')
+                        values.append(experiment.values[item[0]][0])
+                        errors.append(experiment.values[item[0]][1])
+                        bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
                         axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
@@ -612,9 +645,11 @@ class Analysis(QtWidgets.QWidget):
                                         color=colors.lighten_color(colors.colors[j % len(colors.colors)],
                                                                    1 - 0.6 * i / experiment.n_traces),
                                         ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
-                    experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
-                                                 color=colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5),
-                                                 ax=self.get_axis(axis, axis2, item[1]), label='Average')
+                    if self.plot_show['Average']:
+                        experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
+                                                     color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                                1.5),
+                                                     ax=self.get_axis(axis, axis2, item[1]), label='Average')
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -742,11 +777,9 @@ class Analysis(QtWidgets.QWidget):
             else:
                 pass
         else:
-            self.plot_canvas.figure.clear()
-            axis = self.plot_canvas.figure.add_subplot(111)
             axis.set_xlabel(self.plot_x)
-            axis.set_ylabel(self.yaxis_cb.currentText())
-            axis.plot([], [], color=colors.colors[0], lw=1)
+            axis.set_ylabel(" /\n".join([item[0] for item in self.plot_y if item[1] == 'y1']))
+            axis2.set_ylabel(" /\n".join([item[0] for item in self.plot_y if item[1] == 'y2']))
         self.update_plt.emit()
 
     @staticmethod
@@ -765,12 +798,12 @@ class Analysis(QtWidgets.QWidget):
     def save_plot(self):
         i = 0
         path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.plot_x,
-                                                                      self.yaxis_cb.currentText(),
+                                                                      "_".join([item[0] for item in self.plot_y]),
                                                                       self.plot_mode, i))
         while os.path.isfile(path):
             i += 1
             path = os.path.join(self.plot_directory, '%s_%s_%s_%d.png' % (self.plot_x,
-                                                                          self.yaxis_cb.currentText(),
+                                                                          "_".join([item[0] for item in self.plot_y]),
                                                                           self.plot_mode, i))
         self.plot_canvas.figure.savefig(path)
 
