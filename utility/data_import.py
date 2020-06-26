@@ -64,7 +64,11 @@ class Experiment:
                              'Delta I_sc': [0, 0],
                              'Delta P_max': [0, 0],
                              'Delta Fill Factor': [0, 0],
-                             'Delta T_avg': [0,0]}
+                             'Delta T_avg': [0, 0],
+                             'Delta I_1_avg': [0, 0],
+                             'Delta I_2_avg': [0, 0],
+                             'Delta I_3_avg': [0, 0],
+                             'Delta I_4_avg': [0, 0]}
 
     def update_efficiencies(self, reference_experiment):
         if not reference_experiment:
@@ -72,7 +76,11 @@ class Experiment:
                                  'Delta I_sc': [0, 0],
                                  'Delta P_max': [0, 0],
                                  'Delta Fill Factor': [0, 0],
-                                 'Delta T_avg': [0, 0]}
+                                 'Delta T_avg': [0, 0],
+                                 'Delta I_1_avg': [0, 0],
+                                 'Delta I_2_avg': [0, 0],
+                                 'Delta I_3_avg': [0, 0],
+                                 'Delta I_4_avg': [0, 0]}
         else:
             self.efficiencies['Delta V_oc'] = [100 * (self.values['Open Circuit Voltage V_oc (V)'][0] -
                                                reference_experiment.values['Open Circuit Voltage V_oc (V)'][0]) /
@@ -99,6 +107,26 @@ class Experiment:
                                                 reference_experiment.values['Average Temperature T_avg (C)'][0],
                                                 100 * self.values['Average Temperature T_avg (C)'][1] /
                                                 reference_experiment.values['Average Temperature T_avg (C)'][0]]
+            self.efficiencies['Delta I_1_avg'] = [100 * (self.values['Average Irradiance I_1_avg (W/m2)'][0] -
+                                                  reference_experiment.values['Average Irradiance I_1_avg (W/m2)'][0]) /
+                                                  reference_experiment.values['Average Irradiance I_1_avg (W/m2)'][0],
+                                                  100 * self.values['Average Irradiance I_1_avg (W/m2)'][1] /
+                                                  reference_experiment.values['Average Irradiance I_1_avg (W/m2)'][0]]
+            self.efficiencies['Delta I_2_avg'] = [100 * (self.values['Average Irradiance I_2_avg (W/m2)'][0] -
+                                                  reference_experiment.values['Average Irradiance I_2_avg (W/m2)'][0]) /
+                                                  reference_experiment.values['Average Irradiance I_2_avg (W/m2)'][0],
+                                                  100 * self.values['Average Irradiance I_2_avg (W/m2)'][1] /
+                                                  reference_experiment.values['Average Irradiance I_2_avg (W/m2)'][0]]
+            self.efficiencies['Delta I_3_avg'] = [100 * (self.values['Average Irradiance I_3_avg (W/m2)'][0] -
+                                                  reference_experiment.values['Average Irradiance I_3_avg (W/m2)'][0]) /
+                                                  reference_experiment.values['Average Irradiance I_3_avg (W/m2)'][0],
+                                                  100 * self.values['Average Irradiance I_3_avg (W/m2)'][1] /
+                                                  reference_experiment.values['Average Irradiance I_3_avg (W/m2)'][0]]
+            self.efficiencies['Delta I_4_avg'] = [100 * (self.values['Average Irradiance I_4_avg (W/m2)'][0] -
+                                                  reference_experiment.values['Average Irradiance I_4_avg (W/m2)'][0]) /
+                                                  reference_experiment.values['Average Irradiance I_4_avg (W/m2)'][0],
+                                                  100 * self.values['Average Irradiance I_4_avg (W/m2)'][1] /
+                                                  reference_experiment.values['Average Irradiance I_4_avg (W/m2)'][0]]
 
 
 class Trace:

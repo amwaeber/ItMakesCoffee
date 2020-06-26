@@ -18,18 +18,28 @@ line_plot_dict = {'Time': 'Time (s)',
                   'Voltage': 'Voltage (V)',
                   'Power': 'Power (W)',
                   'Temperature': 'Temperature (C)',
-                  'Irradiance': 'Irradiance 1 (W/m2)'}
+                  'Irradiance 1': 'Irradiance 1 (W/m2)',
+                  'Irradiance 2': 'Irradiance 2 (W/m2)',
+                  'Irradiance 3': 'Irradiance 3 (W/m2)',
+                  'Irradiance 4': 'Irradiance 4 (W/m2)'}
 bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
                  'Voltage': 'Open Circuit Voltage V_oc (V)',
                  'Power': 'Maximum Power P_max (W)',
                  'Fill Factor': 'Fill Factor',
                  'Temperature': 'Average Temperature T_avg (C)',
-                 'Irradiance': 'Average Irradiance I_1_avg (W/m2)'}
+                 'Irradiance 1': 'Average Irradiance I_1_avg (W/m2)',
+                 'Irradiance 2': 'Average Irradiance I_2_avg (W/m2)',
+                 'Irradiance 3': 'Average Irradiance I_3_avg (W/m2)',
+                 'Irradiance 4': 'Average Irradiance I_4_avg (W/m2)'}
 efficiency_plot_dict = {'Current': ['Delta I_sc', r'$\Delta I_{sc}/PV (\%)$'],
                         'Voltage': ['Delta V_oc', r'$\Delta V_{oc}/PV (\%)$'],
                         'Power': ['Delta P_max', r'$\Delta P_{max}/PV (\%)$'],
                         'Fill Factor': ['Delta Fill Factor', r'$\Delta FF/PV (\%)$'],
-                        'Temperature': ['Delta T_avg', r'$\Delta T_{avg}/PV (\%)$']}
+                        'Temperature': ['Delta T_avg', r'$\Delta T_{avg}/PV (\%)$'],
+                        'Irradiance 1': ['Delta I_1_avg', r'$\Delta I_{1, avg}/PV (\%)$'],
+                        'Irradiance 2': ['Delta I_2_avg', r'$\Delta I_{2, avg}/PV (\%)$'],
+                        'Irradiance 3': ['Delta I_3_avg', r'$\Delta I_{3, avg}/PV (\%)$'],
+                        'Irradiance 4': ['Delta I_4_avg', r'$\Delta I_{4, avg}/PV (\%)$']}
 
 
 class Analysis(QtWidgets.QWidget):
@@ -216,17 +226,35 @@ class Analysis(QtWidgets.QWidget):
         self.item_irradiance_label = QtWidgets.QLabel("Irradiance/Iavg", self)
         grid_plot_items.addWidget(self.item_irradiance_label, 8, 0)
         self.item_irradiance_x = QtWidgets.QCheckBox('',)
-        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance',
+        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 1',
+                                                                              self.item_irradiance_x.isChecked()))
+        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 2',
+                                                                              self.item_irradiance_x.isChecked()))
+        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 3',
+                                                                              self.item_irradiance_x.isChecked()))
+        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 4',
                                                                               self.item_irradiance_x.isChecked()))
         self.plot_mode_xaxis_group.addButton(self.item_irradiance_x)
         grid_plot_items.addWidget(self.item_irradiance_x, 8, 1)
         self.item_irradiance_y1 = QtWidgets.QCheckBox('',)
-        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance',
+        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 1',
+                                                                               self.item_irradiance_y1.isChecked()))
+        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 2',
+                                                                               self.item_irradiance_y1.isChecked()))
+        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 3',
+                                                                               self.item_irradiance_y1.isChecked()))
+        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 4',
                                                                                self.item_irradiance_y1.isChecked()))
         self.plot_mode_yaxis1_group.addButton(self.item_irradiance_y1)
         grid_plot_items.addWidget(self.item_irradiance_y1, 8, 2)
         self.item_irradiance_y2 = QtWidgets.QCheckBox('',)
-        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance',
+        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 1',
+                                                                               self.item_irradiance_y2.isChecked()))
+        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 2',
+                                                                               self.item_irradiance_y2.isChecked()))
+        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 3',
+                                                                               self.item_irradiance_y2.isChecked()))
+        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 4',
                                                                                self.item_irradiance_y2.isChecked()))
         self.plot_mode_yaxis2_group.addButton(self.item_irradiance_y2)
         grid_plot_items.addWidget(self.item_irradiance_y2, 8, 3)
@@ -709,7 +737,7 @@ class Analysis(QtWidgets.QWidget):
                         self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
                                                                        color=colors.lighten_color(
                                                                            colors.colors[j % len(colors.colors)],
-                                                                           2 - 1.8 * i / len(plot_list)),
+                                                                           1.75 - 1.5 * i / len(plot_list)),
                                                                        ax=self.get_axis(axis, axis2, item[1]),
                                                                        label=self.experiments[experiment].name)
                 axis.set_xlabel(x_data)
