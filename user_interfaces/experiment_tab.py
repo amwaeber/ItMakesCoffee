@@ -249,12 +249,12 @@ class Experiment(QtWidgets.QWidget):
         self.delay_edit = QtWidgets.QLineEdit('0.025', self)
         self.delay_edit.setFixedWidth(60)
         grid_source.addWidget(self.delay_edit, 3, 1)
-        self.reps_label = QtWidgets.QLabel("Repetitions", self)
+        self.reps_label = QtWidgets.QLabel("Traces", self)
         grid_source.addWidget(self.reps_label, 2, 2)
         self.reps_edit = QtWidgets.QLineEdit('5', self)
         self.reps_edit.setFixedWidth(60)
         grid_source.addWidget(self.reps_edit, 2, 3)
-        self.rep_delay_label = QtWidgets.QLabel("Rep. Delay (s)", self)
+        self.rep_delay_label = QtWidgets.QLabel("Tr. Delay (s)", self)
         grid_source.addWidget(self.rep_delay_label, 3, 2)
         self.rep_delay_edit = QtWidgets.QLineEdit('2.0', self)
         self.rep_delay_edit.setFixedWidth(60)
@@ -600,7 +600,7 @@ class Experiment(QtWidgets.QWidget):
             self.read_curr_edit.setText("%0.2f" % (1e3*self.iv_mes.currents[datapoint]))
         self.iv_mes.line_plot(self.iv_data_line)
 
-    def stop(self):  # TODO: implement iv scan pause
+    def stop(self):
         if self.iv_mes:
             self.iv_mes.close()
         self.start_button.setChecked(False)

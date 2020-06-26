@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.Qt import Qt
 
 import utility.colors as colors
+import utility.plots as plots
 from utility.data_import import Experiment
 from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
@@ -105,13 +106,11 @@ class Analysis(QtWidgets.QWidget):
         self.plot_mode_xaxis_group.addButton(self.item_experiment_x)
         grid_plot_items.addWidget(self.item_experiment_x, 1, 1)
         self.item_experiment_y1 = QtWidgets.QCheckBox('',)
-        self.item_experiment_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Experiment',
-                                                                               self.item_experiment_y1.isChecked()))
+        self.item_experiment_y1.setEnabled(False)
         self.plot_mode_yaxis1_group.addButton(self.item_experiment_y1)
         grid_plot_items.addWidget(self.item_experiment_y1, 1, 2)
         self.item_experiment_y2 = QtWidgets.QCheckBox('',)
-        self.item_experiment_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Experiment',
-                                                                               self.item_experiment_y2.isChecked()))
+        self.item_experiment_y2.setEnabled(False)
         self.plot_mode_yaxis2_group.addButton(self.item_experiment_y2)
         grid_plot_items.addWidget(self.item_experiment_y2, 1, 3)
         self.item_time_label = QtWidgets.QLabel("Time", self)
@@ -571,7 +570,17 @@ class Analysis(QtWidgets.QWidget):
     def change_plot_mode(self, mode, state):
         if state:
             self.plot_mode = mode
-        self.update_plot()
+            # Set defaults and parameters
+            if mode == 'Single':
+                self.show_avg_cb.setEnabled(True)
+                self.show_rescale_cb.setChecked(True)
+            elif mode == 'Average':
+                self.show_avg_cb.setEnabled(False)
+                self.show_rescale_cb.setChecked(True)
+            elif mode == 'Efficiency':
+                self.show_avg_cb.setEnabled(False)
+                self.show_rescale_cb.setChecked(False)
+            self.update_plot()
 
     def update_plot(self):
         plot_list = [experiment for experiment in self.experiment_directories
@@ -586,8 +595,6 @@ class Analysis(QtWidgets.QWidget):
             axis.set_title(experiment.name)
             if self.plot_x == 'Experiment':
                 y_data = list()
-                low, high = None, None  # empty axis
-                low2, high2 = None, None  # empty axis
                 for item in self.plot_y:
                     try:
                         y_data.append([bar_plot_dict[item[0]], item[1]])
@@ -613,18 +620,10 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
-                        values.extend([low, high])
-                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
                     elif item[1] == 'y2':
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
-                        values.extend([low2, high2])
-                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
-                if high:
-                    axis.set_ylim([min([(low-0.5*(high-low)), low-0.0005]), max([(high+0.5*(high-low)), high+0.0005])])
-                if high2:
-                    axis2.set_ylim([min([(low2-0.5*(high2-low2)), low2-0.0005]), max([(high2+0.5*(high2-low2)),
-                                                                                      high2+0.0005])])
+                plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 axis.set_xlabel("")
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -657,8 +656,6 @@ class Analysis(QtWidgets.QWidget):
             axis.set_title('Averages')
             if self.plot_x == 'Experiment':
                 y_data = list()
-                low, high = None, None  # empty axis
-                low2, high2 = None, None  # empty axis
                 for item in self.plot_y:
                     try:
                         y_data.append([bar_plot_dict[item[0]], item[1]])
@@ -689,19 +686,10 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
-                        values.extend([low, high])
-                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
                     elif item[1] == 'y2':
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
-                        values.extend([low2, high2])
-                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
-                if high:
-                    axis.set_ylim([min([(low - 0.5 * (high - low)), low - 0.0005]),
-                                   max([(high + 0.5 * (high - low)), high + 0.0005])])
-                if high2:
-                    axis2.set_ylim([min([(low2 - 0.5 * (high2 - low2)), low2 - 0.0005]),
-                                    max([(high2 + 0.5 * (high2 - low2)), high2+0.0005])])
+                plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 axis.set_xlabel("")
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -731,8 +719,6 @@ class Analysis(QtWidgets.QWidget):
             axis.set_title('Relative efficiency vs reference')
             if self.plot_x == 'Experiment' and self.reference != '' and len(plot_list) >= 1:
                 y_data = list()
-                low, high = None, None  # empty axis
-                low2, high2 = None, None  # empty axis
                 for item in self.plot_y:
                     try:
                         y_data.append([efficiency_plot_dict[item[0]], item[1]])
@@ -758,19 +744,10 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
-                        values.extend([low, high])
-                        low, high = min(v for v in values if v is not None), max(v for v in values if v is not None)
                     elif item[1] == 'y2':
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
-                        values.extend([low2, high2])
-                        low2, high2 = min(v for v in values if v is not None), max(v for v in values if v is not None)
-                if high:
-                    axis.set_ylim([min([(low - 0.5 * (high - low)), low - 0.0005]),
-                                   max([(high + 0.5 * (high - low)), high + 0.0005])])
-                if high2:
-                    axis2.set_ylim([min([(low2 - 0.5 * (high2 - low2)), low2 - 0.0005]),
-                                    max([(high2 + 0.5 * (high2 - low2)), high2+0.0005])])
+                plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 axis.set_xlabel("")
                 axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))
