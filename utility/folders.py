@@ -14,7 +14,9 @@ def get_csv_folders(path):
     if os.path.isfile(path):
         return []
     # add dir to pathlist if it contains .txt files
-    if len([f for f in os.listdir(path) if f.endswith('.csv') and os.path.basename(f).startswith('IV_Curve_')]) > 0:
+    if len([f for f in os.listdir(path)
+            if f.endswith('.csv') and (os.path.basename(f).startswith('IV_Curve_') or
+                                       os.path.basename(f).startswith('IV Characterizer'))]) > 0:
         path_list.append(os.path.normpath(path))
     for d in os.listdir(path):
         new_path = os.path.join(path, d)
@@ -23,16 +25,23 @@ def get_csv_folders(path):
     return path_list
 
 
+def get_kickstart_paths(path):
+    path_list = [f for f in os.listdir(path) if os.path.basename(f).startswith('IV Characterizer')]
+    return path_list
+
+
 def get_number_of_csv(path):
     # returns number of csv files in the directory
-    n_csv = 0
+    n_csv = [0, 0]
     if os.path.isdir(path):
         for entry in os.scandir(path):
             if os.path.basename(entry).startswith('IV_Curve_') and entry.path.endswith(".csv"):
-                n_csv += 1
+                n_csv[0] += 1
+            elif os.path.basename(entry).startswith('IV Characterizer') and entry.path.endswith(".csv"):
+                n_csv[1] += 1
         return n_csv
     else:
-        return -1
+        return [-1, -1]
 
 
 def get_datetime(path):

@@ -16,14 +16,28 @@ class Experiment:
         self.name = os.path.basename(folder_path)
         try:
             with open(os.path.join(folder_path, 'Settings.txt')) as f:
-                self.time = f.readline().strip('\n')
+                file_contents = f.readlines()
+                self.time = file_contents[0].strip('\n')
+                if file_contents[2].startswith("Film"):
+                    self.film_thickness = file_contents[3].strip('\n').split(' ')[-1]
+                    self.film_area = file_contents[4].strip('\n').split(' ')[-1]
+                else:
+                    self.film_thickness = -1
+                    self.film_area = -1
         except FileNotFoundError:
             self.time = folders.get_datetime(folder_path)
-        self.n_traces = folders.get_number_of_csv(folder_path)
+            self.film_thickness = -1
+            self.film_area = -1
+        self.n_traces = folders.get_number_of_csv(folder_path)  # first par: new format, second par: kickstart format
         self.traces = {}
-        for trace in range(self.n_traces):
+        for trace in range(self.n_traces[0]):
             key = 'IV_Curve_%s' % str(trace)
             self.traces[key] = Trace(os.path.join(folder_path, key + '.csv'), self.name)
+        if self.n_traces[1] > 0:  # Import Kickstart files if there are any
+            kickstart_files = folders.get_kickstart_paths(folder_path)
+            for itrace, trace in enumerate(range(self.n_traces[0], self.n_traces[0] + self.n_traces[1])):
+                key = 'IV_Curve_%s' % str(trace)
+                self.traces[key] = KickstartTrace(os.path.join(folder_path, kickstart_files[itrace]), self.name)
         self.values = {}
         combined_data = pd.concat((trace.data for trace in self.traces.values()))
         self.average_data = combined_data.groupby(combined_data.index).mean()
@@ -120,32 +134,33 @@ class Trace:
                                                             self.data['Irradiance 4 (W/m2)'].std()]  # W/m2
 
 
-class CsvFileKickstart:
-    def __init__(self):
-        self.file_name = ''
-        self.time = 0
-        self.experiment = 'n/a'
-        self.sourcemeter = pd.DataFrame()
-        self.data = pd.DataFrame()
-        self.power_max = -1
-        self.v_oc = -1
-        self.i_sc = -1
-        self.fill_factor = -1
-        self.temperature = -1
-        self.irradiance = -1
-
-    def load_file(self, fname):
-        self.file_name = fname
-        self.time = time.mktime(time.strptime(self.file_name.split(' ')[-1], "%Y-%m-%dT%H.%M.%S.csv"))
-        self.experiment = os.path.split(os.path.dirname(self.file_name))[-1]
-        self.sourcemeter = pd.read_csv(self.file_name, sep=',', header=None, chunksize=33)
-        self.data = pd.read_csv(self.file_name, sep=',', header=0, index_col=0, skiprows=33,
-                                names=["Time", "Voltage", "Current"])
-        self.data['Current'] = - self.data['Current']
-        self.data['Power'] = self.data['Current'] * self.data['Voltage']
-        self.power_max = self.data['Power'].max()  # W
-        self.v_oc = self.data.loc[self.data['Current'].abs() == self.data['Current'].abs().min(),
-                                  ['Voltage']].values[0, 0]  # V
-        self.i_sc = self.data.loc[self.data['Voltage'].abs() == self.data['Voltage'].abs().min(),
-                                  ['Current']].values[0, 0]  # A
-        self.fill_factor = self.power_max / (self.v_oc * self.i_sc)
+class KickstartTrace:
+    def __init__(self, data_path='.', experiment=None):
+        self.data_path = os.path.normpath(data_path)
+        self.experiment = experiment
+        self.data = pd.read_csv(self.data_path, sep=',', header=0, index_col=0, skiprows=33,
+                                names=["Time (s)", "Voltage (V)", "Current (A)"])
+        self.time = time.mktime(time.strptime(os.path.basename(self.data_path).split(' ')[-1], "%Y-%m-%dT%H.%M.%S.csv"))
+        self.data['Index'] = -1
+        self.data['Time (s)'] = self.data['Time (s)'] + self.time
+        self.data['Current (A)'] = - self.data['Current (A)']
+        self.data['Power (W)'] = self.data['Voltage (V)'] * self.data['Current (A)']
+        for item in ["Temperature (C)", "Irradiance 1 (W/m2)", "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)",
+                     "Irradiance 4 (W/m2)"]:
+            self.data[item] = -1
+        self.values = {}
+        self.values['Open Circuit Voltage V_oc (V)'] = [self.data.loc[self.data['Current (A)'].abs() ==
+                                                                      self.data['Current (A)'].abs().min(),
+                                                                      ['Voltage (V)']].values[0, 0], 0]  # V
+        self.values['Short Circuit Current I_sc (A)'] = [self.data.loc[self.data['Voltage (V)'].abs() ==
+                                                                       self.data['Voltage (V)'].abs().min(),
+                                                                       ['Current (A)']].values[0, 0], 0]  # A
+        self.values['Maximum Power P_max (W)'] = [self.data.loc[self.data['Current (A)'] > 0]['Power (W)'].max(), 0]  # W
+        self.values['Fill Factor'] = [abs(self.values['Maximum Power P_max (W)'][0] /
+                                          (self.values['Open Circuit Voltage V_oc (V)'][0] *
+                                           self.values['Short Circuit Current I_sc (A)'][0])), 0]
+        self.values['Average Temperature T_avg (C)'] = [-1, 0]  # C
+        self.values['Average Irradiance I_1_avg (W/m2)'] = [-1, 0]  # W/m2
+        self.values['Average Irradiance I_2_avg (W/m2)'] = [-1, 0]  # W/m2
+        self.values['Average Irradiance I_3_avg (W/m2)'] = [-1, 0]  # W/m2
+        self.values['Average Irradiance I_4_avg (W/m2)'] = [-1, 0]  # W/m2

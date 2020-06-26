@@ -487,7 +487,7 @@ class Analysis(QtWidgets.QWidget):
         for directory in self.experiment_directories:
             tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
                                        [None, None, None, self.experiments[directory].name,
-                                        str(self.experiments[directory].n_traces),
+                                        str(sum(self.experiments[directory].n_traces)),
                                         str(self.experiments[directory].time)])
             tree_item.setToolTip(3, directory)
             tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiments[directory].reference))
@@ -642,7 +642,7 @@ class Analysis(QtWidgets.QWidget):
                     for i, trace in enumerate(experiment.traces.values()):
                         trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
                                         color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                   1 - 0.6 * i / experiment.n_traces),
+                                                                   1 - 0.6 * i / sum(experiment.n_traces)),
                                         ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
                     if self.plot_show['Average']:
                         experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
