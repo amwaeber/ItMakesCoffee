@@ -585,6 +585,7 @@ class Experiment(QtWidgets.QWidget):
                                         compliance_current=float(self.ilimit_edit.text()))
         self.iv_register(self.iv_mes)
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
+        self.check_save_path()
         self.iv_mes.read_keithley_start()
         self.save_configuration()
 
@@ -653,6 +654,13 @@ class Experiment(QtWidgets.QWidget):
         save_file.write("Query Period (s): %s\n" % str(self.query_edit.text()))
         save_file.write("Timeout (s): %s\n" % str(self.timeout_edit.text()))
         save_file.close()
+
+    def check_save_path(self):
+        if any([not os.path.exists(self.directory),
+                os.path.exists(os.path.join(self.directory, 'Settings.txt')),
+                os.path.exists(os.path.join(self.directory, 'IV_Curve_0.csv'))]):
+            self.folder_dialog()
+            self.check_save_path()
 
     @QtCore.pyqtSlot(str)
     def logger(self, string):
