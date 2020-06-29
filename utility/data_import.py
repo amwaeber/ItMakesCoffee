@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import pandas as pd
+import pickle
 import time
 
 from utility import folders
@@ -14,51 +15,57 @@ class Experiment:
 
         self.folder_path = os.path.normpath(folder_path)
         self.name = os.path.basename(folder_path)
-        try:
-            with open(os.path.join(folder_path, 'Settings.txt')) as f:
-                file_contents = f.readlines()
-                self.time = file_contents[0].strip('\n')
-                if file_contents[2].startswith("Film"):
-                    self.film_thickness = file_contents[3].strip('\n').split(' ')[-1]
-                    self.film_area = file_contents[4].strip('\n').split(' ')[-1]
-                else:
-                    self.film_thickness = -1
-                    self.film_area = -1
-        except FileNotFoundError:
-            self.time = folders.get_datetime(folder_path)
-            self.film_thickness = -1
-            self.film_area = -1
-        self.n_traces = folders.get_number_of_csv(folder_path)  # first par: new format, second par: kickstart format
-        self.traces = {}
-        for trace in range(self.n_traces[0]):
-            key = 'IV_Curve_%s' % str(trace)
-            self.traces[key] = Trace(os.path.join(folder_path, key + '.csv'), self.name)
-        if self.n_traces[1] > 0:  # Import Kickstart files if there are any
-            kickstart_files = folders.get_kickstart_paths(folder_path)
-            for itrace, trace in enumerate(range(self.n_traces[0], self.n_traces[0] + self.n_traces[1])):
+
+        if os.path.exists(os.path.join(self.folder_path, 'experiment.pkl')):
+            self.time, self.film_thickness, self.film_area, self.n_traces, self.traces, self.values, self.average_data\
+                = self.load()
+        else:
+            try:
+                with open(os.path.join(folder_path, 'Settings.txt')) as f:
+                    file_contents = f.readlines()
+                    self.time = file_contents[0].strip('\n')
+                    if file_contents[2].startswith("Film"):
+                        self.film_thickness = file_contents[3].strip('\n').split(' ')[-1]
+                        self.film_area = file_contents[4].strip('\n').split(' ')[-1]
+                    else:
+                        self.film_thickness = -1
+                        self.film_area = -1
+            except FileNotFoundError:
+                self.time = folders.get_datetime(folder_path)
+                self.film_thickness = -1
+                self.film_area = -1
+            self.n_traces = folders.get_number_of_csv(folder_path)  # 1st par: new format, 2nd par: kickstart format
+            self.traces = {}
+            for trace in range(self.n_traces[0]):
                 key = 'IV_Curve_%s' % str(trace)
-                self.traces[key] = KickstartTrace(os.path.join(folder_path, kickstart_files[itrace]), self.name)
-        self.values = {}
-        combined_data = pd.concat((trace.data for trace in self.traces.values()))
-        self.average_data = combined_data.groupby(combined_data.index).mean()
-        v_oc = [trace.values['Open Circuit Voltage V_oc (V)'][0] for trace in self.traces.values()]
-        self.values['Open Circuit Voltage V_oc (V)'] = [np.mean(v_oc), np.std(v_oc)]
-        i_sc = [trace.values['Short Circuit Current I_sc (A)'][0] for trace in self.traces.values()]
-        self.values['Short Circuit Current I_sc (A)'] = [np.mean(i_sc), np.std(i_sc)]
-        power_max = [trace.values['Maximum Power P_max (W)'][0] for trace in self.traces.values()]
-        self.values['Maximum Power P_max (W)'] = [np.mean(power_max), np.std(power_max)]
-        fill_factor = [trace.values['Fill Factor'][0] for trace in self.traces.values()]
-        self.values['Fill Factor'] = [np.mean(fill_factor), np.std(fill_factor)]
-        temperature = [trace.values['Average Temperature T_avg (C)'][0] for trace in self.traces.values()]
-        self.values['Average Temperature T_avg (C)'] = [np.mean(temperature), np.std(temperature)]
-        irradiance_1 = [trace.values['Average Irradiance I_1_avg (W/m2)'][0] for trace in self.traces.values()]
-        self.values['Average Irradiance I_1_avg (W/m2)'] = [np.mean(irradiance_1), np.std(irradiance_1)]
-        irradiance_2 = [trace.values['Average Irradiance I_2_avg (W/m2)'][0] for trace in self.traces.values()]
-        self.values['Average Irradiance I_2_avg (W/m2)'] = [np.mean(irradiance_2), np.std(irradiance_2)]
-        irradiance_3 = [trace.values['Average Irradiance I_3_avg (W/m2)'][0] for trace in self.traces.values()]
-        self.values['Average Irradiance I_3_avg (W/m2)'] = [np.mean(irradiance_3), np.std(irradiance_3)]
-        irradiance_4 = [trace.values['Average Irradiance I_4_avg (W/m2)'][0] for trace in self.traces.values()]
-        self.values['Average Irradiance I_4_avg (W/m2)'] = [np.mean(irradiance_4), np.std(irradiance_4)]
+                self.traces[key] = Trace(os.path.join(folder_path, key + '.csv'), self.name)
+            if self.n_traces[1] > 0:  # Import Kickstart files if there are any
+                kickstart_files = folders.get_kickstart_paths(folder_path)
+                for itrace, trace in enumerate(range(self.n_traces[0], self.n_traces[0] + self.n_traces[1])):
+                    key = 'IV_Curve_%s' % str(trace)
+                    self.traces[key] = KickstartTrace(os.path.join(folder_path, kickstart_files[itrace]), self.name)
+        # if not hasattr(self, 'values'):
+            self.values = {}
+            combined_data = pd.concat((trace.data for trace in self.traces.values()))
+            self.average_data = combined_data.groupby(combined_data.index).mean()
+            v_oc = [trace.values['Open Circuit Voltage V_oc (V)'][0] for trace in self.traces.values()]
+            self.values['Open Circuit Voltage V_oc (V)'] = [np.mean(v_oc), np.std(v_oc)]
+            i_sc = [trace.values['Short Circuit Current I_sc (A)'][0] for trace in self.traces.values()]
+            self.values['Short Circuit Current I_sc (A)'] = [np.mean(i_sc), np.std(i_sc)]
+            power_max = [trace.values['Maximum Power P_max (W)'][0] for trace in self.traces.values()]
+            self.values['Maximum Power P_max (W)'] = [np.mean(power_max), np.std(power_max)]
+            fill_factor = [trace.values['Fill Factor'][0] for trace in self.traces.values()]
+            self.values['Fill Factor'] = [np.mean(fill_factor), np.std(fill_factor)]
+            temperature = [trace.values['Average Temperature T_avg (C)'][0] for trace in self.traces.values()]
+            self.values['Average Temperature T_avg (C)'] = [np.mean(temperature), np.std(temperature)]
+            irradiance_1 = [trace.values['Average Irradiance I_1_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_1_avg (W/m2)'] = [np.mean(irradiance_1), np.std(irradiance_1)]
+            irradiance_2 = [trace.values['Average Irradiance I_2_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_2_avg (W/m2)'] = [np.mean(irradiance_2), np.std(irradiance_2)]
+            irradiance_3 = [trace.values['Average Irradiance I_3_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_3_avg (W/m2)'] = [np.mean(irradiance_3), np.std(irradiance_3)]
+            irradiance_4 = [trace.values['Average Irradiance I_4_avg (W/m2)'][0] for trace in self.traces.values()]
+            self.values['Average Irradiance I_4_avg (W/m2)'] = [np.mean(irradiance_4), np.std(irradiance_4)]
 
         self.efficiencies = {'Delta V_oc': [0, 0],
                              'Delta I_sc': [0, 0],
@@ -135,6 +142,17 @@ class Experiment:
                                                   reference_experiment.values['Average Irradiance I_4_avg (W/m2)'][0],
                                                   100 * self.values['Average Irradiance I_4_avg (W/m2)'][1] /
                                                   reference_experiment.values['Average Irradiance I_4_avg (W/m2)'][0]]
+
+    def store(self):
+        if os.path.exists(os.path.join(self.folder_path, 'experiment.pkl')):
+            return
+        with open(os.path.join(self.folder_path, 'experiment.pkl'), 'wb') as f:
+            pickle.dump([self.time, self.film_thickness, self.film_area, self.n_traces, self.traces, self.values,
+                        self.average_data], f, protocol=-1)
+
+    def load(self):
+        with open(os.path.join(self.folder_path, 'experiment.pkl'), 'rb') as f:
+            return pickle.load(f)
 
 
 class Trace:

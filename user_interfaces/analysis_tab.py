@@ -544,6 +544,7 @@ class Analysis(QtWidgets.QWidget):
                 self.experiments[directory] = Experiment(directory)
         for directory in list(self.experiments.keys()):
             if directory not in directories:
+                self.experiments[directory].store()  # save analysed data in pickle
                 self.experiments.pop(directory, None)
 
     @QtCore.pyqtSlot(object, int)

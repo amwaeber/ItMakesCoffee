@@ -24,3 +24,5 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, *args, **kwargs):
         super(QtWidgets.QMainWindow, self).closeEvent(*args, **kwargs)
         self.table_widget.tab_experiment.stop_sensor()  # disconnect sensor before shutdown
+        for experiment in self.table_widget.tab_analysis.experiments.values():
+            experiment.store()
