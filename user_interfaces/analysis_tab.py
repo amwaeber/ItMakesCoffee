@@ -107,7 +107,7 @@ class Analysis(QtWidgets.QWidget):
         grid_plot_items.addWidget(self.yaxis1_label, 0, 2)
         self.yaxis2_label = QtWidgets.QLabel("Y2", self)
         grid_plot_items.addWidget(self.yaxis2_label, 0, 3)
-        self.item_experiment_label = QtWidgets.QLabel("Experiment", self)
+        self.item_experiment_label = QtWidgets.QLabel("Categorical", self)
         grid_plot_items.addWidget(self.item_experiment_label, 1, 0)
         self.item_experiment_x = QtWidgets.QCheckBox('',)
         self.item_experiment_x.setChecked(True)
@@ -288,6 +288,17 @@ class Analysis(QtWidgets.QWidget):
                                                                                self.show_scatter_cb.isChecked()))
         grid_plot_items.addWidget(self.show_scatter_cb, 4, 6)
 
+        self.show_categories_label = QtWidgets.QLabel("Category", self)
+        grid_plot_items.addWidget(self.show_categories_label, 6, 5)
+        self.plot_categories_cb = QtWidgets.QComboBox()
+        self.plot_categories_cb.setFixedWidth(120)
+        self.plot_categories_cb.addItem('Experiment')
+        self.plot_categories_cb.addItem('Film Thickness')
+        self.plot_categories_cb.addItem('Film Area')
+        self.plot_categories_cb.addItem('Time')
+        self.plot_categories_cb.currentTextChanged.connect(self.update_plot)
+        grid_plot_items.addWidget(self.plot_categories_cb, 7, 5)
+
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
         grid_plot_items.addWidget(self.plot_mode_label, 0, 8)
         self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
@@ -414,7 +425,8 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_tree = QtWidgets.QTreeWidget()
         self.experiment_tree.setRootIsDecorated(False)
         self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Created"])
+        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Film Th.", "Film Area",
+                                              "Created"])
         self.experiment_tree.setSortingEnabled(True)
         self.experiment_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.experiment_tree.header().sectionClicked.connect(lambda: self.change_order('header'))
@@ -516,6 +528,8 @@ class Analysis(QtWidgets.QWidget):
             tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
                                        [None, None, None, self.experiments[directory].name,
                                         str(sum(self.experiments[directory].n_traces)),
+                                        str(self.experiments[directory].film_thickness),
+                                        str(self.experiments[directory].film_area),
                                         str(self.experiments[directory].time)])
             tree_item.setToolTip(3, directory)
             tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiments[directory].reference))
@@ -694,12 +708,14 @@ class Analysis(QtWidgets.QWidget):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, experiment in enumerate(plot_list):
                         if self.experiments[experiment].reference:  # TODO: check why not updated
-                            categories.insert(0, self.experiments[experiment].name)
+                            categories.insert(0, self.experiments[experiment].
+                                              plot_categories[self.plot_categories_cb.currentText()])
                             values.insert(0, self.experiments[experiment].values[item[0]][0])
                             errors.insert(0, self.experiments[experiment].values[item[0]][1])
                             bar_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                         else:
-                            categories.append(self.experiments[experiment].name)
+                            categories.append(self.experiments[experiment].
+                                              plot_categories[self.plot_categories_cb.currentText()])
                             values.append(self.experiments[experiment].values[item[0]][0])
                             errors.append(self.experiments[experiment].values[item[0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
@@ -718,7 +734,7 @@ class Analysis(QtWidgets.QWidget):
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
-                axis.set_xlabel("")
+                axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
             else:
@@ -739,7 +755,9 @@ class Analysis(QtWidgets.QWidget):
                                                                            colors.colors[j % len(colors.colors)],
                                                                            1.75 - 1.5 * i / len(plot_list)),
                                                                        ax=self.get_axis(axis, axis2, item[1]),
-                                                                       label=self.experiments[experiment].name)
+                                                                       label=self.experiments[experiment].
+                                                                       plot_categories[self.
+                                                                       plot_categories_cb.currentText()])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -757,7 +775,8 @@ class Analysis(QtWidgets.QWidget):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, experiment in enumerate(plot_list):
                         if self.experiments[experiment].reference is False:
-                            categories.append(self.experiments[experiment].name)
+                            categories.append(self.experiments[experiment].
+                                              plot_categories[self.plot_categories_cb.currentText()])
                             values.append(self.experiments[experiment].efficiencies[item[0][0]][0])
                             errors.append(self.experiments[experiment].efficiencies[item[0][0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
@@ -776,7 +795,7 @@ class Analysis(QtWidgets.QWidget):
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
-                axis.set_xlabel("")
+                axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))
             else:

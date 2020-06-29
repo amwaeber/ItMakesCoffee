@@ -68,7 +68,14 @@ class Experiment:
                              'Delta I_1_avg': [0, 0],
                              'Delta I_2_avg': [0, 0],
                              'Delta I_3_avg': [0, 0],
-                             'Delta I_4_avg': [0, 0]}
+                             'Delta I_4_avg': [0, 0]
+                             }
+
+        self.plot_categories = {'Experiment': str(self.name),
+                                'Film Thickness': str(self.film_thickness),
+                                'Film Area': str(self.film_area),
+                                'Time': str(self.time)
+                                }
 
     def update_efficiencies(self, reference_experiment):
         if not reference_experiment:
@@ -80,7 +87,8 @@ class Experiment:
                                  'Delta I_1_avg': [0, 0],
                                  'Delta I_2_avg': [0, 0],
                                  'Delta I_3_avg': [0, 0],
-                                 'Delta I_4_avg': [0, 0]}
+                                 'Delta I_4_avg': [0, 0]
+                                 }
         else:
             self.efficiencies['Delta V_oc'] = [100 * (self.values['Open Circuit Voltage V_oc (V)'][0] -
                                                reference_experiment.values['Open Circuit Voltage V_oc (V)'][0]) /
