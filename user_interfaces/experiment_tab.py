@@ -6,8 +6,8 @@ import pyqtgraph as pg
 
 import hardware.keithley as keithley
 import hardware.sensor as sensor
-from utility import ports
-from utility.config import paths
+from utility import serial_ports
+from utility.config import paths, ports
 
 
 pg.setConfigOption('background', 'w')
@@ -281,8 +281,10 @@ class Experiment(QtWidgets.QWidget):
         self.sensor_cb = QtWidgets.QComboBox()
         self.sensor_cb.setFixedWidth(90)
         self.sensor_cb.addItem('dummy')
-        for port in ports.get_serial_ports():
+        for port in serial_ports.get_serial_ports():
             self.sensor_cb.addItem(port)
+            if port == ports['arduino']:
+                self.sensor_cb.setCurrentText(port)
         self.sensor_cb.currentTextChanged.connect(self.sensor_port_changed)
         hbox_ports.addWidget(self.sensor_cb)
         self.source_label = QtWidgets.QLabel("Keithley", self)
@@ -291,6 +293,9 @@ class Experiment(QtWidgets.QWidget):
         self.source_cb.setFixedWidth(90)
         self.source_cb.addItem('dummy')
         self.source_cb.addItem('GPIB::24')
+        for i in range(self.source_cb.count()):
+            if self.source_cb.itemText(i) == ports['keithley']:
+                self.source_cb.setCurrentIndex(i)
         hbox_ports.addWidget(self.source_cb)
         hbox_ports.addStretch(-1)
         self.refresh_button = QtWidgets.QPushButton(
@@ -503,7 +508,7 @@ class Experiment(QtWidgets.QWidget):
         self.block_sensor = True
         self.sensor_cb.clear()
         self.sensor_cb.addItem('dummy')
-        for port in ports.get_serial_ports():
+        for port in serial_ports.get_serial_ports():
             self.sensor_cb.addItem(port)
         self.block_sensor = False
         self.start_sensor()

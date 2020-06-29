@@ -424,7 +424,7 @@ class Analysis(QtWidgets.QWidget):
         vbox_analysis.addLayout(hbox_analysis)
         self.experiment_tree = QtWidgets.QTreeWidget()
         self.experiment_tree.setRootIsDecorated(False)
-        self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Film Th.", "Film Area",
                                               "Created"])
         self.experiment_tree.setSortingEnabled(True)

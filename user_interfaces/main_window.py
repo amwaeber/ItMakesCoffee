@@ -33,4 +33,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Update config ini with current paths
         config.write_config(save_path=str(self.table_widget.tab_experiment.directory),
                             plot_path=str(self.table_widget.tab_analysis.plot_directory),
-                            stats_path=str(self.table_widget.tab_analysis.stats_directory))
+                            stats_path=str(self.table_widget.tab_analysis.stats_directory),
+                            arduino=str(self.table_widget.tab_experiment.sensor_cb.currentText()),
+                            keithley=str(self.table_widget.tab_experiment.source_cb.currentText()))

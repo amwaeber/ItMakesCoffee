@@ -13,4 +13,4 @@ class MultiDirDialog(QtWidgets.QFileDialog):
 
         for view in self.findChildren((QtWidgets.QListView, QtWidgets.QTreeView)):
             if isinstance(view.model(), QtWidgets.QFileSystemModel):
-                view.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+                view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)

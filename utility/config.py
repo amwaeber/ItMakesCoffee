@@ -7,6 +7,7 @@ PROJECT_PATH = os.path.join(os.path.dirname(__file__), '..')
 
 global_confs = {}
 paths = {}
+ports = {}
 
 
 def read_config():
@@ -20,6 +21,9 @@ def read_config():
 
     for key in config['paths']:
         paths[key] = str(config['paths'][key])
+
+    for key in config['ports']:
+        ports[key] = str(config['ports'][key])
 
 
 def write_config(**kwargs):
@@ -35,6 +39,10 @@ def write_config(**kwargs):
                        'last_save': kwargs.get('save_path', PROJECT_PATH),
                        'last_plot_save': kwargs.get('plot_path', PROJECT_PATH),
                        'last_stats_save': kwargs.get('stats_path', PROJECT_PATH)
+                       }
+
+    config['ports'] = {'arduino': kwargs.get('arduino', 'dummy'),
+                       'keithley': kwargs.get('keithley', 'dummy')
                        }
 
     with open(config_path, 'w') as f:
