@@ -59,10 +59,10 @@ class Analysis(QtWidgets.QWidget):
                           'Legend': True,
                           'Rescale': True,
                           'Scatter': False}
-        self.plot_directory = paths['last_save']
+        self.plot_directory = paths['last_plot_save']
 
         self.table_select = 'default'
-        self.stats_directory = paths['last_save']
+        self.stats_directory = paths['last_stats_save']
 
         hbox_total = QtWidgets.QHBoxLayout()
         vbox_left = QtWidgets.QVBoxLayout()
@@ -442,16 +442,16 @@ class Analysis(QtWidgets.QWidget):
     def folder_dialog(self, origin):
         if origin == 'plot':
             self.plot_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                 paths['last_save']))
+                                                                                 self.plot_directory))
             self.plot_save_folder_edit.setText(self.plot_directory)
         elif origin == 'stats':
             self.stats_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                  paths['last_save']))
+                                                                                  self.stats_directory))
             self.stats_save_folder_edit.setText(self.stats_directory)
 
     def add_experiments(self):
         multi_dir_dialog = MultiDirDialog()
-        multi_dir_dialog.setDirectory(paths['last_data'])
+        multi_dir_dialog.setDirectory(paths['last_save'])
         multi_dir_dialog.show()
         multi_dir_dialog.exec_()
         self.experiment_directories.extend(get_experiment_folders(multi_dir_dialog.selectedFiles()))

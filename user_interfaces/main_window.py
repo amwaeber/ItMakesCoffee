@@ -2,20 +2,19 @@ import os
 from PyQt5 import QtWidgets, QtGui
 
 from user_interfaces.table_widget import TableWidget
-from utility.config import global_confs
-from utility.config import paths
+from utility import config
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+        config.read_config()
         self.init_ui()
 
     def init_ui(self):
-
-        self.setWindowIcon(QtGui.QIcon(os.path.join(paths['icons'], 'coffee.png')))
-        self.setWindowTitle("%s %s" % (global_confs['progname'], global_confs['progversion']))
+        self.setWindowIcon(QtGui.QIcon(os.path.join(config.paths['icons'], 'coffee.png')))
+        self.setWindowTitle("%s %s" % (config.global_confs['progname'], config.global_confs['progversion']))
 
         self.table_widget = TableWidget(self)  # create multiple document interface widget
         self.setCentralWidget(self.table_widget)
@@ -23,6 +22,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, *args, **kwargs):
         super(QtWidgets.QMainWindow, self).closeEvent(*args, **kwargs)
-        self.table_widget.tab_experiment.stop_sensor()  # disconnect sensor before shutdown
+
+        # Disconnect sensor before shutdown
+        self.table_widget.tab_experiment.stop_sensor()
+
+        # Save newly created experiment analyses
         for experiment in self.table_widget.tab_analysis.experiments.values():
             experiment.store()
+
+        # Update config ini with current paths
+        config.write_config(save_path=str(self.table_widget.tab_experiment.directory),
+                            plot_path=str(self.table_widget.tab_analysis.plot_directory),
+                            stats_path=str(self.table_widget.tab_analysis.stats_directory))

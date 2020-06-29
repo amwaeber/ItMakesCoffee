@@ -18,7 +18,6 @@ class Experiment(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(Experiment, self).__init__(parent)
-
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
         self.block_sensor = False
@@ -547,7 +546,7 @@ class Experiment(QtWidgets.QWidget):
             self.power_data_line4.setData([], [])
 
     def folder_dialog(self):
-        self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', paths['last_save']))
+        self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.directory))
         self.folder_edit.setText(self.directory)
 
     def iv_register(self, mes):
