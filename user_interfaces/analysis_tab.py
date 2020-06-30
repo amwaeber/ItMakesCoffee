@@ -22,6 +22,7 @@ line_plot_dict = {'Time': 'Time (s)',
                   'Irradiance 2': 'Irradiance 2 (W/m2)',
                   'Irradiance 3': 'Irradiance 3 (W/m2)',
                   'Irradiance 4': 'Irradiance 4 (W/m2)'}
+
 bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
                  'Voltage': 'Open Circuit Voltage V_oc (V)',
                  'Power': 'Maximum Power P_max (W)',
@@ -31,6 +32,7 @@ bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
                  'Irradiance 2': 'Average Irradiance I_2_avg (W/m2)',
                  'Irradiance 3': 'Average Irradiance I_3_avg (W/m2)',
                  'Irradiance 4': 'Average Irradiance I_4_avg (W/m2)'}
+
 efficiency_plot_dict = {'Current': ['Delta I_sc', r'$\Delta I_{sc}/PV (\%)$'],
                         'Voltage': ['Delta V_oc', r'$\Delta V_{oc}/PV (\%)$'],
                         'Power': ['Delta P_max', r'$\Delta P_{max}/PV (\%)$'],
@@ -40,6 +42,16 @@ efficiency_plot_dict = {'Current': ['Delta I_sc', r'$\Delta I_{sc}/PV (\%)$'],
                         'Irradiance 2': ['Delta I_2_avg', r'$\Delta I_{2, avg}/PV (\%)$'],
                         'Irradiance 3': ['Delta I_3_avg', r'$\Delta I_{3, avg}/PV (\%)$'],
                         'Irradiance 4': ['Delta I_4_avg', r'$\Delta I_{4, avg}/PV (\%)$']}
+
+table_header_dict = {'Single': ['Trace', 'Isc (A)', 'Voc (V)', 'Pmax (W)', 'FF', 'Tavg (\u00B0C)',
+                                'I\u2081avg (W/m\u00B2)', 'I\u2082avg (W/m\u00B2)', 'I\u2083avg (W/m\u00B2)',
+                                'I\u2084avg (W/m\u00B2)'],
+                     'Average': ['Experiment', 'Isc (A)', 'Voc (V)', 'Pmax (W)', 'FF', 'Tavg (\u00B0C)',
+                                 'I\u2081avg (W/m\u00B2)', 'I\u2082avg (W/m\u00B2)', 'I\u2083avg (W/m\u00B2)',
+                                 'I\u2084avg (W/m\u00B2)'],
+                     'Efficiency': ['Experiment', '\u0394Isc/PV (%)', '\u0394Voc/PV (%)', '\u0394Pmax/PV (%)',
+                                    '\u0394FF/PV (%)', '\u0394Tavg/PV (%)', '\u0394I\u2081avg/PV (%)',
+                                    '\u0394I\u2082avg/PV (%)', '\u0394I\u2083avg/PV (%)', '\u0394I\u2084avg/PV (%)']}
 
 
 class Analysis(QtWidgets.QWidget):
@@ -58,10 +70,10 @@ class Analysis(QtWidgets.QWidget):
         self.plot_show = {'Average': True,
                           'Legend': True,
                           'Rescale': True,
-                          'Scatter': False}
+                          'Scatter': False,
+                          'Groups': False}
         self.plot_directory = paths['last_plot_save']
 
-        self.table_select = 'default'
         self.stats_directory = paths['last_stats_save']
 
         hbox_total = QtWidgets.QHBoxLayout()
@@ -79,10 +91,8 @@ class Analysis(QtWidgets.QWidget):
         vbox_table = QtWidgets.QVBoxLayout()
         self.statistics_table = QtWidgets.QTableWidget()
         self.statistics_table.setRowCount(4)
-        self.statistics_table.setColumnCount(14)
-        col_headers = ['Experiment', 'Time', 'Max. Power', r'$\sigma$', 'V_oc', r'$\sigma$', 'I_sc', r'$\sigma$',
-                       'Fill Factor', r'$\sigma$', 'Temperature', r'$\sigma$', 'Irradiance', r'$\sigma$']
-        self.statistics_table.setHorizontalHeaderLabels(col_headers)
+        self.statistics_table.setColumnCount(10)
+        self.statistics_table.setHorizontalHeaderLabels(table_header_dict[self.plot_mode])
         vbox_table.addWidget(self.statistics_table)
         self.statistics_group_box.setLayout(vbox_table)
         vbox_left.addWidget(self.statistics_group_box, 2)
@@ -259,37 +269,9 @@ class Analysis(QtWidgets.QWidget):
         self.plot_mode_yaxis2_group.addButton(self.item_irradiance_y2)
         grid_plot_items.addWidget(self.item_irradiance_y2, 8, 3)
 
-        self.plot_show_label = QtWidgets.QLabel('Show', self)
-        grid_plot_items.addWidget(self.plot_show_label, 0, 5)
-        self.show_avg_label = QtWidgets.QLabel("Average Lines", self)
-        grid_plot_items.addWidget(self.show_avg_label, 1, 5)
-        self.show_avg_cb = QtWidgets.QCheckBox('', )
-        self.show_avg_cb.setChecked(True)
-        self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_avg_cb, 1, 6)
-        self.show_legend_label = QtWidgets.QLabel("Legend", self)
-        grid_plot_items.addWidget(self.show_legend_label, 2, 5)
-        self.show_legend_cb = QtWidgets.QCheckBox('', )
-        self.show_legend_cb.setChecked(True)
-        self.show_legend_cb.toggled.connect(lambda: self.change_plot_settings('Legend',
-                                                                              self.show_legend_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_legend_cb, 2, 6)
-        self.show_rescale_label = QtWidgets.QLabel("Rescale", self)
-        grid_plot_items.addWidget(self.show_rescale_label, 3, 5)
-        self.show_rescale_cb = QtWidgets.QCheckBox('', )
-        self.show_rescale_cb.setChecked(True)
-        self.show_rescale_cb.toggled.connect(lambda: self.change_plot_settings('Rescale',
-                                                                               self.show_rescale_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_rescale_cb, 3, 6)
-        self.show_scatter_label = QtWidgets.QLabel("Scatter", self)
-        grid_plot_items.addWidget(self.show_scatter_label, 4, 5)
-        self.show_scatter_cb = QtWidgets.QCheckBox('', )
-        self.show_scatter_cb.toggled.connect(lambda: self.change_plot_settings('Scatter',
-                                                                               self.show_scatter_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_scatter_cb, 4, 6)
-
+        # X-axis plot category selection
         self.show_categories_label = QtWidgets.QLabel("Category", self)
-        grid_plot_items.addWidget(self.show_categories_label, 6, 5)
+        grid_plot_items.addWidget(self.show_categories_label, 0, 5)
         self.plot_categories_cb = QtWidgets.QComboBox()
         self.plot_categories_cb.setFixedWidth(120)
         self.plot_categories_cb.addItem('Experiment')
@@ -297,7 +279,43 @@ class Analysis(QtWidgets.QWidget):
         self.plot_categories_cb.addItem('Film Area')
         self.plot_categories_cb.addItem('Time')
         self.plot_categories_cb.currentTextChanged.connect(self.update_plot)
-        grid_plot_items.addWidget(self.plot_categories_cb, 7, 5)
+        grid_plot_items.addWidget(self.plot_categories_cb, 1, 5)
+
+        # Various plot options
+        self.plot_show_label = QtWidgets.QLabel('Options', self)
+        grid_plot_items.addWidget(self.plot_show_label, 3, 5)
+        self.show_avg_label = QtWidgets.QLabel("Show Average", self)
+        grid_plot_items.addWidget(self.show_avg_label, 4, 5)
+        self.show_avg_cb = QtWidgets.QCheckBox('', )
+        self.show_avg_cb.setChecked(True)
+        self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_avg_cb, 4, 6)
+        self.show_legend_label = QtWidgets.QLabel("Show Legend", self)  # TODO: Implement legend toggle
+        grid_plot_items.addWidget(self.show_legend_label, 5, 5)
+        self.show_legend_cb = QtWidgets.QCheckBox('', )
+        self.show_legend_cb.setChecked(True)
+        self.show_legend_cb.toggled.connect(lambda: self.change_plot_settings('Legend',
+                                                                              self.show_legend_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_legend_cb, 5, 6)
+        self.show_rescale_label = QtWidgets.QLabel("Autoscale Y", self)
+        grid_plot_items.addWidget(self.show_rescale_label, 6, 5)
+        self.show_rescale_cb = QtWidgets.QCheckBox('', )
+        self.show_rescale_cb.setChecked(True)
+        self.show_rescale_cb.toggled.connect(lambda: self.change_plot_settings('Rescale',
+                                                                               self.show_rescale_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_rescale_cb, 6, 6)
+        self.show_scatter_label = QtWidgets.QLabel("Plot Scatter", self)  # TODO: Implement scatter plots
+        grid_plot_items.addWidget(self.show_scatter_label, 7, 5)
+        self.show_scatter_cb = QtWidgets.QCheckBox('', )
+        self.show_scatter_cb.toggled.connect(lambda: self.change_plot_settings('Scatter',
+                                                                               self.show_scatter_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_scatter_cb, 7, 6)
+        self.show_groups_label = QtWidgets.QLabel("Plot Groups", self)  # TODO: Implement grouping
+        grid_plot_items.addWidget(self.show_groups_label, 8, 5)
+        self.show_group_cb = QtWidgets.QCheckBox('', )
+        self.show_group_cb.toggled.connect(lambda: self.change_plot_settings('Groups',
+                                                                             self.show_group_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_group_cb, 8, 6)
 
         self.plot_mode_label = QtWidgets.QLabel('Mode', self)
         grid_plot_items.addWidget(self.plot_mode_label, 0, 8)
@@ -354,37 +372,23 @@ class Analysis(QtWidgets.QWidget):
         self.plot_settings_group_box.setLayout(vbox_plot_set)
         vbox_right.addWidget(self.plot_settings_group_box)
 
-        self.stats_settings_group_box = QtWidgets.QGroupBox('Statistics Settings')
-        vbox_stats_set = QtWidgets.QVBoxLayout()
-        hbox_stats_set1 = QtWidgets.QHBoxLayout()
-        self.stats_mode_label = QtWidgets.QLabel('Mode', self)
-        hbox_stats_set1.addWidget(self.stats_mode_label)
-        self.stats_mode_cb = QtWidgets.QComboBox()
-        self.stats_mode_cb.setFixedWidth(120)
-        self.stats_mode_cb.addItem('Average')
-        self.stats_mode_cb.addItem('Efficiency')
-        self.stats_mode_cb.currentTextChanged.connect(self.update_stats)
-        hbox_stats_set1.addWidget(self.stats_mode_cb)
-        hbox_stats_set1.addStretch(-1)
-        vbox_stats_set.addLayout(hbox_stats_set1)
-
-        hbox_stats_set2 = QtWidgets.QHBoxLayout()
+        self.stats_settings_group_box = QtWidgets.QGroupBox('Data Export')
+        hbox_data_export = QtWidgets.QHBoxLayout()
         self.stats_save_folder_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
         self.stats_save_folder_button.clicked.connect(lambda: self.folder_dialog('stats'))
         self.stats_save_folder_button.setToolTip('Choose folder')
-        hbox_stats_set2.addWidget(self.stats_save_folder_button)
+        hbox_data_export.addWidget(self.stats_save_folder_button)
         self.stats_save_folder_edit = QtWidgets.QLineEdit(self.stats_directory, self)
         self.stats_save_folder_edit.setMinimumWidth(180)
         self.stats_save_folder_edit.setDisabled(True)
-        hbox_stats_set2.addWidget(self.stats_save_folder_edit)
+        hbox_data_export.addWidget(self.stats_save_folder_edit)
         self.stats_save_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'save.png')), '')
         self.stats_save_button.clicked.connect(self.save_stats)
-        self.stats_save_button.setToolTip('Save as csv')
-        hbox_stats_set2.addWidget(self.stats_save_button)
-        vbox_stats_set.addLayout(hbox_stats_set2)
-        self.stats_settings_group_box.setLayout(vbox_stats_set)
+        self.stats_save_button.setToolTip('Save as xlsx')
+        hbox_data_export.addWidget(self.stats_save_button)
+        self.stats_settings_group_box.setLayout(hbox_data_export)
         vbox_right.addWidget(self.stats_settings_group_box)
 
         self.analysis_group_box = QtWidgets.QGroupBox('Experiment data')
@@ -520,7 +524,6 @@ class Analysis(QtWidgets.QWidget):
                 self.experiment_tree.setCurrentItem(item)
                 self.experiment_directories.insert(row + 1, self.experiment_directories.pop(row))
         self.update_plot()
-        self.update_stats()
 
     def update_experiment_tree(self):
         self.experiment_tree.clear()
@@ -568,12 +571,12 @@ class Analysis(QtWidgets.QWidget):
                     iterator += 1
             self.update_reference()
             self.update_plot()  # to update effects reference switch has on plot
+            self.update_stats()
 
-        elif column == 1:  # Plot
+        elif column == 1:  # Plot/Statistics
             if int(item.checkState(column)) == 0:
                 self.experiments[experiment].plot = False
             else:
-                self.experiments[experiment].plot = True
                 # set other plot cbs to False if in single-plot mode
                 if self.plot_mode == 'Single':
                     iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
@@ -583,14 +586,16 @@ class Analysis(QtWidgets.QWidget):
                             tree_item.setCheckState(1, Qt.Unchecked)
                             self.experiments[str(tree_item.toolTip(3))].reference = False
                         iterator += 1
+                self.experiments[experiment].plot = True
             self.update_plot()
+            self.update_stats()
 
-        elif column == 2:  # Statistics
+        elif column == 2:  # Statistics TODO: replace by 'group' indicators?
             if int(item.checkState(column)) == 0:
                 self.experiments[experiment].stats = False
             else:
                 self.experiments[experiment].stats = True
-            self.update_stats()
+            # self.update_stats()
 
     def update_reference(self):
         for experiment in self.experiments.values():
@@ -624,6 +629,7 @@ class Analysis(QtWidgets.QWidget):
                 self.show_avg_cb.setEnabled(False)
                 self.show_rescale_cb.setChecked(False)
             self.update_plot()
+            self.update_stats()
 
     def update_plot(self):
         plot_list = [experiment for experiment in self.experiment_directories
@@ -833,25 +839,50 @@ class Analysis(QtWidgets.QWidget):
         self.plot_canvas.figure.savefig(path)
 
     def update_stats(self):
-        pass
-        # if self.table_select == 'default':  # TODO: sort table settings
-        #     for n in range(self.statistics_table.columnCount()):
-        #         for m in range(4):  # add a fix to catch reset to default
-        #             entry = QtWidgets.QTableWidgetItem('-')
-        #             self.statistics_table.setItem(m, n, entry)
-        # elif self.stats_mode_cb.currentText() == 'Average':
-        #     df = pd.concat([self.reference_averaged, self.selection_averaged])
-        #     for m in range(len(df.index)):  # capture shorter subsequent datasets
-        #         if m >= self.statistics_table.rowCount():
-        #             self.statistics_table.insertRow(m)
-        #         for n in range(len(df.columns)):
-        #             entry = QtWidgets.QTableWidgetItem('123')
-        #             self.statistics_table.setItem(m, n, entry)
-        # elif self.stats_mode_cb.currentText() == 'Efficiency':
-        #     df = self.selection_efficiency
-        #     pass
-        # self.statistics_table.resizeColumnsToContents()
-        # self.statistics_table.resizeRowsToContents()
+        stats_list = [experiment for experiment in self.experiment_directories
+                      if self.experiments[experiment].plot is True]
+        self.statistics_table.setHorizontalHeaderLabels(table_header_dict[self.plot_mode])
+
+        if self.plot_mode == 'Single' and len(stats_list) == 1:
+            experiment = self.experiments[stats_list[0]]
+            n_data_rows = sum(experiment.n_traces) + 1
+            self.statistics_table.setRowCount(n_data_rows)
+            for i, trace in enumerate(experiment.traces.values()):
+                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem('Trace %d' % i))
+                for j, par in enumerate(bar_plot_dict.values(), 1):
+                    self.statistics_table.setItem(i, j, QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
+                                                                                   % tuple(trace.values[par])))
+            self.statistics_table.setItem(n_data_rows - 1, 0, QtWidgets.QTableWidgetItem('Average'))
+            for j, par in enumerate(bar_plot_dict.values(), 1):
+                self.statistics_table.setItem(n_data_rows - 1, j,
+                                              QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
+                                                                         % tuple(experiment.values[par])))
+
+        elif self.plot_mode == 'Average':
+            n_data_rows = len(stats_list)
+            self.statistics_table.setRowCount(n_data_rows)
+            for i, experiment in enumerate([exp for exp in self.experiments.values() if exp.plot]):
+                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem(experiment.name))
+                for j, par in enumerate(bar_plot_dict.values(), 1):
+                    self.statistics_table.setItem(i, j,
+                                                  QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
+                                                                             % tuple(experiment.values[par])))
+
+        elif self.plot_mode == 'Efficiency' and self.reference != '' and len(stats_list) >= 1:
+            n_data_rows = len(stats_list) - 1
+            self.statistics_table.setRowCount(n_data_rows)
+            for i, experiment in enumerate([exp for exp in self.experiments.values()
+                                            if exp.plot and not exp.reference]):
+                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem(experiment.name))
+                for j, par in enumerate(efficiency_plot_dict.values(), 1):
+                    self.statistics_table.setItem(i, j,
+                                                  QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
+                                                                             % tuple(experiment.efficiencies[par[0]])))
+
+        else:
+            self.statistics_table.setRowCount(4)
+        self.statistics_table.resizeColumnsToContents()
+        self.statistics_table.resizeRowsToContents()
 
     def save_stats(self):
         # save both average and relative tables
