@@ -84,7 +84,14 @@ class Keithley(QtCore.QObject):
         while self.is_run:
             for repetition in range(self.repetitions):
                 if str(self.gpib_port) == 'dummy':
-                    self.is_receiving = True
+                    for dp in range(self.n_data_points):
+                        if not self.is_run:
+                            self.to_log.emit('<span style=\" color:#ff0000;\" >Scan aborted.</span>')
+                            return
+                        time.sleep(self.delay)
+                        self.times[dp] = time.time()
+                        self.update.emit(dp)
+                        self.is_receiving = True
                 else:
                     for dp in range(self.n_data_points):
                         if not self.is_run:

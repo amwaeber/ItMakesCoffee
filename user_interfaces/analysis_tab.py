@@ -10,6 +10,7 @@ from utility.data_import import Experiment
 from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
+from utility.excel_export import save_to_xlsx
 from utility.folders import get_experiment_folders
 
 
@@ -351,7 +352,7 @@ class Analysis(QtWidgets.QWidget):
         hbox_plot_set2 = QtWidgets.QHBoxLayout()
         self.plot_save_folder_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
-        self.plot_save_folder_button.clicked.connect(lambda: self.folder_dialog('plot'))
+        self.plot_save_folder_button.clicked.connect(self.folder_dialog)
         self.plot_save_folder_button.setToolTip('Choose folder')
         hbox_plot_set2.addWidget(self.plot_save_folder_button)
         self.plot_save_folder_edit = QtWidgets.QLineEdit(self.plot_directory, self)
@@ -374,20 +375,15 @@ class Analysis(QtWidgets.QWidget):
 
         self.stats_settings_group_box = QtWidgets.QGroupBox('Data Export')
         hbox_data_export = QtWidgets.QHBoxLayout()
-        self.stats_save_folder_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'folder.png')), '')
-        self.stats_save_folder_button.clicked.connect(lambda: self.folder_dialog('stats'))
-        self.stats_save_folder_button.setToolTip('Choose folder')
-        hbox_data_export.addWidget(self.stats_save_folder_button)
-        self.stats_save_folder_edit = QtWidgets.QLineEdit(self.stats_directory, self)
-        self.stats_save_folder_edit.setMinimumWidth(180)
-        self.stats_save_folder_edit.setDisabled(True)
-        hbox_data_export.addWidget(self.stats_save_folder_edit)
         self.stats_save_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'save.png')), '')
         self.stats_save_button.clicked.connect(self.save_stats)
         self.stats_save_button.setToolTip('Save as xlsx')
         hbox_data_export.addWidget(self.stats_save_button)
+        self.stats_save_folder_edit = QtWidgets.QLineEdit(self.stats_directory, self)
+        self.stats_save_folder_edit.setMinimumWidth(180)
+        self.stats_save_folder_edit.setDisabled(True)
+        hbox_data_export.addWidget(self.stats_save_folder_edit)
         self.stats_settings_group_box.setLayout(hbox_data_export)
         vbox_right.addWidget(self.stats_settings_group_box)
 
@@ -443,15 +439,10 @@ class Analysis(QtWidgets.QWidget):
         self.update_plot()
         self.update_stats()
 
-    def folder_dialog(self, origin):
-        if origin == 'plot':
-            self.plot_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                 self.plot_directory))
-            self.plot_save_folder_edit.setText(self.plot_directory)
-        elif origin == 'stats':
-            self.stats_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                                                  self.stats_directory))
-            self.stats_save_folder_edit.setText(self.stats_directory)
+    def folder_dialog(self):
+        self.plot_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
+                                                                             self.plot_directory))
+        self.plot_save_folder_edit.setText(self.plot_directory)
 
     def add_experiments(self):
         multi_dir_dialog = MultiDirDialog()
@@ -885,8 +876,15 @@ class Analysis(QtWidgets.QWidget):
         self.statistics_table.resizeRowsToContents()
 
     def save_stats(self):
-        # save both average and relative tables
-        pass
+        export_filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, 'Save as...', self.stats_directory,
+                                                                    "Excel files (*.xlsx)")[0])
+        if export_filepath == '':
+            return
+        if not os.path.basename(export_filepath).endswith('.xlsx'):
+            export_filepath = os.path.join(export_filepath, '.xlsx')
+        self.stats_directory = os.path.dirname(export_filepath)
+        self.stats_save_folder_edit.setText(self.stats_directory)
+        save_to_xlsx(self.experiments, export_filepath)
 
     @staticmethod
     def bool_to_qtchecked(boolean):
