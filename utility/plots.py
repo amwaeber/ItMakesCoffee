@@ -2,6 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def format_legend(ax1, ax2, show_legend=False):
+    if show_legend:
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        if ax1.get_legend():
+            ax1.get_legend().remove()
+        ax2.legend(lines1 + lines2, labels1 + labels2)
+    else:
+        for ax in (ax1, ax2):
+            if ax.get_legend():
+                ax.get_legend().remove()
+
+
 def format_yaxis(ax1, ax2, rescale=True):
     axes = (ax1, ax2)
     is_empty = [ax.lines == [] for ax in axes]

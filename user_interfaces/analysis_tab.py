@@ -664,6 +664,7 @@ class Analysis(QtWidgets.QWidget):
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel("")
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -688,7 +689,8 @@ class Analysis(QtWidgets.QWidget):
                         experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
                                                      color=colors.lighten_color(colors.colors[j % len(colors.colors)],
                                                                                 1.5),
-                                                     ax=self.get_axis(axis, axis2, item[1]), label='Average')
+                                                     ax=self.get_axis(axis, axis2, item[1]), label=item[0])
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -732,6 +734,7 @@ class Analysis(QtWidgets.QWidget):
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -753,9 +756,8 @@ class Analysis(QtWidgets.QWidget):
                                                                            colors.colors[j % len(colors.colors)],
                                                                            1.75 - 1.5 * i / len(plot_list)),
                                                                        ax=self.get_axis(axis, axis2, item[1]),
-                                                                       label=self.experiments[experiment].
-                                                                       plot_categories[self.
-                                                                       plot_categories_cb.currentText()])
+                                                                       label=self.experiments[experiment].name)
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -793,6 +795,7 @@ class Analysis(QtWidgets.QWidget):
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))
