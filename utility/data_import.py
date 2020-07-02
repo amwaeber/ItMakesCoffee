@@ -158,6 +158,7 @@ class Experiment:
         irradiance_4 = [trace.values['Average Irradiance I_4_avg (W/m2)'][0] for trace in self.traces.values()]
         self.values['Average Irradiance I_4_avg (W/m2)'] = [np.mean(irradiance_4), np.std(irradiance_4)]
 
+
 class Trace:
     def __init__(self, data_path='.', experiment=None):
         self.data_path = os.path.normpath(data_path)
