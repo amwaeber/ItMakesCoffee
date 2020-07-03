@@ -557,6 +557,7 @@ class Experiment(QtWidgets.QWidget):
     def iv_register(self, mes):
         self.iv_mes = mes
         self.iv_mes.update.connect(self.update_iv)
+        self.iv_mes.restart_sensor.connect(self.start_sensor)
         self.iv_mes.save.connect(self.save)
         self.iv_mes.to_log.connect(self.logger)
 

@@ -10,6 +10,7 @@ import time
 
 class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal(int)
+    restart_sensor = QtCore.pyqtSignal()
     save = QtCore.pyqtSignal(int)
     to_log = QtCore.pyqtSignal(str)
 
@@ -46,7 +47,8 @@ class Keithley(QtCore.QObject):
             self.sourcemeter = Keithley2400(str(self.gpib_port))
             self.to_log.emit('<span style=\" color:#32cd32;\" >Connected to ' + str(self.gpib_port) + '.</span>')
         except pyvisa.errors.VisaIOError:
-            self.to_log.emit('<span style=\" color:#ff0000;\" >Failed to connect with ' + str(self.gpib_port) + '.</span>')
+            self.to_log.emit('<span style=\" color:#ff0000;\" >Failed to connect with ' + str(self.gpib_port) +
+                             '.</span>')
             self.gpib_port = 'dummy'
             return
         self.sourcemeter.reset()
@@ -83,6 +85,11 @@ class Keithley(QtCore.QObject):
         self.config_keithley()
         while self.is_run:
             for repetition in range(self.repetitions):
+                self.restart_sensor.emit()
+                if repetition == 0:
+                    time.sleep(10.0)  # give time for sensor connection to re-establish itself
+                else:
+                    time.sleep(5.0)  # give time for sensor connection to re-establish itself
                 if str(self.gpib_port) == 'dummy':
                     for dp in range(self.n_data_points):
                         if not self.is_run:

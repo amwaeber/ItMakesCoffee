@@ -420,6 +420,16 @@ class Analysis(QtWidgets.QWidget):
         self.analysis_select_none_button.clicked.connect(lambda: self.change_selection('none'))
         self.analysis_select_none_button.setToolTip('Unselect all experiments')
         hbox_analysis.addWidget(self.analysis_select_none_button)
+        self.analysis_group_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'group.png')), '')
+        self.analysis_group_button.clicked.connect(self.group_experiments)
+        self.analysis_group_button.setToolTip('Group selected experiments')
+        hbox_analysis.addWidget(self.analysis_group_button)
+        self.analysis_ungroup_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'ungroup.png')), '')
+        self.analysis_ungroup_button.clicked.connect(self.ungroup_experiments)
+        self.analysis_ungroup_button.setToolTip('Ungroup selected experiments')
+        hbox_analysis.addWidget(self.analysis_ungroup_button)
         hbox_analysis.addStretch(-1)
         vbox_analysis.addLayout(hbox_analysis)
         self.experiment_tree = QtWidgets.QTreeWidget()
@@ -465,6 +475,12 @@ class Analysis(QtWidgets.QWidget):
         self.update_reference()
         self.update_plot()
         self.update_stats()
+
+    def group_experiments(self):
+        pass
+
+    def ungroup_experiments(self):
+        pass
 
     def change_selection(self, select):
         iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
