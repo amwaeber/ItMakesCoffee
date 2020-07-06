@@ -237,36 +237,18 @@ class Analysis(QtWidgets.QWidget):
         self.item_irradiance_label = QtWidgets.QLabel("Irradiance/Iavg", self)
         grid_plot_items.addWidget(self.item_irradiance_label, 8, 0)
         self.item_irradiance_x = QtWidgets.QCheckBox('',)
-        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 1',
-                                                                              self.item_irradiance_x.isChecked()))
-        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 2',
-                                                                              self.item_irradiance_x.isChecked()))
-        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 3',
-                                                                              self.item_irradiance_x.isChecked()))
-        self.item_irradiance_x.toggled.connect(lambda: self.change_plot_items('x', 'Irradiance 4',
-                                                                              self.item_irradiance_x.isChecked()))
+        self.item_irradiance_x.toggled.connect(lambda: self.irradiance_plot('x', '',
+                                                                            self.item_irradiance_x.isChecked()))
         self.plot_mode_xaxis_group.addButton(self.item_irradiance_x)
         grid_plot_items.addWidget(self.item_irradiance_x, 8, 1)
         self.item_irradiance_y1 = QtWidgets.QCheckBox('',)
-        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 1',
-                                                                               self.item_irradiance_y1.isChecked()))
-        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 2',
-                                                                               self.item_irradiance_y1.isChecked()))
-        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 3',
-                                                                               self.item_irradiance_y1.isChecked()))
-        self.item_irradiance_y1.toggled.connect(lambda: self.change_plot_items('y1', 'Irradiance 4',
-                                                                               self.item_irradiance_y1.isChecked()))
+        self.item_irradiance_y1.toggled.connect(lambda: self.irradiance_plot('y1', '',
+                                                                             self.item_irradiance_y1.isChecked()))
         self.plot_mode_yaxis1_group.addButton(self.item_irradiance_y1)
         grid_plot_items.addWidget(self.item_irradiance_y1, 8, 2)
         self.item_irradiance_y2 = QtWidgets.QCheckBox('',)
-        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 1',
-                                                                               self.item_irradiance_y2.isChecked()))
-        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 2',
-                                                                               self.item_irradiance_y2.isChecked()))
-        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 3',
-                                                                               self.item_irradiance_y2.isChecked()))
-        self.item_irradiance_y2.toggled.connect(lambda: self.change_plot_items('y2', 'Irradiance 4',
-                                                                               self.item_irradiance_y2.isChecked()))
+        self.item_irradiance_y2.toggled.connect(lambda: self.irradiance_plot('y2', '',
+                                                                             self.item_irradiance_y2.isChecked()))
         self.plot_mode_yaxis2_group.addButton(self.item_irradiance_y2)
         grid_plot_items.addWidget(self.item_irradiance_y2, 8, 3)
 
@@ -291,7 +273,7 @@ class Analysis(QtWidgets.QWidget):
         self.show_avg_cb.setChecked(True)
         self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
         grid_plot_items.addWidget(self.show_avg_cb, 4, 6)
-        self.show_legend_label = QtWidgets.QLabel("Show Legend", self)  # TODO: Implement legend toggle
+        self.show_legend_label = QtWidgets.QLabel("Show Legend", self)
         grid_plot_items.addWidget(self.show_legend_label, 5, 5)
         self.show_legend_cb = QtWidgets.QCheckBox('', )
         self.show_legend_cb.setChecked(True)
@@ -318,31 +300,61 @@ class Analysis(QtWidgets.QWidget):
                                                                              self.show_group_cb.isChecked()))
         grid_plot_items.addWidget(self.show_group_cb, 8, 6)
 
-        self.plot_mode_label = QtWidgets.QLabel('Mode', self)
-        grid_plot_items.addWidget(self.plot_mode_label, 0, 8)
         self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
-        self.single_mode_label = QtWidgets.QLabel("Single", self)
-        grid_plot_items.addWidget(self.single_mode_label, 1, 8)
+        self.single_mode_label = QtWidgets.QLabel("Single Mode", self)
+        grid_plot_items.addWidget(self.single_mode_label, 0, 8)
         self.single_mode_rbtn = QtWidgets.QRadioButton('')
         self.single_mode_rbtn.setChecked(True)
         self.single_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Single',
                                                                             self.single_mode_rbtn.isChecked()))
         self.plot_mode_rbtn_group.addButton(self.single_mode_rbtn)
-        grid_plot_items.addWidget(self.single_mode_rbtn, 1, 9)
-        self.avg_mode_label = QtWidgets.QLabel("Average", self)
-        grid_plot_items.addWidget(self.avg_mode_label, 2, 8)
+        grid_plot_items.addWidget(self.single_mode_rbtn, 0, 9)
+        self.avg_mode_label = QtWidgets.QLabel("Average Mode", self)
+        grid_plot_items.addWidget(self.avg_mode_label, 1, 8)
         self.avg_mode_rbtn = QtWidgets.QRadioButton('')
         self.avg_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Average',
                                                                          self.avg_mode_rbtn.isChecked()))
         self.plot_mode_rbtn_group.addButton(self.avg_mode_rbtn)
-        grid_plot_items.addWidget(self.avg_mode_rbtn, 2, 9)
-        self.efficiency_mode_label = QtWidgets.QLabel("Efficiency", self)
-        grid_plot_items.addWidget(self.efficiency_mode_label, 3, 8)
+        grid_plot_items.addWidget(self.avg_mode_rbtn, 1, 9)
+        self.efficiency_mode_label = QtWidgets.QLabel("Efficiency Mode", self)
+        grid_plot_items.addWidget(self.efficiency_mode_label, 2, 8)
         self.efficiency_mode_rbtn = QtWidgets.QRadioButton('')
         self.efficiency_mode_rbtn.toggled.connect(lambda: self.change_plot_mode('Efficiency',
                                                                                 self.efficiency_mode_rbtn.isChecked()))
         self.plot_mode_rbtn_group.addButton(self.efficiency_mode_rbtn)
-        grid_plot_items.addWidget(self.efficiency_mode_rbtn, 3, 9)
+        grid_plot_items.addWidget(self.efficiency_mode_rbtn, 2, 9)
+
+        self.diodes_label = QtWidgets.QLabel('Show Diodes', self)
+        grid_plot_items.addWidget(self.diodes_label, 4, 8)
+        self.show_d1_label = QtWidgets.QLabel("Diode 1", self)
+        grid_plot_items.addWidget(self.show_d1_label, 5, 8)
+        self.show_d1_cb = QtWidgets.QCheckBox('', )
+        self.show_d1_cb.setChecked(True)
+        self.show_d1_cb.toggled.connect(lambda: self.irradiance_plot(None, 'Irradiance 1',
+                                                                     self.show_d1_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_d1_cb, 5, 9)
+        self.show_d2_label = QtWidgets.QLabel("Diode 2", self)
+        grid_plot_items.addWidget(self.show_d2_label, 6, 8)
+        self.show_d2_cb = QtWidgets.QCheckBox('', )
+        self.show_d2_cb.setChecked(True)
+        self.show_d2_cb.toggled.connect(lambda: self.irradiance_plot(None, 'Irradiance 2',
+                                                                     self.show_d2_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_d2_cb, 6, 9)
+        self.show_d3_label = QtWidgets.QLabel("Diode 3", self)
+        grid_plot_items.addWidget(self.show_d3_label, 7, 8)
+        self.show_d3_cb = QtWidgets.QCheckBox('', )
+        self.show_d3_cb.setChecked(True)
+        self.show_d3_cb.toggled.connect(lambda: self.irradiance_plot(None, 'Irradiance 3',
+                                                                     self.show_d3_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_d3_cb, 7, 9)
+        self.show_d4_label = QtWidgets.QLabel("Diode 4", self)
+        grid_plot_items.addWidget(self.show_d4_label, 8, 8)
+        self.show_d4_cb = QtWidgets.QCheckBox('', )
+        self.show_d4_cb.setChecked(True)
+        self.show_d4_cb.toggled.connect(lambda: self.irradiance_plot(None, 'Irradiance 4',
+                                                                     self.show_d4_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_d4_cb, 8, 9)
+
         hbox_plot_set1.addLayout(grid_plot_items)
         vbox_plot_mode = QtWidgets.QVBoxLayout()
         hbox_plot_set1.addLayout(vbox_plot_mode)
@@ -607,6 +619,18 @@ class Analysis(QtWidgets.QWidget):
     def update_reference(self):
         for experiment in self.experiments.values():
             experiment.update_efficiencies(self.experiments.get(self.reference, None))
+
+    def irradiance_plot(self, axis, item, state):
+        if axis is None:  # toggled a 'show diode' checkbox
+            for ax, obj in [('x', self.item_irradiance_x), ('y1', self.item_irradiance_y1),
+                            ('y2', self.item_irradiance_y2)]:
+                if obj.isChecked():
+                    self.change_plot_items(ax, item, state)
+        else:  # toggled an irradiance axis checkbox
+            for it, obj in [('Irradiance 1', self.show_d1_cb), ('Irradiance 2', self.show_d2_cb),
+                            ('Irradiance 3', self.show_d3_cb), ('Irradiance 4', self.show_d4_cb)]:
+                if obj.isChecked():
+                    self.change_plot_items(axis, it, state)
 
     def change_plot_items(self, axis, item, state):
         if axis == 'x' and state:
