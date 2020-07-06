@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 
 
@@ -30,3 +31,7 @@ def voltage_to_power(voltage=0):
         return (coefficient*voltage)**exponent
     else:
         return -1
+
+
+def timestamp_to_datetime_hour(timestamp):
+    return datetime.datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')

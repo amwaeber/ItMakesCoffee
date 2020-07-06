@@ -6,6 +6,7 @@ from PyQt5.Qt import Qt
 
 import utility.colors as colors
 import utility.plots as plots
+from utility.conversions import timestamp_to_datetime_hour
 from utility.data_import import Experiment
 from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
@@ -44,16 +45,6 @@ efficiency_plot_dict = {'Current': ['Delta I_sc', r'$\Delta I_{sc}/PV (\%)$'],
                         'Irradiance 3': ['Delta I_3_avg', r'$\Delta I_{3, avg}/PV (\%)$'],
                         'Irradiance 4': ['Delta I_4_avg', r'$\Delta I_{4, avg}/PV (\%)$']}
 
-table_header_dict = {'Single': ['Trace', 'Isc (A)', 'Voc (V)', 'Pmax (W)', 'FF', 'Tavg (\u00B0C)',
-                                'I\u2081avg (W/m\u00B2)', 'I\u2082avg (W/m\u00B2)', 'I\u2083avg (W/m\u00B2)',
-                                'I\u2084avg (W/m\u00B2)'],
-                     'Average': ['Experiment', 'Isc (A)', 'Voc (V)', 'Pmax (W)', 'FF', 'Tavg (\u00B0C)',
-                                 'I\u2081avg (W/m\u00B2)', 'I\u2082avg (W/m\u00B2)', 'I\u2083avg (W/m\u00B2)',
-                                 'I\u2084avg (W/m\u00B2)'],
-                     'Efficiency': ['Experiment', '\u0394Isc/PV (%)', '\u0394Voc/PV (%)', '\u0394Pmax/PV (%)',
-                                    '\u0394FF/PV (%)', '\u0394Tavg/PV (%)', '\u0394I\u2081avg/PV (%)',
-                                    '\u0394I\u2082avg/PV (%)', '\u0394I\u2083avg/PV (%)', '\u0394I\u2084avg/PV (%)']}
-
 
 class Analysis(QtWidgets.QWidget):
     update_plt = QtCore.pyqtSignal()  # figure signal lane
@@ -88,15 +79,16 @@ class Analysis(QtWidgets.QWidget):
         self.plot_group_box.setLayout(vbox_plot)
         vbox_left.addWidget(self.plot_group_box, 5)
 
-        self.statistics_group_box = QtWidgets.QGroupBox('Statistics')
-        vbox_table = QtWidgets.QVBoxLayout()
-        self.statistics_table = QtWidgets.QTableWidget()
-        self.statistics_table.setRowCount(4)
-        self.statistics_table.setColumnCount(10)
-        self.statistics_table.setHorizontalHeaderLabels(table_header_dict[self.plot_mode])
-        vbox_table.addWidget(self.statistics_table)
-        self.statistics_group_box.setLayout(vbox_table)
-        vbox_left.addWidget(self.statistics_group_box, 2)
+        self.trace_group_box = QtWidgets.QGroupBox('Trace Info')
+        vbox_trace = QtWidgets.QVBoxLayout()
+        self.trace_tree = QtWidgets.QTreeWidget()
+        self.trace_tree.setRootIsDecorated(False)
+        self.trace_tree.setHeaderLabels(["Plot", "Trace", "Time", "Isc", "Voc", "Pmax", "FF", "Tavg", 'I1avg', 'I2avg',
+                                         'I3avg', 'I4avg'])
+        self.trace_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        vbox_trace.addWidget(self.trace_tree)
+        self.trace_group_box.setLayout(vbox_trace)
+        vbox_left.addWidget(self.trace_group_box, 2)
         hbox_total.addLayout(vbox_left, 5)
 
         vbox_right = QtWidgets.QVBoxLayout()
@@ -447,7 +439,7 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_tree = QtWidgets.QTreeWidget()
         self.experiment_tree.setRootIsDecorated(False)
         self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Stat", "Experiment", "Traces", "Film Th.", "Film Area",
+        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Group", "Experiment", "Traces", "Film Th.", "Film Area",
                                               "Created"])
         self.experiment_tree.setSortingEnabled(True)
         self.experiment_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
@@ -459,7 +451,6 @@ class Analysis(QtWidgets.QWidget):
         self.setLayout(hbox_total)
 
         self.update_plot()
-        self.update_stats()
 
     def folder_dialog(self):
         self.plot_directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory',
@@ -486,7 +477,7 @@ class Analysis(QtWidgets.QWidget):
         self.update_experiment_tree()
         self.update_reference()
         self.update_plot()
-        self.update_stats()
+        self.update_trace_tree()
 
     def group_experiments(self):
         pass
@@ -506,7 +497,7 @@ class Analysis(QtWidgets.QWidget):
                 elif select == 'none':
                     tree_item.setCheckState(1, Qt.Unchecked)
                     self.experiments[str(tree_item.toolTip(3))].plot = False
-            elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):  # affecting statistics
+            elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):  # affecting groups
                 if select == 'all':
                     tree_item.setCheckState(2, Qt.Checked)
                     self.experiments[str(tree_item.toolTip(3))].stats = True
@@ -590,9 +581,8 @@ class Analysis(QtWidgets.QWidget):
                     iterator += 1
             self.update_reference()
             self.update_plot()  # to update effects reference switch has on plot
-            self.update_stats()
 
-        elif column == 1:  # Plot/Statistics
+        elif column == 1:  # Plot
             if int(item.checkState(column)) == 0:
                 self.experiments[experiment].plot = False
             else:
@@ -607,18 +597,42 @@ class Analysis(QtWidgets.QWidget):
                         iterator += 1
                 self.experiments[experiment].plot = True
             self.update_plot()
-            self.update_stats()
+            self.update_trace_tree()
 
         elif column == 2:  # Statistics TODO: replace by 'group' indicators?
             if int(item.checkState(column)) == 0:
                 self.experiments[experiment].stats = False
             else:
                 self.experiments[experiment].stats = True
-            # self.update_stats()
 
     def update_reference(self):
         for experiment in self.experiments.values():
             experiment.update_efficiencies(self.experiments.get(self.reference, None))
+
+    def update_trace_tree(self):
+        self.trace_tree.clear()
+        plot_list = [experiment for experiment in self.experiment_directories
+                     if self.experiments[experiment].plot is True]
+        if self.plot_mode == 'Single' and len(plot_list) == 1:
+            experiment = self.experiments[plot_list[0]]
+            for i, trace in enumerate(experiment.traces.values()):
+                tree_item = TreeWidgetItem(ItemSignal(), self.trace_tree,
+                                           [None, 'Trace %d' % i, timestamp_to_datetime_hour(trace.time),
+                                            '%.3f' % trace.values['Short Circuit Current I_sc (A)'][0],
+                                            '%.3f' % trace.values['Open Circuit Voltage V_oc (V)'][0],
+                                            '%.3f' % trace.values['Maximum Power P_max (W)'][0],
+                                            '%.3f' % trace.values['Fill Factor'][0],
+                                            '%.2f' % trace.values['Average Temperature T_avg (C)'][0],
+                                            '%.2f' % trace.values['Average Irradiance I_1_avg (W/m2)'][0],
+                                            '%.2f' % trace.values['Average Irradiance I_2_avg (W/m2)'][0],
+                                            '%.2f' % trace.values['Average Irradiance I_3_avg (W/m2)'][0],
+                                            '%.2f' % trace.values['Average Irradiance I_4_avg (W/m2)'][0]])
+                tree_item.setToolTip(1, trace.data_path)
+                tree_item.setCheckState(0, self.bool_to_qtchecked(True))
+                tree_item.signal.itemChecked.connect(self.trace_selection_changed)
+
+    def trace_selection_changed(self):  # TODO: implement toggle trace selection
+        pass
 
     def irradiance_plot(self, axis, item, state):
         if axis is None:  # toggled a 'show diode' checkbox
@@ -660,7 +674,7 @@ class Analysis(QtWidgets.QWidget):
                 self.show_avg_cb.setEnabled(False)
                 self.show_rescale_cb.setChecked(False)
             self.update_plot()
-            self.update_stats()
+            self.update_trace_tree()
 
     def update_plot(self):
         plot_list = [experiment for experiment in self.experiment_directories
@@ -871,52 +885,6 @@ class Analysis(QtWidgets.QWidget):
                                                                           "_".join([item[0] for item in self.plot_y]),
                                                                           self.plot_mode, i))
         self.plot_canvas.figure.savefig(path)
-
-    def update_stats(self):
-        stats_list = [experiment for experiment in self.experiment_directories
-                      if self.experiments[experiment].plot is True]
-        self.statistics_table.setHorizontalHeaderLabels(table_header_dict[self.plot_mode])
-
-        if self.plot_mode == 'Single' and len(stats_list) == 1:
-            experiment = self.experiments[stats_list[0]]
-            n_data_rows = sum(experiment.n_traces) + 1
-            self.statistics_table.setRowCount(n_data_rows)
-            for i, trace in enumerate(experiment.traces.values()):
-                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem('Trace %d' % i))
-                for j, par in enumerate(bar_plot_dict.values(), 1):
-                    self.statistics_table.setItem(i, j, QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
-                                                                                   % tuple(trace.values[par])))
-            self.statistics_table.setItem(n_data_rows - 1, 0, QtWidgets.QTableWidgetItem('Average'))
-            for j, par in enumerate(bar_plot_dict.values(), 1):
-                self.statistics_table.setItem(n_data_rows - 1, j,
-                                              QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
-                                                                         % tuple(experiment.values[par])))
-
-        elif self.plot_mode == 'Average':
-            n_data_rows = len(stats_list)
-            self.statistics_table.setRowCount(n_data_rows)
-            for i, experiment in enumerate([exp for exp in self.experiments.values() if exp.plot]):
-                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem(experiment.name))
-                for j, par in enumerate(bar_plot_dict.values(), 1):
-                    self.statistics_table.setItem(i, j,
-                                                  QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
-                                                                             % tuple(experiment.values[par])))
-
-        elif self.plot_mode == 'Efficiency' and self.reference != '' and len(stats_list) >= 1:
-            n_data_rows = len(stats_list) - 1
-            self.statistics_table.setRowCount(n_data_rows)
-            for i, experiment in enumerate([exp for exp in self.experiments.values()
-                                            if exp.plot and not exp.reference]):
-                self.statistics_table.setItem(i, 0, QtWidgets.QTableWidgetItem(experiment.name))
-                for j, par in enumerate(efficiency_plot_dict.values(), 1):
-                    self.statistics_table.setItem(i, j,
-                                                  QtWidgets.QTableWidgetItem("%.3f\u00B1%.3f"
-                                                                             % tuple(experiment.efficiencies[par[0]])))
-
-        else:
-            self.statistics_table.setRowCount(4)
-        self.statistics_table.resizeColumnsToContents()
-        self.statistics_table.resizeRowsToContents()
 
     def save_stats(self):
         export_filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, 'Save as...', self.stats_directory,
