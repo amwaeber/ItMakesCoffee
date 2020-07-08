@@ -27,12 +27,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table_widget.tab_experiment.stop_sensor()
 
         # Save newly created experiment analyses
-        for experiment in self.table_widget.tab_analysis.experiments.values():
-            experiment.store()
+        for experiment in self.table_widget.tab_analysis.experiment_dict.values():
+            experiment.save_pickle()
 
         # Update config ini with current paths
         config.write_config(save_path=str(self.table_widget.tab_experiment.directory),
                             plot_path=str(self.table_widget.tab_analysis.plot_directory),
-                            stats_path=str(self.table_widget.tab_analysis.stats_directory),
+                            export_path=str(self.table_widget.tab_analysis.export_directory),
                             arduino=str(self.table_widget.tab_experiment.sensor_cb.currentText()),
                             keithley=str(self.table_widget.tab_experiment.source_cb.currentText()))

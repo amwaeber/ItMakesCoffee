@@ -53,8 +53,8 @@ class Analysis(QtWidgets.QWidget):
         super(Analysis, self).__init__(parent)
 
         self.experiment_directories = list()
-        self.experiments = {}
-        self.reference = ''
+        self.experiment_dict = {}
+        self.reference_experiment = ''
 
         self.plot_x = 'Experiment'
         self.plot_y = [['Power', 'y1']]
@@ -65,8 +65,9 @@ class Analysis(QtWidgets.QWidget):
                           'Scatter': False,
                           'Groups': False}
         self.plot_directory = paths['last_plot_save']
+        self.plot_list = list()
 
-        self.stats_directory = paths['last_stats_save']
+        self.export_directory = paths['last_export']
 
         hbox_total = QtWidgets.QHBoxLayout()
         vbox_left = QtWidgets.QVBoxLayout()
@@ -377,19 +378,19 @@ class Analysis(QtWidgets.QWidget):
         self.plot_settings_group_box.setLayout(vbox_plot_set)
         vbox_right.addWidget(self.plot_settings_group_box)
 
-        self.stats_settings_group_box = QtWidgets.QGroupBox('Data Export')
+        self.export_group_box = QtWidgets.QGroupBox('Data Export')
         hbox_data_export = QtWidgets.QHBoxLayout()
-        self.stats_save_button = QtWidgets.QPushButton(
+        self.export_button = QtWidgets.QPushButton(
             QtGui.QIcon(os.path.join(paths['icons'], 'save.png')), '')
-        self.stats_save_button.clicked.connect(self.save_stats)
-        self.stats_save_button.setToolTip('Save as xlsx')
-        hbox_data_export.addWidget(self.stats_save_button)
-        self.stats_save_folder_edit = QtWidgets.QLineEdit(self.stats_directory, self)
-        self.stats_save_folder_edit.setMinimumWidth(180)
-        self.stats_save_folder_edit.setDisabled(True)
-        hbox_data_export.addWidget(self.stats_save_folder_edit)
-        self.stats_settings_group_box.setLayout(hbox_data_export)
-        vbox_right.addWidget(self.stats_settings_group_box)
+        self.export_button.clicked.connect(self.save_to_excel)
+        self.export_button.setToolTip('Save as xlsx')
+        hbox_data_export.addWidget(self.export_button)
+        self.export_folder_edit = QtWidgets.QLineEdit(self.export_directory, self)
+        self.export_folder_edit.setMinimumWidth(180)
+        self.export_folder_edit.setDisabled(True)
+        hbox_data_export.addWidget(self.export_folder_edit)
+        self.export_group_box.setLayout(hbox_data_export)
+        vbox_right.addWidget(self.export_group_box)
 
         self.analysis_group_box = QtWidgets.QGroupBox('Experiment data')
         vbox_analysis = QtWidgets.QVBoxLayout()
@@ -466,13 +467,20 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_directories = list(set(self.experiment_directories))
         self.update_experiment_data()
         self.update_experiment_tree()
-        if self.reference:
+        if self.reference_experiment:
             self.update_reference()  # apply reference to new experiments too
 
     def remove_experiments(self):
         for item in self.experiment_tree.selectedItems():
-            self.experiment_directories = [entry for entry in self.experiment_directories
-                                           if not (item.toolTip(3) == entry)]
+            experiment = item.toolTip(3)
+            self.experiment_directories.remove(experiment)
+            try:
+                self.plot_list.remove(experiment)
+            except ValueError:
+                pass
+            # self.experiment_directories = [entry for entry in self.experiment_directories
+            #                                if not (item.toolTip(3) == entry)]
+            # self.plot_list = [entry for entry in self.plot_list if not (item.toolTip(3) == entry)]
         self.update_experiment_data()
         self.update_experiment_tree()
         self.update_reference()
@@ -493,17 +501,10 @@ class Analysis(QtWidgets.QWidget):
             if modifiers == QtCore.Qt.ControlModifier:  # Affecting plots
                 if select == 'all':
                     tree_item.setCheckState(1, Qt.Checked)
-                    self.experiments[str(tree_item.toolTip(3))].plot = True
+                    self.experiment_dict[str(tree_item.toolTip(3))].is_plotted = True
                 elif select == 'none':
                     tree_item.setCheckState(1, Qt.Unchecked)
-                    self.experiments[str(tree_item.toolTip(3))].plot = False
-            elif modifiers == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier):  # affecting groups
-                if select == 'all':
-                    tree_item.setCheckState(2, Qt.Checked)
-                    self.experiments[str(tree_item.toolTip(3))].stats = True
-                elif select == 'none':
-                    tree_item.setCheckState(2, Qt.Unchecked)
-                    self.experiments[str(tree_item.toolTip(3))].stats = False
+                    self.experiment_dict[str(tree_item.toolTip(3))].is_plotted = False
             else:
                 if select == 'all':
                     tree_item.setSelected(True)
@@ -539,52 +540,53 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_tree.clear()
         for directory in self.experiment_directories:
             tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
-                                       [None, None, None, self.experiments[directory].name,
-                                        str(sum(self.experiments[directory].n_traces)),
-                                        str(self.experiments[directory].film_thickness),
-                                        str(self.experiments[directory].film_area),
-                                        str(self.experiments[directory].time)])
+                                       [None, None, None, self.experiment_dict[directory].name,
+                                        str(sum(self.experiment_dict[directory].n_traces)),
+                                        str(self.experiment_dict[directory].film_thickness),
+                                        str(self.experiment_dict[directory].film_area),
+                                        str(self.experiment_dict[directory].time)])
             tree_item.setToolTip(3, directory)
-            tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiments[directory].reference))
-            tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiments[directory].plot))
-            tree_item.setCheckState(2, self.bool_to_qtchecked(self.experiments[directory].stats))
+            tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiment_dict[directory].is_reference))
+            tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiment_dict[directory].is_plotted))
+            tree_item.setCheckState(2, self.bool_to_qtchecked(False))
             tree_item.signal.itemChecked.connect(self.tree_checkbox_changed)
 
     def update_experiment_data(self):
         directories = self.experiment_directories
         for directory in directories:
-            if directory not in self.experiments.keys():
-                self.experiments[directory] = Experiment(directory)
-        for directory in list(self.experiments.keys()):
+            if directory not in self.experiment_dict.keys():
+                self.experiment_dict[directory] = Experiment(directory)
+        for directory in list(self.experiment_dict.keys()):
             if directory not in directories:
-                self.experiments[directory].store()  # save analysed data in pickle
-                self.experiments.pop(directory, None)
+                self.experiment_dict[directory].save_pickle()  # save analysed data in pickle
+                self.experiment_dict.pop(directory, None)
 
     @QtCore.pyqtSlot(object, int)
     def tree_checkbox_changed(self, item, column):
         experiment = str(item.toolTip(3))
         if column == 0:  # Reference
             if int(item.checkState(column)) == 0:
-                self.experiments[experiment].reference = False
-                if self.reference == experiment:
-                    self.reference = ''
+                self.experiment_dict[experiment].is_reference = False
+                if self.reference_experiment == experiment:
+                    self.reference_experiment = ''
             else:
-                self.experiments[experiment].reference = True
-                self.reference = experiment
+                self.experiment_dict[experiment].is_reference = True
+                self.reference_experiment = experiment
                 # set other reference cbs to False so only one reference at any time
                 iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
                 while iterator.value():
                     tree_item = iterator.value()
                     if tree_item != item and int(tree_item.checkState(column)) != 0:
                         tree_item.setCheckState(0, Qt.Unchecked)
-                        self.experiments[str(tree_item.toolTip(3))].reference = False
+                        self.experiment_dict[str(tree_item.toolTip(3))].is_reference = False
                     iterator += 1
             self.update_reference()
             self.update_plot()  # to update effects reference switch has on plot
 
         elif column == 1:  # Plot
             if int(item.checkState(column)) == 0:
-                self.experiments[experiment].plot = False
+                self.experiment_dict[experiment].is_plotted = False
+                self.plot_list.remove(experiment)
             else:
                 # set other plot cbs to False if in single-plot mode
                 if self.plot_mode == 'Single':
@@ -593,28 +595,24 @@ class Analysis(QtWidgets.QWidget):
                         tree_item = iterator.value()
                         if tree_item != item and int(tree_item.checkState(column)) != 0:
                             tree_item.setCheckState(1, Qt.Unchecked)
-                            self.experiments[str(tree_item.toolTip(3))].reference = False
+                            self.experiment_dict[str(tree_item.toolTip(3))].is_reference = False
                         iterator += 1
-                self.experiments[experiment].plot = True
+                self.experiment_dict[experiment].is_plotted = True
+                self.plot_list.append(experiment)
             self.update_plot()
             self.update_trace_tree()
 
         elif column == 2:  # Statistics TODO: replace by 'group' indicators?
-            if int(item.checkState(column)) == 0:
-                self.experiments[experiment].stats = False
-            else:
-                self.experiments[experiment].stats = True
+            pass
 
     def update_reference(self):
-        for experiment in self.experiments.values():
-            experiment.update_efficiencies(self.experiments.get(self.reference, None))
+        for experiment in self.experiment_dict.values():
+            experiment.update_reference(self.experiment_dict.get(self.reference_experiment, None))
 
     def update_trace_tree(self):
         self.trace_tree.clear()
-        plot_list = [experiment for experiment in self.experiment_directories
-                     if self.experiments[experiment].plot is True]
-        if self.plot_mode == 'Single' and len(plot_list) == 1:
-            experiment = self.experiments[plot_list[0]]
+        if self.plot_mode == 'Single' and len(self.plot_list) == 1:
+            experiment = self.experiment_dict[self.plot_list[0]]
             for i, trace in enumerate(experiment.traces.values()):
                 tree_item = TreeWidgetItem(ItemSignal(), self.trace_tree,
                                            [None, 'Trace %d' % i, timestamp_to_datetime_hour(trace.time),
@@ -627,12 +625,21 @@ class Analysis(QtWidgets.QWidget):
                                             '%.2f' % trace.values['Average Irradiance I_2_avg (W/m2)'][0],
                                             '%.2f' % trace.values['Average Irradiance I_3_avg (W/m2)'][0],
                                             '%.2f' % trace.values['Average Irradiance I_4_avg (W/m2)'][0]])
-                tree_item.setToolTip(1, trace.data_path)
-                tree_item.setCheckState(0, self.bool_to_qtchecked(True))
+                tree_item.setToolTip(1, trace.name)
+                tree_item.setCheckState(0, self.bool_to_qtchecked(trace.is_included))
                 tree_item.signal.itemChecked.connect(self.trace_selection_changed)
 
-    def trace_selection_changed(self):  # TODO: implement toggle trace selection
-        pass
+    @QtCore.pyqtSlot(object, int)
+    def trace_selection_changed(self, item, column):
+        experiment = self.experiment_dict[self.plot_list[0]]
+        trace = str(item.toolTip(1))
+        if int(item.checkState(column)) == 0:
+            experiment.traces[trace].is_included = False
+        else:
+            experiment.traces[trace].is_included = True
+        experiment.update_average()
+        self.update_reference()
+        self.update_plot()
 
     def irradiance_plot(self, axis, item, state):
         if axis is None:  # toggled a 'show diode' checkbox
@@ -677,15 +684,13 @@ class Analysis(QtWidgets.QWidget):
             self.update_trace_tree()
 
     def update_plot(self):
-        plot_list = [experiment for experiment in self.experiment_directories
-                     if self.experiments[experiment].plot is True]
         self.plot_canvas.figure.clear()
         axis = self.plot_canvas.figure.add_subplot(111)
         axis2 = axis.twinx()
         axis2.yaxis.tick_right()
         axis2.yaxis.set_label_position("right")
-        if self.plot_mode == 'Single' and len(plot_list) == 1:
-            experiment = self.experiments[plot_list[0]]
+        if self.plot_mode == 'Single' and len(self.plot_list) == 1:
+            experiment = self.experiment_dict[self.plot_list[0]]
             axis.set_title(experiment.name)
             if self.plot_x == 'Experiment':
                 y_data = list()
@@ -698,10 +703,11 @@ class Analysis(QtWidgets.QWidget):
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate(experiment.traces.values()):
-                        categories.append('Trace %d' % i)
-                        values.append(trace.values[item[0]][0])
-                        errors.append(trace.values[item[0]][1])
-                        bar_color.append(colors.colors[j % len(colors.colors)])
+                        if trace.is_included:
+                            categories.append('Trace %d' % i)
+                            values.append(trace.values[item[0]][0])
+                            errors.append(trace.values[item[0]][1])
+                            bar_color.append(colors.colors[j % len(colors.colors)])
                     if self.plot_show['Average']:
                         categories.append('Average')
                         values.append(experiment.values[item[0]][0])
@@ -735,15 +741,17 @@ class Analysis(QtWidgets.QWidget):
                         pass
                 for j, item in enumerate(y_data):
                     for i, trace in enumerate(experiment.traces.values()):
-                        trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
-                                        color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                   1 - 0.6 * i / sum(experiment.n_traces)),
-                                        ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
+                        if trace.is_included:
+                            trace.data.is_plotted(kind='line', x=x_data, y=item[0], lw=1, ls='--',
+                                                  color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                             1 - 0.6 * i / sum(experiment.n_traces)),
+                                                  ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
                     if self.plot_show['Average']:
-                        experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
-                                                     color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                                1.5),
-                                                     ax=self.get_axis(axis, axis2, item[1]), label=item[0])
+                        experiment.average_data.is_plotted(kind='line', x=x_data, y=item[0], lw=2,
+                                                           color=colors.lighten_color(colors.
+                                                                                      colors[j % len(colors.colors)],
+                                                                                      1.5),
+                                                           ax=self.get_axis(axis, axis2, item[1]), label=item[0])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
@@ -760,18 +768,18 @@ class Analysis(QtWidgets.QWidget):
                 ny = len(y_data)
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
-                    for i, experiment in enumerate(plot_list):
-                        if self.experiments[experiment].reference:  # TODO: check why not updated
-                            categories.insert(0, self.experiments[experiment].
+                    for i, experiment in enumerate(self.plot_list):
+                        if self.experiment_dict[experiment].is_reference:  # TODO: check why not updated
+                            categories.insert(0, self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.insert(0, self.experiments[experiment].values[item[0]][0])
-                            errors.insert(0, self.experiments[experiment].values[item[0]][1])
+                            values.insert(0, self.experiment_dict[experiment].values[item[0]][0])
+                            errors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                         else:
-                            categories.append(self.experiments[experiment].
+                            categories.append(self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.append(self.experiments[experiment].values[item[0]][0])
-                            errors.append(self.experiments[experiment].values[item[0]][1])
+                            values.append(self.experiment_dict[experiment].values[item[0]][0])
+                            errors.append(self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
@@ -804,20 +812,20 @@ class Analysis(QtWidgets.QWidget):
                     except KeyError:
                         pass
                 for j, item in enumerate(y_data):
-                    for i, experiment in enumerate(plot_list):
-                        self.experiments[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
-                                                                       color=colors.lighten_color(
+                    for i, experiment in enumerate(self.plot_list):
+                        self.experiment_dict[experiment].average_data.is_plotted(kind='line', x=x_data, y=item[0], lw=1,
+                                                                                 color=colors.lighten_color(
                                                                            colors.colors[j % len(colors.colors)],
-                                                                           1.75 - 1.5 * i / len(plot_list)),
-                                                                       ax=self.get_axis(axis, axis2, item[1]),
-                                                                       label=self.experiments[experiment].name)
+                                                                           1.75 - 1.5 * i / len(self.plot_list)),
+                                                                                 ax=self.get_axis(axis, axis2, item[1]),
+                                                                                 label=self.experiment_dict[experiment].name)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
         elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
-            if self.plot_x == 'Experiment' and self.reference != '' and len(plot_list) >= 1:
+            if self.plot_x == 'Experiment' and self.reference_experiment != '' and len(self.plot_list) >= 1:
                 y_data = list()
                 for item in self.plot_y:
                     try:
@@ -827,12 +835,12 @@ class Analysis(QtWidgets.QWidget):
                 ny = len(y_data)
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
-                    for i, experiment in enumerate(plot_list):
-                        if self.experiments[experiment].reference is False:
-                            categories.append(self.experiments[experiment].
+                    for i, experiment in enumerate(self.plot_list):
+                        if self.experiment_dict[experiment].is_reference is False:
+                            categories.append(self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.append(self.experiments[experiment].efficiencies[item[0][0]][0])
-                            errors.append(self.experiments[experiment].efficiencies[item[0][0]][1])
+                            values.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
+                            errors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
@@ -886,16 +894,16 @@ class Analysis(QtWidgets.QWidget):
                                                                           self.plot_mode, i))
         self.plot_canvas.figure.savefig(path)
 
-    def save_stats(self):
-        export_filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, 'Save as...', self.stats_directory,
+    def save_to_excel(self):
+        export_filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, 'Save as...', self.export_directory,
                                                                     "Excel files (*.xlsx)")[0])
         if export_filepath == '':
             return
         if not os.path.basename(export_filepath).endswith('.xlsx'):
             export_filepath = os.path.join(export_filepath, '.xlsx')
-        self.stats_directory = os.path.dirname(export_filepath)
-        self.stats_save_folder_edit.setText(self.stats_directory)
-        save_to_xlsx(self.experiments, export_filepath)
+        self.export_directory = os.path.dirname(export_filepath)
+        self.export_folder_edit.setText(self.export_directory)
+        save_to_xlsx(self.experiment_dict, export_filepath)
 
     @staticmethod
     def bool_to_qtchecked(boolean):

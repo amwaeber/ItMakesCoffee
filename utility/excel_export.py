@@ -50,7 +50,7 @@ def get_efficiencies(experiments, worksheet):
     for col, title in enumerate(col_titles, 1):
         worksheet.cell(row=2, column=col).value = title
     for row, experiment in enumerate(experiments.values(), 3):
-        if experiment.reference:
+        if experiment.is_reference:
             worksheet['A1'] = "Reference:"
             worksheet['B1'] = experiment.name
         worksheet.cell(row=row, column=1).value = experiment.name
