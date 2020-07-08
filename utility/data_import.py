@@ -104,7 +104,7 @@ class Experiment:
     def save_pickle(self):
         with open(os.path.join(self.folder_path, 'experiment.pkl'), 'wb') as f:
             pickle.dump([self.version, self.time, self.film_thickness, self.film_area, self.n_traces, self.traces,
-                         self.values, self.average_data], f, protocol=-1)
+                         self.values, self.average_data, self.reference_path, self.efficiencies], f, protocol=-1)
 
     def load_pickle(self):
         with open(os.path.join(self.folder_path, 'experiment.pkl'), 'rb') as f:

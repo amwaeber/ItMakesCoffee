@@ -702,12 +702,11 @@ class Analysis(QtWidgets.QWidget):
                 ny = len(y_data)
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
-                    for i, trace in enumerate(experiment.traces.values()):
-                        if trace.is_included:
-                            categories.append('Trace %d' % i)
-                            values.append(trace.values[item[0]][0])
-                            errors.append(trace.values[item[0]][1])
-                            bar_color.append(colors.colors[j % len(colors.colors)])
+                    for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
+                        categories.append('Trace %d' % i)
+                        values.append(trace.values[item[0]][0])
+                        errors.append(trace.values[item[0]][1])
+                        bar_color.append(colors.colors[j % len(colors.colors)])
                     if self.plot_show['Average']:
                         categories.append('Average')
                         values.append(experiment.values[item[0]][0])
@@ -740,14 +739,13 @@ class Analysis(QtWidgets.QWidget):
                     except KeyError:
                         pass
                 for j, item in enumerate(y_data):
-                    for i, trace in enumerate(experiment.traces.values()):
-                        if trace.is_included:
-                            trace.data.is_plotted(kind='line', x=x_data, y=item[0], lw=1, ls='--',
-                                                  color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                             1 - 0.6 * i / sum(experiment.n_traces)),
-                                                  ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
+                    for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
+                        trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
+                                              color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                         1 - 0.6 * i / sum(experiment.n_traces)),
+                                              ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
                     if self.plot_show['Average']:
-                        experiment.average_data.is_plotted(kind='line', x=x_data, y=item[0], lw=2,
+                        experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
                                                            color=colors.lighten_color(colors.
                                                                                       colors[j % len(colors.colors)],
                                                                                       1.5),
@@ -813,12 +811,12 @@ class Analysis(QtWidgets.QWidget):
                         pass
                 for j, item in enumerate(y_data):
                     for i, experiment in enumerate(self.plot_list):
-                        self.experiment_dict[experiment].average_data.is_plotted(kind='line', x=x_data, y=item[0], lw=1,
-                                                                                 color=colors.lighten_color(
+                        self.experiment_dict[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
+                                                                           color=colors.lighten_color(
                                                                            colors.colors[j % len(colors.colors)],
                                                                            1.75 - 1.5 * i / len(self.plot_list)),
-                                                                                 ax=self.get_axis(axis, axis2, item[1]),
-                                                                                 label=self.experiment_dict[experiment].name)
+                                                                           ax=self.get_axis(axis, axis2, item[1]),
+                                                                           label=self.experiment_dict[experiment].name)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))

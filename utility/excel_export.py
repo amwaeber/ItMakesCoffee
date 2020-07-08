@@ -80,12 +80,12 @@ def get_data(experiment, worksheet):
     for col, title in enumerate(col_titles, 1):
         worksheet.cell(row=3, column=col).value = title
     row = 4
-    for row, trace in enumerate(experiment.traces.keys(), 4):
-        worksheet.cell(row=row, column=1).value = trace
-        worksheet.cell(row=row, column=2).value = experiment.traces[trace].time
+    for row, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included], 4):
+        worksheet.cell(row=row, column=1).value = trace.name
+        worksheet.cell(row=row, column=2).value = trace.time
         for i, col in enumerate(range(3, 21, 2)):
             worksheet.cell(row=row, column=col).value, worksheet.cell(row=row, column=col+1).value = \
-                experiment.traces[trace].values[exp_vals[i]]
+                trace.values[exp_vals[i]]
     worksheet.cell(row=row+1, column=1).value = 'Average'
     worksheet.cell(row=row+1, column=2).value = experiment.time
     for i, col in enumerate(range(3, 21, 2)):
