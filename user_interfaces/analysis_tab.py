@@ -61,6 +61,7 @@ class Analysis(QtWidgets.QWidget):
         self.plot_mode = 'Single'
         self.plot_show = {'Average': True,
                           'Legend': True,
+                          'Values': False,
                           'Rescale': True,
                           'Scatter': False,
                           'Groups': False}
@@ -258,21 +259,25 @@ class Analysis(QtWidgets.QWidget):
         grid_plot_items.addWidget(self.plot_categories_cb, 1, 5)
 
         # Various plot options
-        self.plot_show_label = QtWidgets.QLabel('Options', self)
-        grid_plot_items.addWidget(self.plot_show_label, 3, 5)
         self.show_avg_label = QtWidgets.QLabel("Show Average", self)
-        grid_plot_items.addWidget(self.show_avg_label, 4, 5)
+        grid_plot_items.addWidget(self.show_avg_label, 3, 5)
         self.show_avg_cb = QtWidgets.QCheckBox('', )
         self.show_avg_cb.setChecked(True)
         self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_avg_cb, 4, 6)
+        grid_plot_items.addWidget(self.show_avg_cb, 3, 6)
         self.show_legend_label = QtWidgets.QLabel("Show Legend", self)
-        grid_plot_items.addWidget(self.show_legend_label, 5, 5)
+        grid_plot_items.addWidget(self.show_legend_label, 4, 5)
         self.show_legend_cb = QtWidgets.QCheckBox('', )
         self.show_legend_cb.setChecked(True)
         self.show_legend_cb.toggled.connect(lambda: self.change_plot_settings('Legend',
                                                                               self.show_legend_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_legend_cb, 5, 6)
+        grid_plot_items.addWidget(self.show_legend_cb, 4, 6)
+        self.show_values_label = QtWidgets.QLabel("Show Values", self)
+        grid_plot_items.addWidget(self.show_values_label, 5, 5)
+        self.show_values_cb = QtWidgets.QCheckBox('', )
+        self.show_values_cb.toggled.connect(lambda: self.change_plot_settings('Values',
+                                                                              self.show_values_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_values_cb, 5, 6)
         self.show_rescale_label = QtWidgets.QLabel("Autoscale Y", self)
         grid_plot_items.addWidget(self.show_rescale_label, 6, 5)
         self.show_rescale_cb = QtWidgets.QCheckBox('', )
@@ -703,7 +708,7 @@ class Analysis(QtWidgets.QWidget):
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
-                        categories.append('Trace %d' % i)
+                        categories.append(trace.name)
                         values.append(trace.values[item[0]][0])
                         errors.append(trace.values[item[0]][1])
                         bar_color.append(colors.colors[j % len(colors.colors)])
@@ -724,6 +729,7 @@ class Analysis(QtWidgets.QWidget):
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel("")
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -741,15 +747,14 @@ class Analysis(QtWidgets.QWidget):
                 for j, item in enumerate(y_data):
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
                         trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
-                                              color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                         1 - 0.6 * i / sum(experiment.n_traces)),
-                                              ax=self.get_axis(axis, axis2, item[1]), label='Trace %d' % i)
+                                        color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                   1 - 0.6 * i / sum(experiment.n_traces)),
+                                        ax=self.get_axis(axis, axis2, item[1]), label=trace.name)
                     if self.plot_show['Average']:
                         experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
-                                                           color=colors.lighten_color(colors.
-                                                                                      colors[j % len(colors.colors)],
-                                                                                      1.5),
-                                                           ax=self.get_axis(axis, axis2, item[1]), label=item[0])
+                                                     color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                                1.5),
+                                                     ax=self.get_axis(axis, axis2, item[1]), label=item[0])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(x_data)
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
@@ -795,6 +800,7 @@ class Analysis(QtWidgets.QWidget):
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
@@ -856,6 +862,7 @@ class Analysis(QtWidgets.QWidget):
                                   error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0][1])
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))

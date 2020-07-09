@@ -1,6 +1,20 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+
+
+def format_value_display(ax1, ax2, show_values=False):
+    if show_values:
+        for ax in (ax1, ax2):
+            ylimits = ax.get_ylim()
+            offset = (ylimits[1] - ylimits[0])*0.05
+            for bar in ax.patches:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2.,
+                        height+offset if height > 0 else offset,
+                        '%.2f' % height,
+                        ha='center',
+                        va='bottom')
+    else:
+        pass
 
 
 def format_legend(ax1, ax2, show_legend=False):
