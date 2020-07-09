@@ -708,7 +708,7 @@ class Analysis(QtWidgets.QWidget):
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
-                        categories.append(trace.name)
+                        categories.append('Trace %d' % int(trace.name.split('_')[-1]))
                         values.append(trace.values[item[0]][0])
                         errors.append(trace.values[item[0]][1])
                         bar_color.append(colors.colors[j % len(colors.colors)])
@@ -749,7 +749,8 @@ class Analysis(QtWidgets.QWidget):
                         trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
                                         color=colors.lighten_color(colors.colors[j % len(colors.colors)],
                                                                    1 - 0.6 * i / sum(experiment.n_traces)),
-                                        ax=self.get_axis(axis, axis2, item[1]), label=trace.name)
+                                        ax=self.get_axis(axis, axis2, item[1]),
+                                        label='Trace %d' % int(trace.name.split('_')[-1]))
                     if self.plot_show['Average']:
                         experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
                                                      color=colors.lighten_color(colors.colors[j % len(colors.colors)],
