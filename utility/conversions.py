@@ -35,3 +35,20 @@ def voltage_to_power(voltage=0):
 
 def timestamp_to_datetime_hour(timestamp):
     return datetime.datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
+
+
+def metric_prefix(values, errors=None, label=''):
+    errors = list() if errors is None else errors
+    prefix_list = ((24, 'Y'), (21, 'Z'), (18, 'E'), (15, 'P'), (12, 'T'), (9, 'G'), (6, 'M'), (3, 'k'), (0, ''),
+                   (-3, 'm'), (-6, 'u'), (-9, 'n'), (-12, 'p'), (-15, 'f'), (-18, 'a'), (-21, 'z'), (-24, 'y'))
+    val = np.amax(values)
+    i = 0
+    while i < len(prefix_list):
+        if 10 * val // 10**prefix_list[i][0] != 0:
+            label = label.split('(')
+            if len(label) > 1:
+                label.insert(-1, '(%s' % prefix_list[i][1])
+            return [value / 10**prefix_list[i][0] for value in values], \
+                   [error / 10**prefix_list[i][0] for error in errors], ''.join(label)
+        i += 1
+    return values, errors, label

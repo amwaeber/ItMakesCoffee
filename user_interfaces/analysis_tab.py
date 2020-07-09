@@ -6,7 +6,7 @@ from PyQt5.Qt import Qt
 
 import utility.colors as colors
 import utility.plots as plots
-from utility.conversions import timestamp_to_datetime_hour
+from utility.conversions import timestamp_to_datetime_hour, metric_prefix
 from utility.data_import import Experiment
 from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
@@ -621,15 +621,15 @@ class Analysis(QtWidgets.QWidget):
             for i, trace in enumerate(experiment.traces.values()):
                 tree_item = TreeWidgetItem(ItemSignal(), self.trace_tree,
                                            [None, 'Trace %d' % i, timestamp_to_datetime_hour(trace.time),
-                                            '%.3f' % trace.values['Short Circuit Current I_sc (A)'][0],
-                                            '%.3f' % trace.values['Open Circuit Voltage V_oc (V)'][0],
-                                            '%.3f' % trace.values['Maximum Power P_max (W)'][0],
+                                            '%.2f' % metric_prefix([trace.values['Short Circuit Current I_sc (A)'][0]])[0][0],
+                                            '%.3f' % metric_prefix([trace.values['Open Circuit Voltage V_oc (V)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values['Maximum Power P_max (W)'][0]])[0][0],
                                             '%.3f' % trace.values['Fill Factor'][0],
                                             '%.2f' % trace.values['Average Temperature T_avg (C)'][0],
-                                            '%.2f' % trace.values['Average Irradiance I_1_avg (W/m2)'][0],
-                                            '%.2f' % trace.values['Average Irradiance I_2_avg (W/m2)'][0],
-                                            '%.2f' % trace.values['Average Irradiance I_3_avg (W/m2)'][0],
-                                            '%.2f' % trace.values['Average Irradiance I_4_avg (W/m2)'][0]])
+                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_1_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_2_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_3_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_4_avg (W/m2)'][0]])[0][0]])
                 tree_item.setToolTip(1, trace.name)
                 tree_item.setCheckState(0, self.bool_to_qtchecked(trace.is_included))
                 tree_item.signal.itemChecked.connect(self.trace_selection_changed)
@@ -705,6 +705,7 @@ class Analysis(QtWidgets.QWidget):
                     except KeyError:
                         pass
                 ny = len(y_data)
+                ylabel_list = list()
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
@@ -717,25 +718,28 @@ class Analysis(QtWidgets.QWidget):
                         values.append(experiment.values[item[0]][0])
                         errors.append(experiment.values[item[0]][1])
                         bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                    values, errors, ylabel = metric_prefix(values, errors, y_data[j][0])
+                    ylabel_list.append(ylabel)
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
                         axis.set_xticks([k + 0.4 * (ny - 1) / ny for k in range(len(values))])
                         axis.set_xticklabels(tuple(categories))
                     if item[1] == 'y1':
                         axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
-                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=ylabel)
                     elif item[1] == 'y2':
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
-                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=ylabel)
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel("")
-                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
-                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
+                    xlabel = x_data
                 except KeyError:
                     return
                 y_data = list()
@@ -744,22 +748,44 @@ class Analysis(QtWidgets.QWidget):
                         y_data.append([line_plot_dict[item[0]], item[1]])
                     except KeyError:
                         pass
+                ylabel_list = list()
                 for j, item in enumerate(y_data):
+                    ylabel = item[0]
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
-                        trace.data.plot(kind='line', x=x_data, y=item[0], lw=1, ls='--',
-                                        color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                        if x_data == 'Time (s)':
+                            x_values = list(trace.data[x_data])
+                        else:
+                            x_values, _, xlabel = metric_prefix(trace.data[x_data], label=x_data)
+                        if item[0] == 'Time (s)':
+                            y_values = list(trace.data[item[0]])
+                        else:
+                            y_values, _, ylabel = metric_prefix(trace.data[item[0]], label=item[0])
+                        if item[1] == 'y1':
+                            axis.plot(x_values, y_values, lw=1, ls='--',
+                                      color=colors.lighten_color(colors.colors[j % len(colors.colors)],
                                                                    1 - 0.6 * i / sum(experiment.n_traces)),
-                                        ax=self.get_axis(axis, axis2, item[1]),
-                                        label='Trace %d' % int(trace.name.split('_')[-1]))
-                    if self.plot_show['Average']:
-                        experiment.average_data.plot(kind='line', x=x_data, y=item[0], lw=2,
-                                                     color=colors.lighten_color(colors.colors[j % len(colors.colors)],
-                                                                                1.5),
-                                                     ax=self.get_axis(axis, axis2, item[1]), label=item[0])
+                                      label='Trace %d' % int(trace.name.split('_')[-1]))
+                        elif item[1] == 'y2':
+                            axis2.plot(x_values, y_values, lw=1, ls='--',
+                                       color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                  1 - 0.6 * i / sum(experiment.n_traces)),
+                                       label='Trace %d' % int(trace.name.split('_')[-1]))
+                    if self.plot_show['Average'] and not x_data == 'Time (s)' and not item[0] == 'Time (s)':
+                        x_values, _, xlabel = metric_prefix(experiment.average_data[x_data], label=x_data)
+                        y_values, _, ylabel = metric_prefix(experiment.average_data[item[0]], label=item[0])
+                        if item[1] == 'y1':
+                            axis.plot(x_values, y_values, lw=2, ls='-',
+                                      color=colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5),
+                                      label=ylabel)
+                        if item[1] == 'y2':
+                            axis2.plot(x_values, y_values, lw=2, ls='-',
+                                       color=colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5),
+                                       label=ylabel)
+                    ylabel_list.append(ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
-                axis.set_xlabel(x_data)
-                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
-                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
+                axis.set_xlabel(xlabel)
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
         elif self.plot_mode == 'Average':
             axis.set_title('Averages')
             if self.plot_x == 'Experiment':
@@ -770,6 +796,7 @@ class Analysis(QtWidgets.QWidget):
                     except KeyError:
                         pass
                 ny = len(y_data)
+                ylabel_list = list()
                 for j, item in enumerate(y_data):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, experiment in enumerate(self.plot_list):
@@ -785,6 +812,8 @@ class Analysis(QtWidgets.QWidget):
                             values.append(self.experiment_dict[experiment].values[item[0]][0])
                             errors.append(self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
+                    values, errors, ylabel = metric_prefix(values, errors, y_data[j][0])
+                    ylabel_list.append(ylabel)
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
                         for k, cat in enumerate(categories):  # add line breaks in experiment labels
@@ -795,19 +824,20 @@ class Analysis(QtWidgets.QWidget):
                         axis.set_xticklabels(tuple(categories))
                     if item[1] == 'y1':
                         axis.bar(index, values, yerr=errors, width=0.8/ny, color=bar_color,
-                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                                 error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=ylabel)
                     elif item[1] == 'y2':
                         axis2.bar(index, values, yerr=errors, width=0.8 / ny, color=bar_color,
-                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=y_data[j][0])
+                                  error_kw=dict(ecolor='black', elinewidth=1, capsize=3), label=ylabel)
                 plots.format_yaxis(axis, axis2, self.plot_show['Rescale'])
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
-                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
-                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
             else:
                 try:
                     x_data = line_plot_dict[self.plot_x]
+                    xlabel = x_data
                 except KeyError:
                     return
                 y_data = list()
@@ -816,18 +846,42 @@ class Analysis(QtWidgets.QWidget):
                         y_data.append([line_plot_dict[item[0]], item[1]])
                     except KeyError:
                         pass
+                ylabel_list = list()
                 for j, item in enumerate(y_data):
+                    ylabel = item[0]
                     for i, experiment in enumerate(self.plot_list):
-                        self.experiment_dict[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
-                                                                           color=colors.lighten_color(
-                                                                           colors.colors[j % len(colors.colors)],
-                                                                           1.75 - 1.5 * i / len(self.plot_list)),
-                                                                           ax=self.get_axis(axis, axis2, item[1]),
-                                                                           label=self.experiment_dict[experiment].name)
+                        if x_data == 'Time (s)':
+                            x_values = list(self.experiment_dict[experiment].average_data[x_data])
+                        else:
+                            x_values, _, xlabel = metric_prefix(self.experiment_dict[experiment].average_data[x_data],
+                                                                label=x_data)
+                        if item[0] == 'Time (s)':
+                            y_values = list(self.experiment_dict[experiment].average_data[item[0]])
+                        else:
+                            y_values, _, ylabel = metric_prefix(self.experiment_dict[experiment].average_data[item[0]],
+                                                                label=item[0])
+                        if item[1] == 'y1':
+                            axis.plot(x_values, y_values, lw=1, ls='-',
+                                      color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                 1.75 - 1.5 * i / len(self.plot_list)),
+                                      label=self.experiment_dict[experiment].name)
+                        elif item[1] == 'y2':
+                            axis2.plot(x_values, y_values, lw=1, ls='-',
+                                       color=colors.lighten_color(colors.colors[j % len(colors.colors)],
+                                                                  1.75 - 1.5 * i / len(self.plot_list)),
+                                       label=self.experiment_dict[experiment].name)
+
+                        # self.experiment_dict[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
+                        #                                                    color=colors.lighten_color(
+                        #                                                    colors.colors[j % len(colors.colors)],
+                        #                                                    1.75 - 1.5 * i / len(self.plot_list)),
+                        #                                                    ax=self.get_axis(axis, axis2, item[1]),
+                        #                                                    label=self.experiment_dict[experiment].name)
+                    ylabel_list.append(ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
-                axis.set_xlabel(x_data)
-                axis.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y1']))
-                axis2.set_ylabel(" /\n".join([item[0] for item in y_data if item[1] == 'y2']))
+                axis.set_xlabel(xlabel)
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
         elif self.plot_mode == 'Efficiency':
             axis.set_title('Relative efficiency vs reference')
             if self.plot_x == 'Experiment' and self.reference_experiment != '' and len(self.plot_list) >= 1:

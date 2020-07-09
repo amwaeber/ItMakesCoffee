@@ -117,7 +117,7 @@ class Trace:
         self.name = key
         self.is_included = True
         self.experiment = experiment
-        self.data = pd.read_csv(self.data_path, header=None, index_col=0, skiprows=1,
+        self.data = pd.read_csv(self.data_path, header=None, index_col=0, skiprows=3,
                                 names=["Index", "Time (s)", "Voltage (V)", "Current (A)", "Current Std (A)",
                                        "Resistance (Ohm)", "Power (W)", "Temperature (C)", "Irradiance 1 (W/m2)",
                                        "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"],
