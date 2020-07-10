@@ -718,7 +718,7 @@ class Analysis(QtWidgets.QWidget):
                         values.append(experiment.values[item[0]][0])
                         errors.append(experiment.values[item[0]][1])
                         bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
-                    values, errors, ylabel = metric_prefix(values, errors, y_data[j][0])
+                    values, errors, ylabel = metric_prefix(values, errors, item[0])
                     ylabel_list.append(ylabel)
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
@@ -734,6 +734,48 @@ class Analysis(QtWidgets.QWidget):
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel("")
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
+            elif self.plot_show['Scatter']:
+                try:
+                    x_data = bar_plot_dict[self.plot_x]
+                    xlabel = x_data
+                except KeyError:
+                    return
+                y_data = list()
+                for item in self.plot_y:
+                    try:
+                        y_data.append([bar_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                ylabel_list = list()
+                for j, item in enumerate(y_data):
+                    xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
+                    for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
+                        xvalues.append(trace.values[x_data][0])
+                        xerrors.append(trace.values[x_data][1])
+                        yvalues.append(trace.values[item[0]][0])
+                        yerrors.append(trace.values[item[0]][1])
+                        point_color.append(colors.colors[j % len(colors.colors)])
+                    if self.plot_show['Average']:
+                        xvalues.append(experiment.values[x_data][0])
+                        xerrors.append(experiment.values[x_data][1])
+                        yvalues.append(experiment.values[item[0]][0])
+                        yerrors.append(experiment.values[item[0]][1])
+                        point_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                    xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data)
+                    yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0])
+                    ylabel_list.append(ylabel)
+                    if item[1] == 'y1':
+                        axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                      ecolor='black', elinewidth=1, capsize=3)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                    if item[1] == 'y2':
+                        axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                       ecolor='black', elinewidth=1, capsize=3)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                axis.set_xlabel(xlabel)
                 axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
             else:
@@ -812,7 +854,7 @@ class Analysis(QtWidgets.QWidget):
                             values.append(self.experiment_dict[experiment].values[item[0]][0])
                             errors.append(self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
-                    values, errors, ylabel = metric_prefix(values, errors, y_data[j][0])
+                    values, errors, ylabel = metric_prefix(values, errors, item[0])
                     ylabel_list.append(ylabel)
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
@@ -832,6 +874,49 @@ class Analysis(QtWidgets.QWidget):
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 plots.format_value_display(axis, axis2, self.plot_show['Values'])
                 axis.set_xlabel(self.plot_categories_cb.currentText())
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
+            elif self.plot_show['Scatter']:
+                try:
+                    x_data = bar_plot_dict[self.plot_x]
+                    xlabel = x_data
+                except KeyError:
+                    return
+                y_data = list()
+                for item in self.plot_y:
+                    try:
+                        y_data.append([bar_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                ylabel_list = list()
+                for j, item in enumerate(y_data):
+                    xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
+                    for i, experiment in enumerate(self.plot_list):
+                        if self.experiment_dict[experiment].is_reference:  # TODO: check why not updated
+                            xvalues.insert(0, self.experiment_dict[experiment].values[x_data][0])
+                            xerrors.insert(0, self.experiment_dict[experiment].values[x_data][1])
+                            yvalues.insert(0, self.experiment_dict[experiment].values[item[0]][0])
+                            yerrors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
+                            point_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
+                        else:
+                            xvalues.append(self.experiment_dict[experiment].values[x_data][0])
+                            xerrors.append(self.experiment_dict[experiment].values[x_data][1])
+                            yvalues.append(self.experiment_dict[experiment].values[item[0]][0])
+                            yerrors.append(self.experiment_dict[experiment].values[item[0]][1])
+                            point_color.append(colors.colors[j % len(colors.colors)])
+                    xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data)
+                    yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0])
+                    ylabel_list.append(ylabel)
+                    if item[1] == 'y1':
+                        axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                      ecolor='black', elinewidth=1, capsize=3)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                    if item[1] == 'y2':
+                        axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                       ecolor='black', elinewidth=1, capsize=3)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                axis.set_xlabel(xlabel)
                 axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
             else:
@@ -870,13 +955,6 @@ class Analysis(QtWidgets.QWidget):
                                        color=colors.lighten_color(colors.colors[j % len(colors.colors)],
                                                                   1.75 - 1.5 * i / len(self.plot_list)),
                                        label=self.experiment_dict[experiment].name)
-
-                        # self.experiment_dict[experiment].average_data.plot(kind='line', x=x_data, y=item[0], lw=1,
-                        #                                                    color=colors.lighten_color(
-                        #                                                    colors.colors[j % len(colors.colors)],
-                        #                                                    1.75 - 1.5 * i / len(self.plot_list)),
-                        #                                                    ax=self.get_axis(axis, axis2, item[1]),
-                        #                                                    label=self.experiment_dict[experiment].name)
                     ylabel_list.append(ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(xlabel)
@@ -921,6 +999,43 @@ class Analysis(QtWidgets.QWidget):
                 axis.set_xlabel(self.plot_categories_cb.currentText())
                 axis.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y1']))
                 axis2.set_ylabel(" /\n".join([item[0][1] for item in y_data if item[1] == 'y2']))
+            elif self.plot_show['Scatter']:
+                try:
+                    x_data = efficiency_plot_dict[self.plot_x]
+                    xlabel = x_data[1]
+                except KeyError:
+                    return
+                y_data = list()
+                for item in self.plot_y:
+                    try:
+                        y_data.append([efficiency_plot_dict[item[0]], item[1]])
+                    except KeyError:
+                        pass
+                ylabel_list = list()
+                for j, item in enumerate(y_data):
+                    xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
+                    for i, experiment in enumerate(self.plot_list):
+                        if self.experiment_dict[experiment].is_reference is False:
+                            xvalues.append(self.experiment_dict[experiment].efficiencies[x_data[0]][0])
+                            xerrors.append(self.experiment_dict[experiment].efficiencies[x_data[0]][1])
+                            yvalues.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
+                            yerrors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
+                            point_color.append(colors.colors[j % len(colors.colors)])
+                    xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data[1])
+                    yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0][1])
+                    ylabel_list.append(ylabel)
+                    if item[1] == 'y1':
+                        axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                      ecolor='black', elinewidth=1, capsize=3)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                    if item[1] == 'y2':
+                        axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
+                                       ecolor='black', elinewidth=1, capsize=3)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                plots.format_legend(axis, axis2, self.plot_show['Legend'])
+                axis.set_xlabel(xlabel)
+                axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
+                axis2.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y2']))
             else:
                 pass
         else:

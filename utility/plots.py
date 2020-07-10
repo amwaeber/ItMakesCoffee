@@ -10,7 +10,7 @@ def format_value_display(ax1, ax2, show_values=False):
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2.,
                         height+offset if height > 0 else offset,
-                        '%.2f' % height,
+                        '%.3f' % height,
                         ha='center',
                         va='bottom')
     else:
