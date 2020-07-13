@@ -7,7 +7,7 @@ from PyQt5.Qt import Qt
 import utility.colors as colors
 import utility.plots as plots
 from utility.conversions import timestamp_to_datetime_hour, metric_prefix
-from utility.data_import import Experiment
+from utility.data_import import Experiment, Group
 from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
@@ -63,11 +63,11 @@ class Analysis(QtWidgets.QWidget):
                           'Legend': True,
                           'Values': False,
                           'Rescale': True,
-                          'Scatter': False,
-                          'Groups': False}
+                          'Scatter': False}
         self.plot_directory = paths['last_plot_save']
         self.plot_list = list()
 
+        self.analysis_directory = paths['last_analysis']
         self.export_directory = paths['last_export']
 
         hbox_total = QtWidgets.QHBoxLayout()
@@ -82,14 +82,23 @@ class Analysis(QtWidgets.QWidget):
         vbox_left.addWidget(self.plot_group_box, 5)
 
         self.trace_group_box = QtWidgets.QGroupBox('Trace Info')
-        vbox_trace = QtWidgets.QVBoxLayout()
+        hbox_trace = QtWidgets.QHBoxLayout()
         self.trace_tree = QtWidgets.QTreeWidget()
         self.trace_tree.setRootIsDecorated(False)
+        self.trace_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.trace_tree.setHeaderLabels(["Plot", "Trace", "Time", "Isc", "Voc", "Pmax", "FF", "Tavg", 'I1avg', 'I2avg',
                                          'I3avg', 'I4avg'])
         self.trace_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        vbox_trace.addWidget(self.trace_tree)
-        self.trace_group_box.setLayout(vbox_trace)
+        hbox_trace.addWidget(self.trace_tree)
+        vbox_trace = QtWidgets.QVBoxLayout()
+        self.trace_group_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'group.png')), '')
+        self.trace_group_button.clicked.connect(self.group_traces)
+        self.trace_group_button.setToolTip('Group selected traces')
+        vbox_trace.addWidget(self.trace_group_button)
+        vbox_trace.addStretch(-1)
+        hbox_trace.addLayout(vbox_trace)
+        self.trace_group_box.setLayout(hbox_trace)
         vbox_left.addWidget(self.trace_group_box, 2)
         hbox_total.addLayout(vbox_left, 5)
 
@@ -259,44 +268,40 @@ class Analysis(QtWidgets.QWidget):
         grid_plot_items.addWidget(self.plot_categories_cb, 1, 5)
 
         # Various plot options
+        self.show_options_label = QtWidgets.QLabel("Options", self)
+        grid_plot_items.addWidget(self.show_options_label, 3, 5)
         self.show_avg_label = QtWidgets.QLabel("Show Average", self)
-        grid_plot_items.addWidget(self.show_avg_label, 3, 5)
+        grid_plot_items.addWidget(self.show_avg_label, 4, 5)
         self.show_avg_cb = QtWidgets.QCheckBox('', )
         self.show_avg_cb.setChecked(True)
         self.show_avg_cb.toggled.connect(lambda: self.change_plot_settings('Average', self.show_avg_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_avg_cb, 3, 6)
+        grid_plot_items.addWidget(self.show_avg_cb, 4, 6)
         self.show_legend_label = QtWidgets.QLabel("Show Legend", self)
-        grid_plot_items.addWidget(self.show_legend_label, 4, 5)
+        grid_plot_items.addWidget(self.show_legend_label, 5, 5)
         self.show_legend_cb = QtWidgets.QCheckBox('', )
         self.show_legend_cb.setChecked(True)
         self.show_legend_cb.toggled.connect(lambda: self.change_plot_settings('Legend',
                                                                               self.show_legend_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_legend_cb, 4, 6)
+        grid_plot_items.addWidget(self.show_legend_cb, 5, 6)
         self.show_values_label = QtWidgets.QLabel("Show Values", self)
-        grid_plot_items.addWidget(self.show_values_label, 5, 5)
+        grid_plot_items.addWidget(self.show_values_label, 6, 5)
         self.show_values_cb = QtWidgets.QCheckBox('', )
         self.show_values_cb.toggled.connect(lambda: self.change_plot_settings('Values',
                                                                               self.show_values_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_values_cb, 5, 6)
+        grid_plot_items.addWidget(self.show_values_cb, 6, 6)
         self.show_rescale_label = QtWidgets.QLabel("Autoscale Y", self)
-        grid_plot_items.addWidget(self.show_rescale_label, 6, 5)
+        grid_plot_items.addWidget(self.show_rescale_label, 7, 5)
         self.show_rescale_cb = QtWidgets.QCheckBox('', )
         self.show_rescale_cb.setChecked(True)
         self.show_rescale_cb.toggled.connect(lambda: self.change_plot_settings('Rescale',
                                                                                self.show_rescale_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_rescale_cb, 6, 6)
-        self.show_scatter_label = QtWidgets.QLabel("Plot Scatter", self)  # TODO: Implement scatter plots
-        grid_plot_items.addWidget(self.show_scatter_label, 7, 5)
+        grid_plot_items.addWidget(self.show_rescale_cb, 7, 6)
+        self.show_scatter_label = QtWidgets.QLabel("Plot Scatter", self)
+        grid_plot_items.addWidget(self.show_scatter_label, 8, 5)
         self.show_scatter_cb = QtWidgets.QCheckBox('', )
         self.show_scatter_cb.toggled.connect(lambda: self.change_plot_settings('Scatter',
                                                                                self.show_scatter_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_scatter_cb, 7, 6)
-        self.show_groups_label = QtWidgets.QLabel("Plot Groups", self)  # TODO: Implement grouping
-        grid_plot_items.addWidget(self.show_groups_label, 8, 5)
-        self.show_group_cb = QtWidgets.QCheckBox('', )
-        self.show_group_cb.toggled.connect(lambda: self.change_plot_settings('Groups',
-                                                                             self.show_group_cb.isChecked()))
-        grid_plot_items.addWidget(self.show_group_cb, 8, 6)
+        grid_plot_items.addWidget(self.show_scatter_cb, 8, 6)
 
         self.plot_mode_rbtn_group = QtWidgets.QButtonGroup()
         self.single_mode_label = QtWidgets.QLabel("Single Mode", self)
@@ -435,17 +440,12 @@ class Analysis(QtWidgets.QWidget):
         self.analysis_group_button.clicked.connect(self.group_experiments)
         self.analysis_group_button.setToolTip('Group selected experiments')
         hbox_analysis.addWidget(self.analysis_group_button)
-        self.analysis_ungroup_button = QtWidgets.QPushButton(
-            QtGui.QIcon(os.path.join(paths['icons'], 'ungroup.png')), '')
-        self.analysis_ungroup_button.clicked.connect(self.ungroup_experiments)
-        self.analysis_ungroup_button.setToolTip('Ungroup selected experiments')
-        hbox_analysis.addWidget(self.analysis_ungroup_button)
         hbox_analysis.addStretch(-1)
         vbox_analysis.addLayout(hbox_analysis)
         self.experiment_tree = QtWidgets.QTreeWidget()
         self.experiment_tree.setRootIsDecorated(False)
         self.experiment_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Group", "Experiment", "Traces", "Film Th.", "Film Area",
+        self.experiment_tree.setHeaderLabels(["Ref", "Plot", "Experiment", "Traces", "Film Th.", "Film Area",
                                               "Created"])
         self.experiment_tree.setSortingEnabled(True)
         self.experiment_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
@@ -465,10 +465,12 @@ class Analysis(QtWidgets.QWidget):
 
     def add_experiments(self):
         multi_dir_dialog = MultiDirDialog()
-        multi_dir_dialog.setDirectory(paths['last_save'])
+        multi_dir_dialog.setDirectory(self.analysis_directory)
         multi_dir_dialog.show()
         multi_dir_dialog.exec_()
         self.experiment_directories.extend(get_experiment_folders(multi_dir_dialog.selectedFiles()))
+        self.analysis_directory = self.experiment_directories[-1] if len(self.experiment_directories) > 0 \
+            else self.analysis_directory
         self.experiment_directories = list(set(self.experiment_directories))
         self.update_experiment_data()
         self.update_experiment_tree()
@@ -477,15 +479,12 @@ class Analysis(QtWidgets.QWidget):
 
     def remove_experiments(self):
         for item in self.experiment_tree.selectedItems():
-            experiment = item.toolTip(3)
+            experiment = item.toolTip(2)
             self.experiment_directories.remove(experiment)
             try:
                 self.plot_list.remove(experiment)
             except ValueError:
                 pass
-            # self.experiment_directories = [entry for entry in self.experiment_directories
-            #                                if not (item.toolTip(3) == entry)]
-            # self.plot_list = [entry for entry in self.plot_list if not (item.toolTip(3) == entry)]
         self.update_experiment_data()
         self.update_experiment_tree()
         self.update_reference()
@@ -493,10 +492,30 @@ class Analysis(QtWidgets.QWidget):
         self.update_trace_tree()
 
     def group_experiments(self):
-        pass
+        group_list = list()
+        for item in self.experiment_tree.selectedItems():
+            experiment = self.experiment_dict[item.toolTip(2)]
+            for trace in experiment.traces.values():
+                if trace.is_included:
+                    group_list.append(trace.data_path)
+        self.group(group_list)
 
-    def ungroup_experiments(self):
-        pass
+    def group_traces(self):
+        group_list = list()
+        experiment = self.experiment_dict[self.plot_list[0]]
+        for item in self.trace_tree.selectedItems():
+            trace = experiment.traces[item.toolTip(1)]
+            group_list.append(trace.data_path)
+        self.group(group_list)
+
+    def group(self, traces):
+        group_filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, 'Save group as',
+                                                                   self.analysis_directory,
+                                                                   "Excel files (*.gpkl)")[0])
+        if not os.path.basename(group_filepath).endswith('.gpkl'):
+            group_filepath = os.path.join(group_filepath, '.gpkl')
+        group = Group(group_filepath, traces)
+        group.save_pickle()
 
     def change_selection(self, select):
         iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
@@ -506,10 +525,10 @@ class Analysis(QtWidgets.QWidget):
             if modifiers == QtCore.Qt.ControlModifier:  # Affecting plots
                 if select == 'all':
                     tree_item.setCheckState(1, Qt.Checked)
-                    self.experiment_dict[str(tree_item.toolTip(3))].is_plotted = True
+                    self.experiment_dict[str(tree_item.toolTip(2))].is_plotted = True
                 elif select == 'none':
                     tree_item.setCheckState(1, Qt.Unchecked)
-                    self.experiment_dict[str(tree_item.toolTip(3))].is_plotted = False
+                    self.experiment_dict[str(tree_item.toolTip(2))].is_plotted = False
             else:
                 if select == 'all':
                     tree_item.setSelected(True)
@@ -523,7 +542,7 @@ class Analysis(QtWidgets.QWidget):
             iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
             while iterator.value():
                 tree_item = iterator.value()
-                self.experiment_directories.append(str(tree_item.toolTip(3)))
+                self.experiment_directories.append(str(tree_item.toolTip(2)))
                 iterator += 1
         elif len(self.experiment_tree.selectedItems()) == 1:
             self.experiment_tree.header().setSortIndicator(-1, Qt.AscendingOrder)
@@ -545,15 +564,14 @@ class Analysis(QtWidgets.QWidget):
         self.experiment_tree.clear()
         for directory in self.experiment_directories:
             tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
-                                       [None, None, None, self.experiment_dict[directory].name,
+                                       [None, None, self.experiment_dict[directory].name,
                                         str(sum(self.experiment_dict[directory].n_traces)),
                                         str(self.experiment_dict[directory].film_thickness),
                                         str(self.experiment_dict[directory].film_area),
                                         str(self.experiment_dict[directory].time)])
-            tree_item.setToolTip(3, directory)
+            tree_item.setToolTip(2, directory)
             tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiment_dict[directory].is_reference))
             tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiment_dict[directory].is_plotted))
-            tree_item.setCheckState(2, self.bool_to_qtchecked(False))
             tree_item.signal.itemChecked.connect(self.tree_checkbox_changed)
 
     def update_experiment_data(self):
@@ -568,7 +586,7 @@ class Analysis(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(object, int)
     def tree_checkbox_changed(self, item, column):
-        experiment = str(item.toolTip(3))
+        experiment = str(item.toolTip(2))
         if column == 0:  # Reference
             if int(item.checkState(column)) == 0:
                 self.experiment_dict[experiment].is_reference = False
@@ -583,7 +601,7 @@ class Analysis(QtWidgets.QWidget):
                     tree_item = iterator.value()
                     if tree_item != item and int(tree_item.checkState(column)) != 0:
                         tree_item.setCheckState(0, Qt.Unchecked)
-                        self.experiment_dict[str(tree_item.toolTip(3))].is_reference = False
+                        self.experiment_dict[str(tree_item.toolTip(2))].is_reference = False
                     iterator += 1
             self.update_reference()
             self.update_plot()  # to update effects reference switch has on plot
@@ -600,15 +618,12 @@ class Analysis(QtWidgets.QWidget):
                         tree_item = iterator.value()
                         if tree_item != item and int(tree_item.checkState(column)) != 0:
                             tree_item.setCheckState(1, Qt.Unchecked)
-                            self.experiment_dict[str(tree_item.toolTip(3))].is_reference = False
+                            self.experiment_dict[str(tree_item.toolTip(2))].is_reference = False
                         iterator += 1
                 self.experiment_dict[experiment].is_plotted = True
                 self.plot_list.append(experiment)
             self.update_plot()
             self.update_trace_tree()
-
-        elif column == 2:  # Statistics TODO: replace by 'group' indicators?
-            pass
 
     def update_reference(self):
         for experiment in self.experiment_dict.values():
@@ -621,15 +636,22 @@ class Analysis(QtWidgets.QWidget):
             for i, trace in enumerate(experiment.traces.values()):
                 tree_item = TreeWidgetItem(ItemSignal(), self.trace_tree,
                                            [None, 'Trace %d' % i, timestamp_to_datetime_hour(trace.time),
-                                            '%.2f' % metric_prefix([trace.values['Short Circuit Current I_sc (A)'][0]])[0][0],
-                                            '%.3f' % metric_prefix([trace.values['Open Circuit Voltage V_oc (V)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values[
+                                                                        'Short Circuit Current I_sc (A)'][0]])[0][0],
+                                            '%.3f' % metric_prefix([trace.values[
+                                                                        'Open Circuit Voltage V_oc (V)'][0]])[0][0],
                                             '%.2f' % metric_prefix([trace.values['Maximum Power P_max (W)'][0]])[0][0],
                                             '%.3f' % trace.values['Fill Factor'][0],
                                             '%.2f' % trace.values['Average Temperature T_avg (C)'][0],
-                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_1_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_2_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_3_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values['Average Irradiance I_4_avg (W/m2)'][0]])[0][0]])
+                                            '%.2f' % metric_prefix([trace.values[
+                                                                        'Average Irradiance I_1_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values[
+                                                                        'Average Irradiance I_2_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values[
+                                                                        'Average Irradiance I_3_avg (W/m2)'][0]])[0][0],
+                                            '%.2f' % metric_prefix([trace.values[
+                                                                        'Average Irradiance I_4_avg (W/m2)'][0]])[0][0]]
+                                           )
                 tree_item.setToolTip(1, trace.name)
                 tree_item.setCheckState(0, self.bool_to_qtchecked(trace.is_included))
                 tree_item.signal.itemChecked.connect(self.trace_selection_changed)
@@ -769,11 +791,11 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                       ecolor='black', elinewidth=1, capsize=3)
-                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                     if item[1] == 'y2':
                         axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                        ecolor='black', elinewidth=1, capsize=3)
-                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(xlabel)
                 axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
@@ -910,11 +932,11 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                       ecolor='black', elinewidth=1, capsize=3)
-                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                     if item[1] == 'y2':
                         axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                        ecolor='black', elinewidth=1, capsize=3)
-                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(xlabel)
                 axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))
@@ -1027,11 +1049,11 @@ class Analysis(QtWidgets.QWidget):
                     if item[1] == 'y1':
                         axis.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                       ecolor='black', elinewidth=1, capsize=3)
-                        axis.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                     if item[1] == 'y2':
                         axis2.errorbar(xvalues, yvalues, xerr=xerrors, yerr=yerrors, ls='none',
                                        ecolor='black', elinewidth=1, capsize=3)
-                        axis2.scatter(xvalues, yvalues, color=point_color, s=25, marker='s', label=ylabel)
+                        axis2.scatter(xvalues, yvalues, color=point_color, s=100, marker='s', label=ylabel)
                 plots.format_legend(axis, axis2, self.plot_show['Legend'])
                 axis.set_xlabel(xlabel)
                 axis.set_ylabel(" /\n".join([ylabel_list[i] for i, item in enumerate(y_data) if item[1] == 'y1']))

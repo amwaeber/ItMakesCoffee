@@ -38,6 +38,7 @@ def write_config(**kwargs):
     config['paths'] = {'icons': os.path.join(PROJECT_PATH, 'icons'),
                        'last_save': kwargs.get('save_path', PROJECT_PATH),
                        'last_plot_save': kwargs.get('plot_path', PROJECT_PATH),
+                       'last_analysis': kwargs.get('analysis_path', PROJECT_PATH),
                        'last_export': kwargs.get('export_path', PROJECT_PATH)
                        }
 
