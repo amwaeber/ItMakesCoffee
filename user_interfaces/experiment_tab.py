@@ -20,6 +20,7 @@ class Experiment(QtWidgets.QWidget):
         super(Experiment, self).__init__(parent)
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
+        self.exp_count = 0
         self.block_sensor = False
         self.red_pen = pg.mkPen(color=(255, 0, 0), width=2)
         self.orange_pen = pg.mkPen(color=(255, 140, 0), width=2)
@@ -560,6 +561,7 @@ class Experiment(QtWidgets.QWidget):
         self.iv_mes.restart_sensor.connect(self.start_sensor)
         self.iv_mes.save.connect(self.save)
         self.iv_mes.to_log.connect(self.logger)
+        self.iv_mes.end_of_experiment.connect(self.experiment_loop)
 
     def start(self):
         # Stop measurement if measurement is running
@@ -579,12 +581,14 @@ class Experiment(QtWidgets.QWidget):
             return
         if self.iv_mes:
             self.iv_mes.close()
+        experiment_delay = 1 if self.exp_count == 0 else float(self.exp_delay_edit.text()) * 60
         self.iv_mes = keithley.Keithley(gpib_port=str(self.source_cb.currentText()),
                                         n_data_points=int(self.nstep_edit.text()),
                                         averages=int(self.naverage_edit.text()),
                                         repetitions=int(self.reps_edit.text()),
                                         repetition_delay=float(self.rep_delay_edit.text()),
                                         delay=float(self.delay_edit.text()),
+                                        experiment_delay=experiment_delay,
                                         min_voltage=float(self.start_edit.text()),
                                         max_voltage=float(self.end_edit.text()),
                                         compliance_current=float(self.ilimit_edit.text()))
@@ -593,6 +597,7 @@ class Experiment(QtWidgets.QWidget):
         self.check_save_path()
         self.iv_mes.read_keithley_start()
         self.save_configuration()
+        self.exp_count += 1
 
     @QtCore.pyqtSlot(int)
     def update_iv(self, datapoint):
@@ -610,6 +615,22 @@ class Experiment(QtWidgets.QWidget):
         if self.iv_mes:
             self.iv_mes.close()
         self.start_button.setChecked(False)
+
+    @QtCore.pyqtSlot()
+    def experiment_loop(self):
+        if self.exp_count < int(self.exps_edit.text()):
+            if self.exp_count > 1:
+                self.directory = self.directory[:-(len(str(self.exp_count))+1)]
+            self.directory += ' %d' % self.exp_count
+            self.folder_edit.setText(self.directory)
+            if not os.path.exists(self.directory):
+                os.makedirs(self.directory)
+            # self.start_button.setChecked(True)
+            self.start_button.click()
+            self.logger('<span style=\" color:#ff0000;\" >Next Experiment lined up in %s minutes.</span>' %
+                        str(self.exp_delay_edit.text()))
+        else:
+            self.exp_count = 0
 
     def clipboard(self, plot):
         if plot == 'iv':
@@ -669,7 +690,8 @@ class Experiment(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def logger(self, string):
-        self.log_edit.append(string)
+        timestring = '[' + datetime.datetime.now().strftime('%H:%M:%S') + '] '
+        self.log_edit.append(timestring + string)
         self.log_edit.moveCursor(QtGui.QTextCursor.End)
 
     @QtCore.pyqtSlot()

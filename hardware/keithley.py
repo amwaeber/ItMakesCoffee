@@ -13,9 +13,10 @@ class Keithley(QtCore.QObject):
     restart_sensor = QtCore.pyqtSignal()
     save = QtCore.pyqtSignal(int)
     to_log = QtCore.pyqtSignal(str)
+    end_of_experiment = QtCore.pyqtSignal()
 
     def __init__(self, gpib_port='GPIB::24', n_data_points=100, averages=5, repetitions=1, repetition_delay=2.0,
-                 delay=0.25, min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
+                 delay=0.25, experiment_delay=1.0, min_voltage=-0.01, max_voltage=0.7, compliance_current=0.5):
         super(Keithley, self).__init__()
         self.gpib_port = gpib_port
         self.n_data_points = n_data_points
@@ -23,6 +24,7 @@ class Keithley(QtCore.QObject):
         self.repetitions = repetitions
         self.repetition_delay = repetition_delay
         self.delay = delay
+        self.experiment_delay = experiment_delay
         self.max_voltage = max_voltage
         self.min_voltage = min_voltage
         self.compliance_current = compliance_current
@@ -82,6 +84,7 @@ class Keithley(QtCore.QObject):
 
     def background_thread(self):  # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
+        time.sleep(self.experiment_delay)  # pause between experiments
         self.config_keithley()
         while self.is_run:
             for repetition in range(self.repetitions):
@@ -122,6 +125,7 @@ class Keithley(QtCore.QObject):
                 else:
                     self.to_log.emit('<span style=\" color:#32cd32;\" >Finished IV scan.</span>')
             self.is_run = False
+        self.end_of_experiment.emit()
 
     def close(self):
         self.is_run = False
