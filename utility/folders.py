@@ -9,8 +9,16 @@ def get_experiment_folders(list_of_paths):
     return all_paths
 
 
+def get_group_file_paths(list_of_paths):
+    all_paths = list()
+    for path in list_of_paths:
+        for (dirpath, dirnames, filenames) in os.walk(path):
+            all_paths += [os.path.join(dirpath, file) for file in filenames if file.endswith('.gpkl')]
+    return all_paths
+
+
 def get_csv_folders(path):
-    path_list = []
+    path_list = list()
     if os.path.isfile(path):
         return []
     # add dir to pathlist if it contains .txt files

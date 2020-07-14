@@ -12,7 +12,7 @@ from utility.widgets import TreeWidgetItem, ItemSignal
 from user_interfaces.multi_dir_dialog import MultiDirDialog
 from utility.config import paths
 from utility.excel_export import save_to_xlsx
-from utility.folders import get_experiment_folders
+from utility.folders import get_experiment_folders, get_group_file_paths
 
 
 line_plot_dict = {'Time': 'Time (s)',
@@ -52,7 +52,7 @@ class Analysis(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Analysis, self).__init__(parent)
 
-        self.experiment_directories = list()
+        self.experiment_paths = list()
         self.experiment_dict = {}
         self.reference_experiment = ''
 
@@ -468,10 +468,11 @@ class Analysis(QtWidgets.QWidget):
         multi_dir_dialog.setDirectory(self.analysis_directory)
         multi_dir_dialog.show()
         multi_dir_dialog.exec_()
-        self.experiment_directories.extend(get_experiment_folders(multi_dir_dialog.selectedFiles()))
-        self.analysis_directory = self.experiment_directories[-1] if len(self.experiment_directories) > 0 \
+        self.experiment_paths.extend(get_experiment_folders(multi_dir_dialog.selectedFiles()))
+        self.analysis_directory = self.experiment_paths[-1] if len(self.experiment_paths) > 0 \
             else self.analysis_directory
-        self.experiment_directories = list(set(self.experiment_directories))
+        self.experiment_paths.extend(get_group_file_paths(multi_dir_dialog.selectedFiles()))
+        self.experiment_paths = list(set(self.experiment_paths))
         self.update_experiment_data()
         self.update_experiment_tree()
         if self.reference_experiment:
@@ -480,7 +481,7 @@ class Analysis(QtWidgets.QWidget):
     def remove_experiments(self):
         for item in self.experiment_tree.selectedItems():
             experiment = item.toolTip(2)
-            self.experiment_directories.remove(experiment)
+            self.experiment_paths.remove(experiment)
             try:
                 self.plot_list.remove(experiment)
             except ValueError:
@@ -516,6 +517,9 @@ class Analysis(QtWidgets.QWidget):
             group_filepath = os.path.join(group_filepath, '.gpkl')
         group = Group(group_filepath, traces)
         group.save_pickle()
+        self.experiment_paths.append(group.file_path)
+        self.update_experiment_data()
+        self.update_experiment_tree()
 
     def change_selection(self, select):
         iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
@@ -538,11 +542,11 @@ class Analysis(QtWidgets.QWidget):
 
     def change_order(self, origin=None):
         if origin == 'header':
-            self.experiment_directories = []
+            self.experiment_paths = []
             iterator = QtWidgets.QTreeWidgetItemIterator(self.experiment_tree)
             while iterator.value():
                 tree_item = iterator.value()
-                self.experiment_directories.append(str(tree_item.toolTip(2)))
+                self.experiment_paths.append(str(tree_item.toolTip(2)))
                 iterator += 1
         elif len(self.experiment_tree.selectedItems()) == 1:
             self.experiment_tree.header().setSortIndicator(-1, Qt.AscendingOrder)
@@ -552,37 +556,38 @@ class Analysis(QtWidgets.QWidget):
                 self.experiment_tree.takeTopLevelItem(row)
                 self.experiment_tree.insertTopLevelItem(row - 1, item)
                 self.experiment_tree.setCurrentItem(item)
-                self.experiment_directories.insert(row - 1, self.experiment_directories.pop(row))
-            elif origin == 'down' and row < len(self.experiment_directories) - 1:
+                self.experiment_paths.insert(row - 1, self.experiment_paths.pop(row))
+            elif origin == 'down' and row < len(self.experiment_paths) - 1:
                 self.experiment_tree.takeTopLevelItem(row)
                 self.experiment_tree.insertTopLevelItem(row + 1, item)
                 self.experiment_tree.setCurrentItem(item)
-                self.experiment_directories.insert(row + 1, self.experiment_directories.pop(row))
+                self.experiment_paths.insert(row + 1, self.experiment_paths.pop(row))
         self.update_plot()
 
     def update_experiment_tree(self):
         self.experiment_tree.clear()
-        for directory in self.experiment_directories:
+        for path in self.experiment_paths:
             tree_item = TreeWidgetItem(ItemSignal(), self.experiment_tree,
-                                       [None, None, self.experiment_dict[directory].name,
-                                        str(sum(self.experiment_dict[directory].n_traces)),
-                                        str(self.experiment_dict[directory].film_thickness),
-                                        str(self.experiment_dict[directory].film_area),
-                                        str(self.experiment_dict[directory].time)])
-            tree_item.setToolTip(2, directory)
-            tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiment_dict[directory].is_reference))
-            tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiment_dict[directory].is_plotted))
+                                       [None, None, self.experiment_dict[path].name,
+                                        str(sum(self.experiment_dict[path].n_traces)),
+                                        str(self.experiment_dict[path].film_thickness),
+                                        str(self.experiment_dict[path].film_area),
+                                        str(self.experiment_dict[path].time)])
+            tree_item.setToolTip(2, path)
+            tree_item.setCheckState(0, self.bool_to_qtchecked(self.experiment_dict[path].is_reference))
+            tree_item.setCheckState(1, self.bool_to_qtchecked(self.experiment_dict[path].is_plotted))
             tree_item.signal.itemChecked.connect(self.tree_checkbox_changed)
 
     def update_experiment_data(self):
-        directories = self.experiment_directories
-        for directory in directories:
-            if directory not in self.experiment_dict.keys():
-                self.experiment_dict[directory] = Experiment(directory)
-        for directory in list(self.experiment_dict.keys()):
-            if directory not in directories:
-                self.experiment_dict[directory].save_pickle()  # save analysed data in pickle
-                self.experiment_dict.pop(directory, None)
+        for path in self.experiment_paths:
+            if path not in self.experiment_dict.keys() and path.endswith('.gpkl'):
+                self.experiment_dict[path] = Group(path)
+            elif path not in self.experiment_dict.keys():
+                self.experiment_dict[path] = Experiment(path)
+        for path in list(self.experiment_dict.keys()):
+            if path not in self.experiment_paths:
+                self.experiment_dict[path].save_pickle()  # save analysed data in pickle
+                self.experiment_dict.pop(path, None)
 
     @QtCore.pyqtSlot(object, int)
     def tree_checkbox_changed(self, item, column):

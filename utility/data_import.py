@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import os
 import pandas as pd
@@ -157,7 +158,7 @@ class Group(DataBundle):
         super().__init__(file_path=file_path)
 
         self.folder_path = os.path.dirname(self.file_path)
-        self.name = os.path.basename(self.file_path)
+        self.name = os.path.splitext(os.path.basename(self.file_path))[0]
 
         self.import_from_pickle(trace_paths)
         self.update_plot_categories()
@@ -194,6 +195,7 @@ class Group(DataBundle):
                 self.film_thickness = -1 if self.film_thickness != self.traces[key].film_thickness \
                     else self.film_thickness
                 self.film_area = -1 if self.film_area != self.traces[key].film_area else self.film_area
+        self.time = datetime.datetime.fromtimestamp(self.time).strftime("%Y-%m-%d %H:%M:%S")
         self.update_average()
         self.update_reference(None)  # set reference and efficiencies to default
 
