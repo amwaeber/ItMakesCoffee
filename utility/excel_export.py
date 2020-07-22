@@ -96,7 +96,7 @@ def get_data(experiment, worksheet):
     worksheet['AA1'] = 'Average IV'
     worksheet['AA2'] = 'Voltage (V)'
     worksheet['AB2'] = 'Current (A)'
-    for i in range(len(experiment.average_data.index)):
+    for i in range(1, len(experiment.average_data.index)):
         worksheet.cell(row=i+3, column=27).value = experiment.average_data['Voltage (V)'][i]
         worksheet.cell(row=i+3, column=28).value = experiment.average_data['Current (A)'][i]
 
