@@ -558,6 +558,7 @@ class Experiment(QtWidgets.QWidget):
     def iv_register(self, mes):
         self.iv_mes = mes
         self.iv_mes.update.connect(self.update_iv)
+        self.iv_mes.save_settings.connect(self.save_configuration)
         self.iv_mes.restart_sensor.connect(self.start_sensor)
         self.iv_mes.save.connect(self.save)
         self.iv_mes.to_log.connect(self.logger)
@@ -596,7 +597,6 @@ class Experiment(QtWidgets.QWidget):
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.check_save_path()
         self.iv_mes.read_keithley_start()
-        self.save_configuration()
         self.exp_count += 1
 
     @QtCore.pyqtSlot(int)
@@ -625,7 +625,6 @@ class Experiment(QtWidgets.QWidget):
             self.folder_edit.setText(self.directory)
             if not os.path.exists(self.directory):
                 os.makedirs(self.directory)
-            # self.start_button.setChecked(True)
             self.start_button.click()
             self.logger('<span style=\" color:#ff0000;\" >Next Experiment lined up in %s minutes.</span>' %
                         str(self.exp_delay_edit.text()))
@@ -653,6 +652,7 @@ class Experiment(QtWidgets.QWidget):
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)
 
+    @QtCore.pyqtSlot()
     def save_configuration(self):
         now = datetime.datetime.now()
         save_file = open(os.path.join(self.directory, 'Settings.txt'), 'w')

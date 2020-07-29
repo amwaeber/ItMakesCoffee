@@ -10,6 +10,7 @@ import time
 
 class Keithley(QtCore.QObject):
     update = QtCore.pyqtSignal(int)
+    save_settings = QtCore.pyqtSignal()
     restart_sensor = QtCore.pyqtSignal()
     save = QtCore.pyqtSignal(int)
     to_log = QtCore.pyqtSignal(str)
@@ -37,7 +38,7 @@ class Keithley(QtCore.QObject):
         self.powers = np.zeros_like(self.voltages_set)
 
         self.is_run = True
-        self.is_receiving = False
+        # self.is_receiving = False
         self.gpib_thread = None
         self.sourcemeter = None
 
@@ -64,13 +65,13 @@ class Keithley(QtCore.QObject):
 
     def read_keithley_start(self):
         self.is_run = True
-        self.is_receiving = False
+        # self.is_receiving = False
         if self.gpib_thread is None:
             self.gpib_thread = threading.Thread(target=self.background_thread)
             self.gpib_thread.start()
-            # Block till we start receiving values
-            while not self.is_receiving:
-                time.sleep(0.1)
+            # # Block till we start receiving values
+            # while not self.is_receiving:
+            #     time.sleep(0.1)
 
     def get_keithley_data(self):
         data = pd.DataFrame({
@@ -87,6 +88,7 @@ class Keithley(QtCore.QObject):
         time.sleep(self.experiment_delay)  # pause between experiments
         self.config_keithley()
         while self.is_run:
+            self.save_settings.emit()
             for repetition in range(self.repetitions):
                 self.restart_sensor.emit()
                 time.sleep(5.0)  # give time for sensor connection to re-establish itself
@@ -98,7 +100,7 @@ class Keithley(QtCore.QObject):
                         time.sleep(self.delay)
                         self.times[dp] = time.time()
                         self.update.emit(dp)
-                        self.is_receiving = True
+                        # self.is_receiving = True
                 else:
                     for dp in range(self.n_data_points):
                         if not self.is_run:
@@ -116,7 +118,7 @@ class Keithley(QtCore.QObject):
                         self.resistances[dp] = abs(self.voltages[dp] / self.currents[dp])
                         self.powers[dp] = abs(self.voltages[dp] * self.currents[dp])
                         self.update.emit(dp)
-                        self.is_receiving = True
+                        # self.is_receiving = True
                     self.sourcemeter.source_voltage = 0
                 self.save.emit(repetition)
                 self.to_log.emit('<span style=\" color:#1e90ff;\" >Finished curve #%s</span>' % str(repetition + 1))
