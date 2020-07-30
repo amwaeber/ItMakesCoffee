@@ -596,6 +596,12 @@ class Experiment(QtWidgets.QWidget):
         self.iv_register(self.iv_mes)
         self.data_sensor = np.zeros((int(self.ais_edit.text()), int(self.nstep_edit.text())))
         self.check_save_path()
+        if self.exp_count == 0 and int(self.exps_edit.text()) > 1:  # count file names from ' 0' if multiple
+            os.rmdir(self.directory)
+            self.directory += ' 0'
+            self.folder_edit.setText(self.directory)
+            if not os.path.exists(self.directory):
+                os.makedirs(self.directory)
         self.iv_mes.read_keithley_start()
         self.exp_count += 1
 
@@ -619,8 +625,7 @@ class Experiment(QtWidgets.QWidget):
     @QtCore.pyqtSlot()
     def experiment_loop(self):
         if self.exp_count < int(self.exps_edit.text()):
-            if self.exp_count > 1:
-                self.directory = self.directory[:-(len(str(self.exp_count))+1)]
+            self.directory = self.directory[:-(len(str(self.exp_count - 1)) + 1)]
             self.directory += ' %d' % self.exp_count
             self.folder_edit.setText(self.directory)
             if not os.path.exists(self.directory):
