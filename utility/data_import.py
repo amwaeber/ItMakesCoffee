@@ -230,6 +230,12 @@ class Data:
             self.film_thickness = -1
             self.film_area = -1
 
+    def fill_missing_values(self, column=None):  # To fix temporarily the missing first sensor values issue
+        self.data[column].replace([0, -1], np.nan, inplace=True)
+        self.data[column].fillna(method='backfill', inplace=True)
+        self.data[column].fillna(method='pad', inplace=True)
+        self.data[column].fillna(value=-1, inplace=True)
+
     def get_voc(self):
         try:
             voc = self.data.loc[self.data['Current (A)'].abs() == self.data['Current (A)'].abs().min(),
@@ -275,6 +281,9 @@ class Trace(Data):
                                        "Resistance (Ohm)", "Power (W)", "Temperature (C)", "Irradiance 1 (W/m2)",
                                        "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)", "Irradiance 4 (W/m2)"],
                                 usecols=[0, 1, 2, 3, 6, 7, 8, 9, 10, 11])
+        for col in ["Temperature (C)", "Irradiance 1 (W/m2)", "Irradiance 2 (W/m2)", "Irradiance 3 (W/m2)",
+                    "Irradiance 4 (W/m2)"]:
+            self.fill_missing_values(col)
         self.time = self.data['Time (s)'].min()
         self.values = {'Open Circuit Voltage V_oc (V)': [self.get_voc(), 0],
                        'Short Circuit Current I_sc (A)': [self.get_isc(), 0],
