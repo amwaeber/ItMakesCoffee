@@ -25,7 +25,8 @@ line_plot_dict = {'Time': 'Time (s)',
                   'Irradiance 3': 'Irradiance 3 (W/m2)',
                   'Irradiance 4': 'Irradiance 4 (W/m2)'}
 
-bar_plot_dict = {'Current': 'Short Circuit Current I_sc (A)',
+bar_plot_dict = {'Time': 'Time (s)',
+                 'Current': 'Short Circuit Current I_sc (A)',
                  'Voltage': 'Open Circuit Voltage V_oc (V)',
                  'Power': 'Maximum Power P_max (W)',
                  'Fill Factor': 'Fill Factor',

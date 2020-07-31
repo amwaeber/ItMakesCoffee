@@ -11,10 +11,10 @@ from utility._version import __version__
 
 efficiency_keys = ['Delta V_oc', 'Delta I_sc', 'Delta P_max', 'Delta Fill Factor', 'Delta T_avg', 'Delta I_1_avg',
                    'Delta I_2_avg', 'Delta I_3_avg', 'Delta I_4_avg']
-average_keys = ['Open Circuit Voltage V_oc (V)', 'Short Circuit Current I_sc (A)', 'Maximum Power P_max (W)',
-                'Fill Factor', 'Average Temperature T_avg (C)', 'Average Irradiance I_1_avg (W/m2)',
-                'Average Irradiance I_2_avg (W/m2)', 'Average Irradiance I_3_avg (W/m2)',
-                'Average Irradiance I_4_avg (W/m2)']
+average_keys = ['Time (s)', 'Open Circuit Voltage V_oc (V)', 'Short Circuit Current I_sc (A)',
+                'Maximum Power P_max (W)', 'Fill Factor', 'Average Temperature T_avg (C)',
+                'Average Irradiance I_1_avg (W/m2)', 'Average Irradiance I_2_avg (W/m2)',
+                'Average Irradiance I_3_avg (W/m2)', 'Average Irradiance I_4_avg (W/m2)']
 
 
 class DataBundle:
@@ -60,7 +60,10 @@ class DataBundle:
 
     def get_average(self, key):
         trace_values = [trace.values[key][0] for trace in self.traces.values() if trace.is_included]
-        return [np.mean(trace_values), np.std(trace_values)]
+        if key == 'Time (s)':
+            return [trace_values[0], 0]
+        else:
+            return [np.mean(trace_values), np.std(trace_values)]
 
     def update_reference(self, ref_experiment):
         if not ref_experiment:
@@ -69,7 +72,7 @@ class DataBundle:
         else:
             self.reference_path = ref_experiment.folder_path
             self.efficiencies = {key: self.get_efficiency(ref_experiment, avg_key) for key, avg_key in
-                                 zip(efficiency_keys, average_keys)}
+                                 zip(efficiency_keys, average_keys[1:])}
 
     def get_efficiency(self, ref_experiment, key):
         if ref_experiment.values[key][0] == 0:
@@ -288,8 +291,9 @@ class Trace(Data):
         self.values = {'Open Circuit Voltage V_oc (V)': [self.get_voc(), 0],
                        'Short Circuit Current I_sc (A)': [self.get_isc(), 0],
                        'Maximum Power P_max (W)': [self.get_pmax(), 0],
-                       'Fill Factor': [self.get_fill_factor(), 0]}
-        for key, col in zip(average_keys[4:], self.data.columns.values[4:]):
+                       'Fill Factor': [self.get_fill_factor(), 0],
+                       'Time (s)': [self.time, 0]}
+        for key, col in zip(average_keys[5:], self.data.columns.values[4:]):
             self.values[key] = [self.data[col].mean(), self.data[col].std()]
 
 
@@ -312,3 +316,4 @@ class KickstartTrace(Data):
         self.values['Short Circuit Current I_sc (A)'] = [self.get_isc(), 0]
         self.values['Maximum Power P_max (W)'] = [self.get_pmax(), 0]
         self.values['Fill Factor'] = [self.get_fill_factor(), 0]
+        self.values['Time (s)'] = [self.time, 0]
