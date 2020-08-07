@@ -12,8 +12,8 @@ def voltage_to_temperature_thermocouple(voltage=0):
     return voltage * intrinsic_conversion / gain
 
 
-def voltage_to_temperature(voltage=0, voltage_range=5):  # with 100kOhm thermistor
-    serial_resistance = 58
+def voltage_to_temperature(voltage=0, voltage_range=5.2):  # with 100kOhm thermistor
+    serial_resistance = 56
     if voltage <= 0:
         return -1
     try:
