@@ -6,9 +6,10 @@ import pyqtgraph as pg
 
 import hardware.keithley as keithley
 import hardware.sensor as sensor
+from user_interfaces.info_widget import InfoWidget
 from utility import serial_ports
 from utility.config import paths, ports
-
+from utility.save_info import save_info, info_defaults
 
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
@@ -20,6 +21,7 @@ class Experiment(QtWidgets.QWidget):
         super(Experiment, self).__init__(parent)
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
+        self.info_data = info_defaults
         self.exp_count = 0
         self.block_sensor = False
         self.red_pen = pg.mkPen(color=(255, 0, 0), width=2)
@@ -349,22 +351,19 @@ class Experiment(QtWidgets.QWidget):
         vbox_iv_port_read_save.addWidget(self.save_group_box)
         hbox_bottom_left.addLayout(vbox_iv_port_read_save)
 
-        vbox_film_start_logo = QtWidgets.QVBoxLayout()
-        hbox_film_start = QtWidgets.QHBoxLayout()
-        self.film_group_box = QtWidgets.QGroupBox('Film')
-        grid_film = QtWidgets.QGridLayout()
-        self.thickness_label = QtWidgets.QLabel("Thickness (mm)", self)
-        grid_film.addWidget(self.thickness_label, 0, 0)
-        self.thickness_edit = QtWidgets.QLineEdit('-1.00', self)
-        self.thickness_edit.setFixedWidth(60)
-        grid_film.addWidget(self.thickness_edit, 0, 1)
-        self.area_label = QtWidgets.QLabel("Area (cm2)", self)
-        grid_film.addWidget(self.area_label, 1, 0)
-        self.area_edit = QtWidgets.QLineEdit('-1.0', self)
-        self.area_edit.setFixedWidth(60)
-        grid_film.addWidget(self.area_edit, 1, 1)
-        self.film_group_box.setLayout(grid_film)
-        hbox_film_start.addWidget(self.film_group_box)
+        vbox_info_start_logo = QtWidgets.QVBoxLayout()
+        hbox_info_start = QtWidgets.QHBoxLayout()
+        self.info_group_box = QtWidgets.QGroupBox('Info')
+        vbox_info = QtWidgets.QVBoxLayout()
+        vbox_info.addStretch(-1)
+        self.info_button = QtWidgets.QPushButton(
+            QtGui.QIcon(os.path.join(paths['icons'], 'info.png')), '')
+        self.info_button.setIconSize(QtCore.QSize(48, 48))
+        self.info_button.clicked.connect(self.info_dialog)
+        self.info_button.setToolTip('Experiment Info')
+        vbox_info.addWidget(self.info_button)
+        self.info_group_box.setLayout(vbox_info)
+        hbox_info_start.addWidget(self.info_group_box)
 
         self.start_group_box = QtWidgets.QGroupBox('Start')
         vbox_source_ctrl = QtWidgets.QVBoxLayout()
@@ -382,8 +381,8 @@ class Experiment(QtWidgets.QWidget):
         vbox_source_ctrl.addWidget(self.start_button)
         vbox_source_ctrl.addStretch(-1)
         self.start_group_box.setLayout(vbox_source_ctrl)
-        hbox_film_start.addWidget(self.start_group_box)
-        vbox_film_start_logo.addLayout(hbox_film_start)
+        hbox_info_start.addWidget(self.start_group_box)
+        vbox_info_start_logo.addLayout(hbox_info_start)
 
         hbox_logo = QtWidgets.QHBoxLayout()
         hbox_logo.addStretch(-1)
@@ -392,9 +391,9 @@ class Experiment(QtWidgets.QWidget):
         self.logo_label.setPixmap(logo_pixmap)
         hbox_logo.addWidget(self.logo_label)
         hbox_logo.addStretch(-1)
-        vbox_film_start_logo.addLayout(hbox_logo)
-        vbox_film_start_logo.addStretch(-1)
-        hbox_bottom_left.addLayout(vbox_film_start_logo)
+        vbox_info_start_logo.addLayout(hbox_logo)
+        vbox_info_start_logo.addStretch(-1)
+        hbox_bottom_left.addLayout(vbox_info_start_logo)
         hbox_bottom_left.addStretch(-1)
         hbox_bottom.addLayout(hbox_bottom_left, 5)
 
@@ -555,6 +554,13 @@ class Experiment(QtWidgets.QWidget):
         self.directory = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.directory))
         self.folder_edit.setText(self.directory)
 
+    def info_dialog(self):
+        info_dialog = InfoWidget(self, self.info_data)
+        if info_dialog.exec_():
+            self.info_data = info_dialog.info
+        else:
+            pass
+
     def iv_register(self, mes):
         self.iv_mes = mes
         self.iv_mes.update.connect(self.update_iv)
@@ -654,6 +660,15 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Irradiance 3 (W/m2)'] = self.data_sensor[3]
         self.data_iv['Irradiance 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
+        save_info(file_path=os.path.join(self.directory, 'IV_Curve_%s.dat' % str(repetition)),
+                  experiment_name=self.info_data[0], experiment_date=self.info_data[1], film_id=self.info_data[2],
+                  film_date=self.info_data[3], film_thickness=self.info_data[4], film_area=self.info_data[5],
+                  film_matrix=self.info_data[6], film_qds=self.info_data[7], film_qd_concentration=self.info_data[8],
+                  film_qd_emission=self.info_data[9], film_solvent=self.info_data[10], pv_cell_id=self.info_data[11],
+                  pv_cell_type=self.info_data[12], pv_cell_area=self.info_data[13], setup_location=self.info_data[14],
+                  setup_calibrated=self.info_data[15], setup_suns=self.info_data[16],
+                  setup_pid_setpoint=self.info_data[17], room_temperature=self.info_data[18],
+                  room_humidity=self.info_data[19])
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)
 
@@ -663,9 +678,9 @@ class Experiment(QtWidgets.QWidget):
         save_file = open(os.path.join(self.directory, 'Settings.txt'), 'w')
         save_file.write(now.strftime("%Y-%m-%d %H:%M:%S"))
         save_file.write("\n\nFilm Parameters\n")
-        save_file.write("Thickness (mm): %s\n" % str(self.thickness_edit.text()))
-        save_file.write("Area (cm2: %s\n" % str(self.area_edit.text()))
-        save_file.write("\nIV Parameters\n")
+        save_file.write("Thickness (mm): %s\n" % str(-1))
+        save_file.write("Area (cm2: %s\n" % str(-1))
+        save_file.write("\n\nIV Parameters\n")
         save_file.write("Port: %s\n" % str(self.source_cb.currentText()))
         save_file.write("Start Voltage (V): %s\n" % str(self.start_edit.text()))
         save_file.write("End Voltage (V): %s\n" % str(self.end_edit.text()))
