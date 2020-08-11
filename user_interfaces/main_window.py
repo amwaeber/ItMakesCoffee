@@ -1,3 +1,4 @@
+import ctypes
 import os
 from PyQt5 import QtWidgets, QtGui
 
@@ -9,6 +10,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+
+        myappid = 'ItMakesCoffee'  # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
         config.read_config()
         self.init_ui()
 

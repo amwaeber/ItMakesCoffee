@@ -605,6 +605,7 @@ class Experiment(QtWidgets.QWidget):
         if self.exp_count == 0 and int(self.exps_edit.text()) > 1:  # count file names from ' 0' if multiple
             os.rmdir(self.directory)
             self.directory += ' 0'
+            self.info_data[0][0] += ' 0'
             self.folder_edit.setText(self.directory)
             if not os.path.exists(self.directory):
                 os.makedirs(self.directory)
@@ -634,6 +635,8 @@ class Experiment(QtWidgets.QWidget):
             self.directory = self.directory[:-(len(str(self.exp_count - 1)) + 1)]
             self.directory += ' %d' % self.exp_count
             self.folder_edit.setText(self.directory)
+            self.info_data[0][0] = self.info_data[0][0][:-(len(str(self.exp_count - 1)) + 1)]
+            self.info_data[0][0] += ' %d' % self.exp_count
             if not os.path.exists(self.directory):
                 os.makedirs(self.directory)
             self.start_button.click()
@@ -680,7 +683,7 @@ class Experiment(QtWidgets.QWidget):
         save_file.write("\n\nFilm Parameters\n")
         save_file.write("Thickness (mm): %s\n" % str(-1))
         save_file.write("Area (cm2: %s\n" % str(-1))
-        save_file.write("\n\nIV Parameters\n")
+        save_file.write("\nIV Parameters\n")
         save_file.write("Port: %s\n" % str(self.source_cb.currentText()))
         save_file.write("Start Voltage (V): %s\n" % str(self.start_edit.text()))
         save_file.write("End Voltage (V): %s\n" % str(self.end_edit.text()))
