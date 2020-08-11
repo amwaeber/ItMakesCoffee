@@ -557,7 +557,7 @@ class Experiment(QtWidgets.QWidget):
     def info_dialog(self):
         info_dialog = InfoWidget(self, self.info_data)
         if info_dialog.exec_():
-            self.info_data = info_dialog.info
+            self.info_data[1:] = info_dialog.info
         else:
             pass
 
@@ -605,10 +605,11 @@ class Experiment(QtWidgets.QWidget):
         if self.exp_count == 0 and int(self.exps_edit.text()) > 1:  # count file names from ' 0' if multiple
             os.rmdir(self.directory)
             self.directory += ' 0'
-            self.info_data[0][0] += ' 0'
+            self.info_data[1][0] += ' 0'
             self.folder_edit.setText(self.directory)
             if not os.path.exists(self.directory):
                 os.makedirs(self.directory)
+        self.info_data[0][0] = self.directory
         self.iv_mes.read_keithley_start()
         self.exp_count += 1
 
@@ -635,8 +636,8 @@ class Experiment(QtWidgets.QWidget):
             self.directory = self.directory[:-(len(str(self.exp_count - 1)) + 1)]
             self.directory += ' %d' % self.exp_count
             self.folder_edit.setText(self.directory)
-            self.info_data[0][0] = self.info_data[0][0][:-(len(str(self.exp_count - 1)) + 1)]
-            self.info_data[0][0] += ' %d' % self.exp_count
+            self.info_data[1][0] = self.info_data[1][0][:-(len(str(self.exp_count - 1)) + 1)]
+            self.info_data[1][0] += ' %d' % self.exp_count
             if not os.path.exists(self.directory):
                 os.makedirs(self.directory)
             self.start_button.click()
@@ -663,15 +664,15 @@ class Experiment(QtWidgets.QWidget):
         self.data_iv['Irradiance 3 (W/m2)'] = self.data_sensor[3]
         self.data_iv['Irradiance 4 (W/m2)'] = self.data_sensor[4]
         self.data_iv.to_csv(os.path.join(self.directory, 'IV_Curve_%s.csv' % str(repetition)))
-        save_info(file_path=os.path.join(self.directory, 'IV_Curve_%s.dat' % str(repetition)),
-                  experiment_name=self.info_data[0], experiment_date=self.info_data[1], film_id=self.info_data[2],
-                  film_date=self.info_data[3], film_thickness=self.info_data[4], film_area=self.info_data[5],
-                  film_matrix=self.info_data[6], film_qds=self.info_data[7], film_qd_concentration=self.info_data[8],
-                  film_qd_emission=self.info_data[9], film_solvent=self.info_data[10], pv_cell_id=self.info_data[11],
-                  pv_cell_type=self.info_data[12], pv_cell_area=self.info_data[13], setup_location=self.info_data[14],
-                  setup_calibrated=self.info_data[15], setup_suns=self.info_data[16],
-                  setup_pid_setpoint=self.info_data[17], room_temperature=self.info_data[18],
-                  room_humidity=self.info_data[19])
+        save_info(file_path=os.path.join(self.directory, 'IV_Curve_%s.dat' % str(repetition)), folder=self.info_data[0],
+                  experiment_name=self.info_data[1], experiment_date=self.info_data[2], film_id=self.info_data[3],
+                  film_date=self.info_data[4], film_thickness=self.info_data[5], film_area=self.info_data[6],
+                  film_matrix=self.info_data[7], film_qds=self.info_data[8], film_qd_concentration=self.info_data[9],
+                  film_qd_emission=self.info_data[10], film_solvent=self.info_data[11], pv_cell_id=self.info_data[12],
+                  pv_cell_type=self.info_data[13], pv_cell_area=self.info_data[14], setup_location=self.info_data[15],
+                  setup_calibrated=self.info_data[16], setup_suns=self.info_data[17],
+                  setup_pid_setpoint=self.info_data[18], room_temperature=self.info_data[19],
+                  room_humidity=self.info_data[20])
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)
 
