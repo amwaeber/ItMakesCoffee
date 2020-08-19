@@ -8,8 +8,8 @@ import hardware.keithley as keithley
 import hardware.sensor as sensor
 from user_interfaces.info_widget import InfoWidget
 from utility import serial_ports
-from utility.config import paths, ports
-from utility.save_info import save_info, info_defaults
+from utility.config import defaults, paths, ports, write_config
+from utility.save_info import save_info
 
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
@@ -21,7 +21,7 @@ class Experiment(QtWidgets.QWidget):
         super(Experiment, self).__init__(parent)
         self.directory = paths['last_save']
         self.data_iv = np.zeros((5, 1))
-        self.info_data = info_defaults
+        self.info_data = [['.']] + defaults['info']
         self.exp_count = 0
         self.block_sensor = False
         self.red_pen = pg.mkPen(color=(255, 0, 0), width=2)
@@ -213,62 +213,62 @@ class Experiment(QtWidgets.QWidget):
         grid_source = QtWidgets.QGridLayout()
         self.start_label = QtWidgets.QLabel("Start (V)", self)
         grid_source.addWidget(self.start_label, 0, 0)
-        self.start_edit = QtWidgets.QLineEdit('-0.01', self)
+        self.start_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][0], self)
         self.start_edit.setFixedWidth(60)
         self.start_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.start_edit, 0, 1)
         self.end_label = QtWidgets.QLabel("End (V)", self)
         grid_source.addWidget(self.end_label, 1, 0)
-        self.end_edit = QtWidgets.QLineEdit('0.7', self)
+        self.end_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][1], self)
         self.end_edit.setFixedWidth(60)
         self.end_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.end_edit, 1, 1)
         self.step_label = QtWidgets.QLabel("Step (V)", self)
         grid_source.addWidget(self.step_label, 0, 2)
-        self.step_edit = QtWidgets.QLineEdit('0.005', self)
+        self.step_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][2], self)
         self.step_edit.setFixedWidth(60)
         self.step_edit.setDisabled(True)
         grid_source.addWidget(self.step_edit, 0, 3)
         self.nstep_label = QtWidgets.QLabel("# Steps", self)
         grid_source.addWidget(self.nstep_label, 1, 2)
-        self.nstep_edit = QtWidgets.QLineEdit('142', self)
+        self.nstep_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][3], self)
         self.nstep_edit.setFixedWidth(60)
         self.nstep_edit.textChanged.connect(self.update_steps)
         grid_source.addWidget(self.nstep_edit, 1, 3)
         self.ilimit_label = QtWidgets.QLabel("I Limit (A)", self)
         grid_source.addWidget(self.ilimit_label, 0, 4)
-        self.ilimit_edit = QtWidgets.QLineEdit('0.5', self)
+        self.ilimit_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][4], self)
         self.ilimit_edit.setFixedWidth(60)
         grid_source.addWidget(self.ilimit_edit, 0, 5)
 
         self.naverage_label = QtWidgets.QLabel("Averages", self)
         grid_source.addWidget(self.naverage_label, 2, 0)
-        self.naverage_edit = QtWidgets.QLineEdit('5', self)  # adjust to update with NSteps
+        self.naverage_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][5], self)  # adjust to update with NSteps
         self.naverage_edit.setFixedWidth(60)
         grid_source.addWidget(self.naverage_edit, 2, 1)
         self.delay_label = QtWidgets.QLabel("Delay (s)", self)
         grid_source.addWidget(self.delay_label, 3, 0)
-        self.delay_edit = QtWidgets.QLineEdit('0.025', self)
+        self.delay_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][6], self)
         self.delay_edit.setFixedWidth(60)
         grid_source.addWidget(self.delay_edit, 3, 1)
         self.reps_label = QtWidgets.QLabel("Traces", self)
         grid_source.addWidget(self.reps_label, 2, 2)
-        self.reps_edit = QtWidgets.QLineEdit('5', self)
+        self.reps_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][7], self)
         self.reps_edit.setFixedWidth(60)
         grid_source.addWidget(self.reps_edit, 2, 3)
         self.rep_delay_label = QtWidgets.QLabel("Tr. Delay (s)", self)
         grid_source.addWidget(self.rep_delay_label, 3, 2)
-        self.rep_delay_edit = QtWidgets.QLineEdit('2.0', self)
+        self.rep_delay_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][8], self)
         self.rep_delay_edit.setFixedWidth(60)
         grid_source.addWidget(self.rep_delay_edit, 3, 3)
         self.exps_label = QtWidgets.QLabel("Experiments", self)
         grid_source.addWidget(self.exps_label, 2, 4)
-        self.exps_edit = QtWidgets.QLineEdit('1', self)
+        self.exps_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][9], self)
         self.exps_edit.setFixedWidth(60)
         grid_source.addWidget(self.exps_edit, 2, 5)
         self.exp_delay_label = QtWidgets.QLabel("Exp. Delay (min)", self)
         grid_source.addWidget(self.exp_delay_label, 3, 4)
-        self.exp_delay_edit = QtWidgets.QLineEdit('30.0', self)
+        self.exp_delay_edit = QtWidgets.QLineEdit('%s' % defaults['iv'][10], self)
         self.exp_delay_edit.setFixedWidth(60)
         grid_source.addWidget(self.exp_delay_edit, 3, 5)
         hbox_source.addLayout(grid_source)
@@ -555,9 +555,9 @@ class Experiment(QtWidgets.QWidget):
         self.folder_edit.setText(self.directory)
 
     def info_dialog(self):
-        info_dialog = InfoWidget(self, self.info_data)
+        info_dialog = InfoWidget(self)
         if info_dialog.exec_():
-            self.info_data[1:] = info_dialog.info
+            self.info_data[1:] = defaults['info']
         else:
             pass
 
@@ -731,11 +731,13 @@ class Experiment(QtWidgets.QWidget):
             int(self.nstep_edit.text())
             int(self.naverage_edit.text())
             int(self.reps_edit.text())
-            float(self.rep_delay_edit.text())
-            float(self.delay_edit.text())
+            int(self.exps_edit.text())
             float(self.start_edit.text())
             float(self.end_edit.text())
             float(self.ilimit_edit.text())
+            float(self.delay_edit.text())
+            float(self.rep_delay_edit.text())
+            float(self.exp_delay_edit.text())
         except (ZeroDivisionError, ValueError):
             self.logger('<span style=\" color:#ff0000;\" >Some parameters are not in the right format. '
                         'Please check before starting measurement.</span>')
@@ -745,15 +747,25 @@ class Experiment(QtWidgets.QWidget):
                 float(self.start_edit.text()) > float(self.end_edit.text()),
                 float(self.delay_edit.text()) < 0.01,
                 float(self.rep_delay_edit.text()) < 0.5,
+                float(self.exp_delay_edit.text()) < 0.5,
                 float(self.ilimit_edit.text()) > 0.5,
                 float(self.ilimit_edit.text()) <= 0.,
                 int(self.naverage_edit.text()) < 1,
-                int(self.reps_edit.text()) < 1
+                int(self.reps_edit.text()) < 1,
+                int(self.exps_edit.text()) < 1
                 ]):
             self.logger('<span style=\" color:#ff0000;\" >Some parameters are out of bounds. '
                         'Please check before starting measurement.</span>')
             return False
+        self.save_defaults()
         return True
+
+    def save_defaults(self):
+        defaults['iv'] = [self.start_edit.text(), self.end_edit.text(), self.step_edit.text(), self.nstep_edit.text(),
+                          self.ilimit_edit.text(), self.naverage_edit.text(), self.delay_edit.text(),
+                          self.reps_edit.text(), self.rep_delay_edit.text(), self.exps_edit.text(),
+                          self.exp_delay_edit.text()]
+        write_config()
 
     def check_sensor_parameters(self):
         try:

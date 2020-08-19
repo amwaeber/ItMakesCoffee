@@ -1,13 +1,26 @@
+import datetime
 import os
 from configparser import ConfigParser
 
 from utility._version import __version__
+from utility.save_info import info_defaults
 
-PROJECT_PATH = os.path.join(os.path.dirname(__file__), '..')
+PROJECT_PATH = os.path.dirname(os.path.dirname(__file__))
 
-global_confs = {}
-paths = {}
-ports = {}
+global_confs = {'progname': 'ItAnalyses',
+                'progversion': __version__}
+
+defaults = {'info': info_defaults[1:],
+            'iv': [-0.01, 0.7, 0.005, 142, 0.5, 5, 0.025, 5, 2.0, 1, 30.0]}
+
+paths = {'icons': os.path.join(PROJECT_PATH, 'icons'),
+         'last_save': PROJECT_PATH,
+         'last_plot_save': PROJECT_PATH,
+         'last_analysis': PROJECT_PATH,
+         'last_export': PROJECT_PATH}
+
+ports = {'arduino': 'dummy',
+         'keithley': 'dummy'}
 
 
 def read_config():
@@ -16,8 +29,8 @@ def read_config():
     config = ConfigParser()
     config.read(os.path.join(PROJECT_PATH, 'config.ini'))
 
-    for key in config['globals']:
-        global_confs[key] = str(config['globals'][key])
+    for key in config['defaults']:
+        defaults[key] = eval(config['defaults'][key])
 
     for key in config['paths']:
         paths[key] = str(config['paths'][key])
@@ -31,19 +44,22 @@ def write_config(**kwargs):
 
     config = ConfigParser()
 
-    config['globals'] = {'progname': 'ItMakesCoffee',
-                         'progversion': __version__
+    config['globals'] = {'progname': global_confs['progname'],
+                         'progversion': global_confs['progversion']
                          }
 
+    config['defaults'] = {'info': defaults['info'],
+                          'iv': defaults['iv']}
+
     config['paths'] = {'icons': os.path.join(PROJECT_PATH, 'icons'),
-                       'last_save': kwargs.get('save_path', PROJECT_PATH),
-                       'last_plot_save': kwargs.get('plot_path', PROJECT_PATH),
-                       'last_analysis': kwargs.get('analysis_path', PROJECT_PATH),
-                       'last_export': kwargs.get('export_path', PROJECT_PATH)
+                       'last_save': kwargs.get('save_path', paths['last_save']),
+                       'last_plot_save': kwargs.get('plot_path', paths['last_plot_save']),
+                       'last_analysis': kwargs.get('analysis_path', paths['last_analysis']),
+                       'last_export': kwargs.get('export_path', paths['last_export'])
                        }
 
-    config['ports'] = {'arduino': kwargs.get('arduino', 'dummy'),
-                       'keithley': kwargs.get('keithley', 'dummy')
+    config['ports'] = {'arduino': kwargs.get('arduino', ports['arduino']),
+                       'keithley': kwargs.get('keithley', ports['keithley'])
                        }
 
     with open(config_path, 'w') as f:
