@@ -9,8 +9,6 @@ class InfoWidget(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(InfoWidget, self).__init__(parent)
 
-        self.info = list()
-
         self.setWindowTitle('Experiment Info')
 
         vbox_total = QtWidgets.QVBoxLayout()
@@ -55,22 +53,53 @@ class InfoWidget(QtWidgets.QDialog):
         self.setup_suns_edit = QtWidgets.QLineEdit('%s' % defaults['info'][6][0], self)
         self.setup_suns_edit.setFixedWidth(80)
         grid_layout.addWidget(self.setup_suns_edit, 3, 1)
-        self.setup_pid_setpoint_label = QtWidgets.QLabel('PID setpoint (C)', self)
-        grid_layout.addWidget(self.setup_pid_setpoint_label, 3, 2)
-        self.setup_pid_setpoint_edit = QtWidgets.QLineEdit('%s' % defaults['info'][7][0], self)
-        self.setup_pid_setpoint_edit.setFixedWidth(80)
-        grid_layout.addWidget(self.setup_pid_setpoint_edit, 3, 3)
+
+        self.pid_prob_band_label = QtWidgets.QLabel('PID prop. band (%)', self)
+        grid_layout.addWidget(self.pid_prob_band_label, 4, 0)
+        self.pid_prob_band_edit = QtWidgets.QLineEdit('%s' % defaults['info'][7][0], self)
+        self.pid_prob_band_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_prob_band_edit, 4, 1)
+        self.pid_integral_label = QtWidgets.QLabel('PID integral time', self)
+        grid_layout.addWidget(self.pid_integral_label, 4, 2)
+        self.pid_integral_edit = QtWidgets.QLineEdit('%s' % defaults['info'][8][0], self)
+        self.pid_integral_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_integral_edit, 4, 3)
+        self.pid_derivative_label = QtWidgets.QLabel('PID derivative time', self)
+        grid_layout.addWidget(self.pid_derivative_label, 5, 0)
+        self.pid_derivative_edit = QtWidgets.QLineEdit('%s' % defaults['info'][9][0], self)
+        self.pid_derivative_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_derivative_edit, 5, 1)
+        self.pid_fuoc_label = QtWidgets.QLabel('Fuzzy Overshoot', self)
+        grid_layout.addWidget(self.pid_fuoc_label, 5, 2)
+        self.pid_fuoc_edit = QtWidgets.QLineEdit('%s' % defaults['info'][10][0], self)
+        self.pid_fuoc_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_fuoc_edit, 5, 3)
+        self.pid_tcr1_label = QtWidgets.QLabel('Heat Cycle TCR1', self)
+        grid_layout.addWidget(self.pid_tcr1_label, 6, 0)
+        self.pid_tcr1_edit = QtWidgets.QLineEdit('%s' % defaults['info'][11][0], self)
+        self.pid_tcr1_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_tcr1_edit, 6, 1)
+        self.pid_tcr2_label = QtWidgets.QLabel('Cool Cycle TCR2', self)
+        grid_layout.addWidget(self.pid_tcr2_label, 6, 2)
+        self.pid_tcr2_edit = QtWidgets.QLineEdit('%s' % defaults['info'][12][0], self)
+        self.pid_tcr2_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_tcr2_edit, 6, 3)
+        self.pid_setpoint_label = QtWidgets.QLabel('PID setpoint (C)', self)
+        grid_layout.addWidget(self.pid_setpoint_label, 7, 0)
+        self.pid_setpoint_edit = QtWidgets.QLineEdit('%s' % defaults['info'][13][0], self)
+        self.pid_setpoint_edit.setFixedWidth(80)
+        grid_layout.addWidget(self.pid_setpoint_edit, 7, 1)
 
         self.room_temperature_label = QtWidgets.QLabel('Room Temperature (C)', self)
-        grid_layout.addWidget(self.room_temperature_label, 4, 0)
-        self.room_temperature_edit = QtWidgets.QLineEdit('%s' % defaults['info'][8][0], self)
+        grid_layout.addWidget(self.room_temperature_label, 8, 0)
+        self.room_temperature_edit = QtWidgets.QLineEdit('%s' % defaults['info'][14][0], self)
         self.room_temperature_edit.setFixedWidth(80)
-        grid_layout.addWidget(self.room_temperature_edit, 4, 1)
+        grid_layout.addWidget(self.room_temperature_edit, 8, 1)
         self.room_humidity_label = QtWidgets.QLabel('Room Humidity', self)
-        grid_layout.addWidget(self.room_humidity_label, 4, 2)
-        self.room_humidity_edit = QtWidgets.QLineEdit('%s' % defaults['info'][9][0], self)
+        grid_layout.addWidget(self.room_humidity_label, 8, 2)
+        self.room_humidity_edit = QtWidgets.QLineEdit('%s' % defaults['info'][15][0], self)
         self.room_humidity_edit.setFixedWidth(80)
-        grid_layout.addWidget(self.room_humidity_edit, 4, 3)
+        grid_layout.addWidget(self.room_humidity_edit, 8, 3)
         vbox_total.addLayout(grid_layout)
 
         self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
@@ -84,7 +113,10 @@ class InfoWidget(QtWidgets.QDialog):
         defaults['info'] = [[self.experiment_name_edit.text()], [self.experiment_date_edit.text()],
                             [self.film_id_edit.text()], [self.pv_cell_id_edit.text()],
                             [self.setup_location_edit.text()], [self.setup_calibrated_edit.text()],
-                            [self.setup_suns_edit.text()], [self.setup_pid_setpoint_edit.text()],
+                            [self.setup_suns_edit.text()], [self.pid_prob_band_edit.text()],
+                            [self.pid_integral_edit.text()], [self.pid_derivative_edit.text()],
+                            [self.pid_fuoc_edit.text()], [self.pid_tcr1_label.text()],
+                            [self.pid_tcr2_label.text()], [self.pid_setpoint_edit.text()],
                             [self.room_temperature_edit.text()], [self.room_humidity_edit.text()]]
         write_config()
         super(InfoWidget, self).accept()

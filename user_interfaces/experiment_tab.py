@@ -668,8 +668,11 @@ class Experiment(QtWidgets.QWidget):
                   experiment_name=self.info_data[1], experiment_date=self.info_data[2], film_id=self.info_data[3],
                   pv_cell_id=self.info_data[4], setup_location=self.info_data[5],
                   setup_calibrated=self.info_data[6], setup_suns=self.info_data[7],
-                  setup_pid_setpoint=self.info_data[8], room_temperature=self.info_data[9],
-                  room_humidity=self.info_data[10])
+                  pid_proportional_band=self.info_data[8], pid_integral=self.info_data[9],
+                  pid_derivative=self.info_data[10], pid_fuzzy_overshoot=self.info_data[11],
+                  pid_heat_tcr1=self.info_data[12], pid_cool_tcr2=self.info_data[13],
+                  pid_setpoint=self.info_data[14], room_temperature=self.info_data[15],
+                  room_humidity=self.info_data[16])
         if repetition == (self.iv_mes.repetitions - 1):
             self.start_button.setChecked(False)
 
