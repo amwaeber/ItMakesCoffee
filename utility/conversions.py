@@ -25,10 +25,11 @@ def voltage_to_temperature(voltage=0, voltage_range=5.2):  # with 100kOhm thermi
 
 
 def voltage_to_power(voltage=0):
-    coefficient = 1 / 0.35
-    exponent = 1 / 0.09
+    resistor = 390
+    offset = 0.00004
+    slope = 185
     if voltage >= 0:
-        return (coefficient*voltage)**exponent
+        return slope * (voltage / resistor) + offset
     else:
         return -1
 

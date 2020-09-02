@@ -70,7 +70,7 @@ class SerialRead(QtCore.QObject):
             value = conversions.voltage_to_temperature(conversions.digital_to_voltage(value, bits=15,
                                                                                       voltage_range=6.144))
         else:
-            value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=15, voltage_range=1.024))
+            value = conversions.voltage_to_power(conversions.digital_to_voltage(value, bits=15, voltage_range=6.144))
         self.data[plt_number].append(value)  # we get the latest data point and append it to our array
         return self.times[plt_number], self.data[plt_number], self.data[plt_number][-1]
 

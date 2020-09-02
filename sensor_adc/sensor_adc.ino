@@ -9,7 +9,7 @@ long loopTime = 5000;   // microseconds
 void setup() {
   Serial.begin(38400);
   
-  ads_pow.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
+  ads_pow.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
   ads_temp.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
   // ads.setGain(GAIN_ONE);        +/- 4.096V  1 bit = 0.125mV
   // ads.setGain(GAIN_TWO);        +/- 2.048V  1 bit = 0.0625mV
