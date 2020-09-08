@@ -29,7 +29,7 @@ def voltage_to_power(voltage=0):
     offset = 0.00004
     slope = 185
     if voltage >= 0:
-        return slope * (voltage / resistor) + offset
+        return (slope * (voltage / resistor) + offset)*1e3
     else:
         return -1
 

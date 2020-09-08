@@ -55,9 +55,12 @@ class Keithley(QtCore.QObject):
             self.gpib_port = 'dummy'
             return
         self.sourcemeter.reset()
-        self.sourcemeter.use_front_terminals()
+        # self.sourcemeter.use_front_terminals()
+        self.sourcemeter.use_rear_terminals()
         self.sourcemeter.compliance_current = kwargs.get('compliance_current', self.compliance_current)
         self.sourcemeter.measure_current()
+        self.sourcemeter.adapter.write(":SOUR:VOLT:PROT 20;")
+        self.sourcemeter.adapter.write(":SYST:RSEN ON;")
         time.sleep(0.1)  # wait here to give the instrument time to react
         self.averages = kwargs.get('averages', self.averages)
         self.sourcemeter.config_buffer(self.averages)
