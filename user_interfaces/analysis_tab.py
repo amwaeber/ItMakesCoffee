@@ -60,7 +60,8 @@ class Analysis(QtWidgets.QWidget):
         self.plot_x = 'Experiment'
         self.plot_y = [['Power', 'y1']]
         self.plot_mode = 'Single'
-        self.plot_show = {'Average': True,
+        self.plot_show = {'Fitted': True,
+                          'Average': True,
                           'Legend': True,
                           'Values': False,
                           'Rescale': True,
@@ -269,8 +270,12 @@ class Analysis(QtWidgets.QWidget):
         grid_plot_items.addWidget(self.plot_categories_cb, 1, 5)
 
         # Various plot options
-        self.show_options_label = QtWidgets.QLabel("Options", self)
-        grid_plot_items.addWidget(self.show_options_label, 3, 5)
+        self.show_fit_label = QtWidgets.QLabel("Use Fitted Data", self)
+        grid_plot_items.addWidget(self.show_fit_label, 3, 5)
+        self.show_fit_cb = QtWidgets.QCheckBox('', )
+        self.show_fit_cb.setChecked(True)
+        self.show_fit_cb.toggled.connect(lambda: self.change_plot_settings('Fitted', self.show_fit_cb.isChecked()))
+        grid_plot_items.addWidget(self.show_fit_cb, 3, 6)
         self.show_avg_label = QtWidgets.QLabel("Show Average", self)
         grid_plot_items.addWidget(self.show_avg_label, 4, 5)
         self.show_avg_cb = QtWidgets.QCheckBox('', )
@@ -640,22 +645,23 @@ class Analysis(QtWidgets.QWidget):
         if self.plot_mode == 'Single' and len(self.plot_list) == 1:
             experiment = self.experiment_dict[self.plot_list[0]]
             for i, trace in enumerate(experiment.traces.values()):
+                display_values = trace.fitted_values if self.plot_show['Fitted'] else trace.values
                 tree_item = TreeWidgetItem(ItemSignal(), self.trace_tree,
                                            [None, 'Trace %d' % i, timestamp_to_datetime_hour(trace.time),
-                                            '%.2f' % metric_prefix([trace.values[
+                                            '%.2f' % metric_prefix([display_values[
                                                                         'Short Circuit Current I_sc (A)'][0]])[0][0],
-                                            '%.3f' % metric_prefix([trace.values[
+                                            '%.3f' % metric_prefix([display_values[
                                                                         'Open Circuit Voltage V_oc (V)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values['Maximum Power P_max (W)'][0]])[0][0],
-                                            '%.3f' % trace.values['Fill Factor'][0],
-                                            '%.2f' % trace.values['Average Temperature T_avg (C)'][0],
-                                            '%.2f' % metric_prefix([trace.values[
+                                            '%.2f' % metric_prefix([display_values['Maximum Power P_max (W)'][0]])[0][0],
+                                            '%.3f' % display_values['Fill Factor'][0],
+                                            '%.2f' % display_values['Average Temperature T_avg (C)'][0],
+                                            '%.2f' % metric_prefix([display_values[
                                                                         'Average Irradiance I_1_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values[
+                                            '%.2f' % metric_prefix([display_values[
                                                                         'Average Irradiance I_2_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values[
+                                            '%.2f' % metric_prefix([display_values[
                                                                         'Average Irradiance I_3_avg (W/m2)'][0]])[0][0],
-                                            '%.2f' % metric_prefix([trace.values[
+                                            '%.2f' % metric_prefix([display_values[
                                                                         'Average Irradiance I_4_avg (W/m2)'][0]])[0][0]]
                                            )
                 tree_item.setToolTip(1, trace.name)
@@ -699,6 +705,8 @@ class Analysis(QtWidgets.QWidget):
     def change_plot_settings(self, setting, state):
         self.plot_show[setting] = state
         self.update_plot()
+        if setting == 'Fitted':
+            self.update_trace_tree()
 
     def change_plot_mode(self, mode, state):
         if state:
@@ -738,13 +746,21 @@ class Analysis(QtWidgets.QWidget):
                     categories, values, errors, bar_color = list(), list(), list(), list()
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
                         categories.append('Trace %d' % int(trace.name.split('_')[-1]))
-                        values.append(trace.values[item[0]][0])
-                        errors.append(trace.values[item[0]][1])
+                        if self.plot_show['Fitted']:
+                            values.append(trace.fitted_values[item[0]][0])
+                            errors.append(trace.fitted_values[item[0]][1])
+                        else:
+                            values.append(trace.values[item[0]][0])
+                            errors.append(trace.values[item[0]][1])
                         bar_color.append(colors.colors[j % len(colors.colors)])
                     if self.plot_show['Average']:
                         categories.append('Average')
-                        values.append(experiment.values[item[0]][0])
-                        errors.append(experiment.values[item[0]][1])
+                        if self.plot_show['Fitted']:
+                            values.append(experiment.fitted_values[item[0]][0])
+                            errors.append(experiment.fitted_values[item[0]][1])
+                        else:
+                            values.append(experiment.values[item[0]][0])
+                            errors.append(experiment.values[item[0]][1])
                         bar_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                     values, errors, ylabel = metric_prefix(values, errors, item[0])
                     ylabel_list.append(ylabel)
@@ -780,16 +796,28 @@ class Analysis(QtWidgets.QWidget):
                 for j, item in enumerate(y_data):
                     xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
                     for i, trace in enumerate([trace for trace in experiment.traces.values() if trace.is_included]):
-                        xvalues.append(trace.values[x_data][0])
-                        xerrors.append(trace.values[x_data][1])
-                        yvalues.append(trace.values[item[0]][0])
-                        yerrors.append(trace.values[item[0]][1])
+                        if self.plot_show['Fitted']:
+                            xvalues.append(trace.fitted_values[x_data][0])
+                            xerrors.append(trace.fitted_values[x_data][1])
+                            yvalues.append(trace.fitted_values[item[0]][0])
+                            yerrors.append(trace.fitted_values[item[0]][1])
+                        else:
+                            xvalues.append(trace.values[x_data][0])
+                            xerrors.append(trace.values[x_data][1])
+                            yvalues.append(trace.values[item[0]][0])
+                            yerrors.append(trace.values[item[0]][1])
                         point_color.append(colors.colors[j % len(colors.colors)])
                     if self.plot_show['Average']:
-                        xvalues.append(experiment.values[x_data][0])
-                        xerrors.append(experiment.values[x_data][1])
-                        yvalues.append(experiment.values[item[0]][0])
-                        yerrors.append(experiment.values[item[0]][1])
+                        if self.plot_show['Fitted']:
+                            xvalues.append(experiment.fitted_values[x_data][0])
+                            xerrors.append(experiment.fitted_values[x_data][1])
+                            yvalues.append(experiment.fitted_values[item[0]][0])
+                            yerrors.append(experiment.fitted_values[item[0]][1])
+                        else:
+                            xvalues.append(experiment.values[x_data][0])
+                            xerrors.append(experiment.values[x_data][1])
+                            yvalues.append(experiment.values[item[0]][0])
+                            yerrors.append(experiment.values[item[0]][1])
                         point_color.append(colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                     xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data)
                     yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0])
@@ -873,14 +901,22 @@ class Analysis(QtWidgets.QWidget):
                         if self.experiment_dict[experiment].is_reference:  # TODO: check why not updated
                             categories.insert(0, self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.insert(0, self.experiment_dict[experiment].values[item[0]][0])
-                            errors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
+                            if self.plot_show['Fitted']:
+                                values.insert(0, self.experiment_dict[experiment].fitted_values[item[0]][0])
+                                errors.insert(0, self.experiment_dict[experiment].fitted_values[item[0]][1])
+                            else:
+                                values.insert(0, self.experiment_dict[experiment].values[item[0]][0])
+                                errors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                         else:
                             categories.append(self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.append(self.experiment_dict[experiment].values[item[0]][0])
-                            errors.append(self.experiment_dict[experiment].values[item[0]][1])
+                            if self.plot_show['Fitted']:
+                                values.append(self.experiment_dict[experiment].fitted_values[item[0]][0])
+                                errors.append(self.experiment_dict[experiment].fitted_values[item[0]][1])
+                            else:
+                                values.append(self.experiment_dict[experiment].values[item[0]][0])
+                                errors.append(self.experiment_dict[experiment].values[item[0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
                     values, errors, ylabel = metric_prefix(values, errors, item[0])
                     ylabel_list.append(ylabel)
@@ -921,16 +957,28 @@ class Analysis(QtWidgets.QWidget):
                     xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
                     for i, experiment in enumerate(self.plot_list):
                         if self.experiment_dict[experiment].is_reference:  # TODO: check why not updated
-                            xvalues.insert(0, self.experiment_dict[experiment].values[x_data][0])
-                            xerrors.insert(0, self.experiment_dict[experiment].values[x_data][1])
-                            yvalues.insert(0, self.experiment_dict[experiment].values[item[0]][0])
-                            yerrors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
+                            if self.plot_show['Fitted']:
+                                xvalues.insert(0, self.experiment_dict[experiment].fitted_values[x_data][0])
+                                xerrors.insert(0, self.experiment_dict[experiment].fitted_values[x_data][1])
+                                yvalues.insert(0, self.experiment_dict[experiment].fitted_values[item[0]][0])
+                                yerrors.insert(0, self.experiment_dict[experiment].fitted_values[item[0]][1])
+                            else:
+                                xvalues.insert(0, self.experiment_dict[experiment].values[x_data][0])
+                                xerrors.insert(0, self.experiment_dict[experiment].values[x_data][1])
+                                yvalues.insert(0, self.experiment_dict[experiment].values[item[0]][0])
+                                yerrors.insert(0, self.experiment_dict[experiment].values[item[0]][1])
                             point_color.insert(0, colors.lighten_color(colors.colors[j % len(colors.colors)], 1.5))
                         else:
-                            xvalues.append(self.experiment_dict[experiment].values[x_data][0])
-                            xerrors.append(self.experiment_dict[experiment].values[x_data][1])
-                            yvalues.append(self.experiment_dict[experiment].values[item[0]][0])
-                            yerrors.append(self.experiment_dict[experiment].values[item[0]][1])
+                            if self.plot_show['Fitted']:
+                                xvalues.append(self.experiment_dict[experiment].fitted_values[x_data][0])
+                                xerrors.append(self.experiment_dict[experiment].fitted_values[x_data][1])
+                                yvalues.append(self.experiment_dict[experiment].fitted_values[item[0]][0])
+                                yerrors.append(self.experiment_dict[experiment].fitted_values[item[0]][1])
+                            else:
+                                xvalues.append(self.experiment_dict[experiment].values[x_data][0])
+                                xerrors.append(self.experiment_dict[experiment].values[x_data][1])
+                                yvalues.append(self.experiment_dict[experiment].values[item[0]][0])
+                                yerrors.append(self.experiment_dict[experiment].values[item[0]][1])
                             point_color.append(colors.colors[j % len(colors.colors)])
                     xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data)
                     yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0])
@@ -1004,8 +1052,12 @@ class Analysis(QtWidgets.QWidget):
                         if self.experiment_dict[experiment].is_reference is False:
                             categories.append(self.experiment_dict[experiment].
                                               plot_categories[self.plot_categories_cb.currentText()])
-                            values.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
-                            errors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
+                            if self.plot_show['Fitted']:
+                                values.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
+                                errors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
+                            else:
+                                values.append(self.experiment_dict[experiment].fitted_efficiencies[item[0][0]][0])
+                                errors.append(self.experiment_dict[experiment].fitted_efficiencies[item[0][0]][1])
                             bar_color.append(colors.colors[j % len(colors.colors)])
                     index = [k + j * 0.8 / ny for k in range(len(values))]
                     if j == 0:
@@ -1044,10 +1096,16 @@ class Analysis(QtWidgets.QWidget):
                     xvalues, xerrors, yvalues, yerrors, point_color = list(), list(), list(), list(), list()
                     for i, experiment in enumerate(self.plot_list):
                         if self.experiment_dict[experiment].is_reference is False:
-                            xvalues.append(self.experiment_dict[experiment].efficiencies[x_data[0]][0])
-                            xerrors.append(self.experiment_dict[experiment].efficiencies[x_data[0]][1])
-                            yvalues.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
-                            yerrors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
+                            if self.plot_show['Fitted']:
+                                xvalues.append(self.experiment_dict[experiment].efficiencies[x_data[0]][0])
+                                xerrors.append(self.experiment_dict[experiment].efficiencies[x_data[0]][1])
+                                yvalues.append(self.experiment_dict[experiment].efficiencies[item[0][0]][0])
+                                yerrors.append(self.experiment_dict[experiment].efficiencies[item[0][0]][1])
+                            else:
+                                xvalues.append(self.experiment_dict[experiment].fitted_efficiencies[x_data[0]][0])
+                                xerrors.append(self.experiment_dict[experiment].fitted_efficiencies[x_data[0]][1])
+                                yvalues.append(self.experiment_dict[experiment].fitted_efficiencies[item[0][0]][0])
+                                yerrors.append(self.experiment_dict[experiment].fitted_efficiencies[item[0][0]][1])
                             point_color.append(colors.colors[j % len(colors.colors)])
                     xvalues, xerrors, xlabel = metric_prefix(xvalues, xerrors, x_data[1])
                     yvalues, yerrors, ylabel = metric_prefix(yvalues, yerrors, item[0][1])

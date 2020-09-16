@@ -1,13 +1,19 @@
+import copy
 import datetime
 import numpy as np
 import os
 import pandas as pd
 import pickle
+from scipy import optimize
+from scipy.optimize import OptimizeWarning
 import time
+import warnings
 
 from utility import folders
 from utility._version import __version__
 
+
+warnings.simplefilter("error", OptimizeWarning)
 
 efficiency_keys = ['Delta V_oc', 'Delta I_sc', 'Delta P_max', 'Delta Fill Factor', 'Delta T_avg', 'Delta I_1_avg',
                    'Delta I_2_avg', 'Delta I_3_avg', 'Delta I_4_avg']
@@ -37,9 +43,11 @@ class DataBundle:
                                                   'Temperature (C)', 'Irradiance 1 (W/m2)', 'Irradiance 2 (W/m2)',
                                                   'Irradiance 3 (W/m2)', 'Irradiance 4 (W/m2)'])
         self.values = {key: [0, 0] for key in average_keys}
+        self.fitted_values = {key: [0, 0] for key in average_keys}
 
         self.reference_path = ''
         self.efficiencies = {key: [0, 0] for key in efficiency_keys}
+        self.fitted_efficiencies = {key: [0, 0] for key in efficiency_keys}
 
         self.plot_categories = {'Experiment': str(self.name),
                                 'Film Thickness': str(self.film_thickness),
@@ -56,23 +64,32 @@ class DataBundle:
     def update_average(self):
         combined_data = pd.concat((trace.data for trace in self.traces.values() if trace.is_included))
         self.average_data = combined_data.groupby(combined_data.index).mean()
-        self.values = {key: self.get_average(key) for key in average_keys}
+        for key in average_keys:
+            trace_values = [trace.values[key][0] for trace in self.traces.values() if trace.is_included]
+            if key == 'Time (s)':
+                self.values[key] = [trace_values[0], 0]
+            else:
+                self.values[key] = [np.mean(trace_values), np.std(trace_values)]
 
-    def get_average(self, key):
-        trace_values = [trace.values[key][0] for trace in self.traces.values() if trace.is_included]
-        if key == 'Time (s)':
-            return [trace_values[0], 0]
-        else:
-            return [np.mean(trace_values), np.std(trace_values)]
+    def update_fit(self):
+        for key in average_keys:
+            trace_values = [trace.fitted_values[key][0] for trace in self.traces.values() if trace.is_included]
+            if key == 'Time (s)':
+                self.fitted_values[key] = [trace_values[0], 0]
+            else:
+                self.fitted_values[key] = [np.mean(trace_values), np.std(trace_values)]
 
     def update_reference(self, ref_experiment):
         if not ref_experiment:
             self.reference_path = ''
             self.efficiencies = {key: [0, 0] for key in efficiency_keys}
+            self.fitted_efficiencies = {key: [0, 0] for key in efficiency_keys}
         else:
             self.reference_path = ref_experiment.folder_path
             self.efficiencies = {key: self.get_efficiency(ref_experiment, avg_key) for key, avg_key in
                                  zip(efficiency_keys, average_keys[1:])}
+            self.fitted_efficiencies = {key: self.get_fitted_efficiency(ref_experiment, avg_key) for key, avg_key in
+                                        zip(efficiency_keys, average_keys[1:])}
 
     def get_efficiency(self, ref_experiment, key):
         if ref_experiment.values[key][0] == 0:
@@ -80,6 +97,13 @@ class DataBundle:
         else:
             return [100 * (self.values[key][0] - ref_experiment.values[key][0]) / ref_experiment.values[key][0],
                     100 * self.values[key][1] / ref_experiment.values[key][0]]
+
+    def get_fitted_efficiency(self, ref_experiment, key):
+        if ref_experiment.values[key][0] == 0:
+            return [0, 0]
+        else:
+            return [100 * (self.fitted_values[key][0] - ref_experiment.fitted_values[key][0]) / ref_experiment.fitted_values[key][0],
+                    100 * self.fitted_values[key][1] / ref_experiment.fitted_values[key][0]]
 
     def update_plot_categories(self):
         self.plot_categories = {'Experiment': str(self.name),
@@ -137,6 +161,7 @@ class Experiment(DataBundle):
                 self.traces[key] = KickstartTrace(os.path.join(self.folder_path, kickstart_files[itrace]),
                                                   self.name, key)
         self.update_average()
+        self.update_fit()
         self.update_reference(None)  # set reference and efficiencies to default
 
     def load_settings(self):
@@ -200,6 +225,7 @@ class Group(DataBundle):
                 self.film_area = -1 if self.film_area != self.traces[key].film_area else self.film_area
         self.time = datetime.datetime.fromtimestamp(self.time).strftime("%Y-%m-%d %H:%M:%S")
         self.update_average()
+        self.update_fit()
         self.update_reference(None)  # set reference and efficiencies to default
 
 
@@ -218,6 +244,7 @@ class Data:
                                           'Irradiance 3 (W/m2)', 'Irradiance 4 (W/m2)'])
         self.time = 0
         self.values = {key: [0, 0] for key in average_keys}
+        self.fitted_values = {key: [0, 0] for key in average_keys}
 
     def load_settings(self):
         try:
@@ -247,6 +274,21 @@ class Data:
             voc = 0
         return voc
 
+    def fit_voc(self, n_points=5, y00=1, a0=1, b0=1):
+        voc_idx = self.data.index[self.data['Voltage (V)'] ==
+                                  self.values['Open Circuit Voltage V_oc (V)'][0]][0]
+        idx_range = [voc_idx - n_points, voc_idx + n_points]
+        slice_df = self.data[idx_range[0]:idx_range[1]]
+
+        try:
+            popt, pcov = optimize.curve_fit(lambda x, y0, a, b: y0 + a * x + b * x ** 2,
+                                            slice_df['Current (A)'],
+                                            slice_df['Voltage (V)'],
+                                            p0=np.array([y00, a0, b0]))
+        except OptimizeWarning:
+            return [0, 0]
+        return [popt[0], np.sqrt(np.diag(pcov))[0]]
+
     def get_isc(self):
         try:
             isc = self.data.loc[self.data['Voltage (V)'].abs() == self.data['Voltage (V)'].abs().min(),
@@ -254,6 +296,21 @@ class Data:
         except IndexError:
             isc = 0
         return isc
+
+    def fit_isc(self, n_points=3, m0=-1e-2):
+        isc_idx = self.data.index[self.data['Current (A)'] ==
+                                  self.values['Short Circuit Current I_sc (A)'][0]][0]
+        idx_range = [0, isc_idx + n_points]
+        slice_df = self.data[idx_range[0]:idx_range[1]]
+
+        try:
+            popt, pcov = optimize.curve_fit(lambda x, y0, m: y0 + m * x,
+                                            slice_df['Voltage (V)'],
+                                            slice_df['Current (A)'],
+                                            p0=np.array([self.values['Short Circuit Current I_sc (A)'][0], m0]))
+        except OptimizeWarning:
+            return [0, 0]
+        return [popt[0], np.sqrt(np.diag(pcov))[0]]
 
     def get_pmax(self):
         try:
@@ -265,12 +322,31 @@ class Data:
             pmax = 0
         return pmax
 
-    def get_fill_factor(self):
-        vocisc = self.get_voc() * self.get_isc()
+    def fit_pmax(self, n_points=10, i00=4e-5, vt0=7.5e-2):
+        pmax_idx = self.data.index[self.data['Power (W)'] == self.values['Maximum Power P_max (W)'][0]][0]
+        idx_range = [pmax_idx - n_points, pmax_idx + n_points]
+        slice_df = self.data[idx_range[0]:idx_range[1]]
+
+        def shockley(v, iph, i0, vt):
+            return iph - i0 * np.exp(v / vt)
+
+        try:
+            popt, pcov = optimize.curve_fit(shockley,
+                                            slice_df['Voltage (V)'],
+                                            slice_df['Current (A)'],
+                                            p0=np.array([self.values['Short Circuit Current I_sc (A)'][0], i00, vt0]))
+            voltage_pmax = optimize.minimize_scalar(lambda v: - v * shockley(v, *popt)).x
+        except OptimizeWarning:
+            return [0, 0]
+        return [voltage_pmax * shockley(voltage_pmax, *popt), 0]
+
+    @staticmethod
+    def get_fill_factor(voc, isc, pmax):
+        vocisc = voc * isc
         if vocisc <= 0:
             return 0
         else:
-            return abs(self.get_pmax() / vocisc)
+            return abs(pmax / vocisc)
 
 
 class Trace(Data):
@@ -291,10 +367,19 @@ class Trace(Data):
         self.values = {'Open Circuit Voltage V_oc (V)': [self.get_voc(), 0],
                        'Short Circuit Current I_sc (A)': [self.get_isc(), 0],
                        'Maximum Power P_max (W)': [self.get_pmax(), 0],
-                       'Fill Factor': [self.get_fill_factor(), 0],
+                       'Fill Factor': [self.get_fill_factor(self.values['Open Circuit Voltage V_oc (V)'][0],
+                                                            self.values['Short Circuit Current I_sc (A)'][0],
+                                                            self.values['Maximum Power P_max (W)'][0]), 0],
                        'Time (s)': [self.time, 0]}
         for key, col in zip(average_keys[5:], self.data.columns.values[4:]):
             self.values[key] = [self.data[col].mean(), self.data[col].std()]
+        self.fitted_values = copy.deepcopy(self.values)
+        self.fitted_values['Open Circuit Voltage V_oc (V)'] = self.fit_voc()
+        self.fitted_values['Short Circuit Current I_sc (A)'] = self.fit_isc()
+        self.fitted_values['Maximum Power P_max (W)'] = self.fit_pmax()
+        self.fitted_values['Fill Factor'] = [self.get_fill_factor(self.fitted_values['Open Circuit Voltage V_oc (V)'][0],
+                                             self.fitted_values['Short Circuit Current I_sc (A)'][0],
+                                             self.fitted_values['Maximum Power P_max (W)'][0]), 0]
 
 
 class KickstartTrace(Data):
@@ -315,5 +400,14 @@ class KickstartTrace(Data):
         self.values['Open Circuit Voltage V_oc (V)'] = [self.get_voc(), 0]
         self.values['Short Circuit Current I_sc (A)'] = [self.get_isc(), 0]
         self.values['Maximum Power P_max (W)'] = [self.get_pmax(), 0]
-        self.values['Fill Factor'] = [self.get_fill_factor(), 0]
+        self.values['Fill Factor'] = [self.get_fill_factor(self.values['Open Circuit Voltage V_oc (V)'][0],
+                                                           self.values['Short Circuit Current I_sc (A)'][0],
+                                                           self.values['Maximum Power P_max (W)'][0]), 0]
         self.values['Time (s)'] = [self.time, 0]
+        self.fitted_values = copy.deepcopy(self.values)
+        self.fitted_values['Open Circuit Voltage V_oc (V)'] = self.fit_voc()
+        self.fitted_values['Short Circuit Current I_sc (A)'] = self.fit_isc()
+        self.fitted_values['Maximum Power P_max (W)'] = self.fit_pmax()
+        self.fitted_values['Fill Factor'] = [self.get_fill_factor(self.fitted_values['Open Circuit Voltage V_oc (V)'][0],
+                                             self.fitted_values['Short Circuit Current I_sc (A)'][0],
+                                             self.fitted_values['Maximum Power P_max (W)'][0]), 0]
